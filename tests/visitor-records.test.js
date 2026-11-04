@@ -231,6 +231,44 @@ test("continuous recording clears only record-specific fields after cloud confir
   assert.equal(toasts[0].message, "已记账，可继续记录");
 });
 
+test("continuous recording submits once and waits for cloud confirmation before resetting", async () => {
+  let resolveCreate;
+  let calls = 0;
+  const toasts = [];
+  const page = load(
+    "miniprogram/pages/record-edit/index.js",
+    { globalData: { currentLedger: { _id: "owned" } } },
+    {},
+    {
+      "../../services/feedback-ui": {
+        showToast: (value) => toasts.push(value),
+      },
+      "../../services/record.service": {
+        createRecord: () => {
+          calls++;
+          return new Promise((resolve) => {
+            resolveCreate = resolve;
+          });
+        },
+      },
+    }
+  );
+  Object.assign(page.data, { ledgerId: "owned", amount: "36", accounts: ["现金"] });
+
+  const first = page.saveAndContinue();
+  const duplicate = page.saveAndContinue();
+  assert.equal(calls, 1);
+  assert.equal(page.data.amount, "36");
+  assert.equal(page.data.saving, true);
+  assert.equal(toasts.length, 0);
+
+  resolveCreate();
+  await Promise.all([first, duplicate]);
+  assert.equal(page.data.amount, "");
+  assert.equal(page.data.saving, false);
+  assert.equal(toasts[0].message, "已记账，可继续记录");
+});
+
 test("failed continuous recording retains all user input and unlocks submission", async () => {
   const toasts = [];
   const page = load(
