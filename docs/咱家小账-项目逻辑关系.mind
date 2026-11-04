@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  番茄记账项目逻辑导图
+  咱家小账（OurNest）项目逻辑导图
   格式：FreeMind/Freeplane XML（扩展名保留为 .mind 以匹配交付需求）。
   如导图软件未自动识别，可将文件后缀改为 .mm 后使用 FreeMind、Freeplane、XMind 导入。
 -->
 <map version="1.0.1">
-  <node TEXT="番茄记账｜项目逻辑关系" FOLDED="false">
+  <node TEXT="咱家小账（OurNest）｜项目逻辑关系" FOLDED="false">
     <node TEXT="运行架构" POSITION="right">
       <node TEXT="微信小程序前端（miniprogram）">
         <node TEXT="页面 + 自定义组件 + services + utils"/>

@@ -17,6 +17,6 @@ parent: product-goal
 - 测试与生产环境隔离，发布前的环境约束见 `cloud-environments`。
 - UI 的语义、公共组件和安全区边界见 `ui-guidelines`。
 
-## 已知文档差异
+## 离线能力边界
 
-README 部分位置仍称云函数为 `ourNestLedger`；实际目录和前端调用名为 `tomatoLedger`。README 对离线能力的概括不代表支持离线写入队列。
+本地缓存用于改善读取体验，不代表支持离线写入队列。

@@ -1,6 +1,6 @@
 # 咱家小账 (OurNest)
 
-一个基于微信小程序云开发的家庭与个人记账应用。支持个人账本与家庭共享账本：夫妻/家庭成员共同记账、实时同步与多维度消费对比；数据、权限和核心业务逻辑统一由云函数安全处理。
+OurNest 意为“我们的小窝”，中文名为“咱家小账”，是一个基于微信小程序云开发的家庭与个人记账应用。支持个人账本与家庭共享账本：夫妻/家庭成员共同记账、实时同步与多维度消费对比；数据、权限和核心业务逻辑统一由云函数安全处理。
 
 项目支持离线缓存优先、账单导入、多级分类管理及双人/家庭消费趋势分析。
 
@@ -25,7 +25,7 @@ miniprogram/                         小程序前端
   services/                           云函数路由调用封装与本地缓存
   utils/                              金额、日期、映射等纯工具函数
   config/cloud-env.js                测试/生产环境配置
-cloudfunctions/ourNestLedger/        业务云函数 (原 tomatoLedger)
+cloudfunctions/tomatoLedger/         业务云函数
   index.js                            路由入口、统一响应、结构化日志
   actions/                            认证、账本、记录、分类、邀请入口
   shared/ validators/ policies/       响应、校验、权限边界
@@ -38,13 +38,13 @@ plan/PENDING.md                       待办清单
 
 ## 云函数接口
 
-前端通过 `miniprogram/services/` 统一调用业务云函数 `ourNestLedger`。
+前端通过 `miniprogram/services/` 统一调用业务云函数 `tomatoLedger`。
 
 请求使用路由协议：
 
 ```js
 wx.cloud.callFunction({
-  name: "ourNestLedger",
+  name: "tomatoLedger",
   data: {
     route: "record/list",
     payload: { ledgerId, start, end, cursor },
@@ -65,7 +65,7 @@ wx.cloud.callFunction({
 1. 使用微信开发者工具导入项目根目录 `D:\CRRC\OurNest`。
 2. 确认 `miniprogram/config/cloud-env.js` 中的测试环境 ID 为你自己的 CloudBase 环境 ID。
 3. 在微信开发者工具中展开 `cloudfunctions` 目录。
-4. 右键点击 `ourNestLedger` 云函数，选择 **“上传并部署：云端安装依赖”**。
+4. 右键点击 `tomatoLedger` 云函数，选择 **“上传并部署：云端安装依赖”**。
 5. 点击 **“编译”**（Ctrl + B）即可启动。
 
 ## 质量与测试验证
