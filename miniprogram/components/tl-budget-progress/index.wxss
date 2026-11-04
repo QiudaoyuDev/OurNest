@@ -1,0 +1,16 @@
+.tl-budget-progress {
+  width: 100%;
+  margin-top: 16rpx;
+}
+.tl-budget-progress__track {
+  height: 12rpx;
+  overflow: hidden;
+  border-radius: var(--tl-radius-pill);
+  background: rgba(240, 68, 47, 0.12);
+}
+.tl-budget-progress__bar {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tl-color-primary);
+  transition: width 180ms ease;
+}

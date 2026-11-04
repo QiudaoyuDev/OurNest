@@ -1,0 +1,67 @@
+<view class="page plain-page record-import-page">
+  <tl-navbar title="导入账单" showBack="{{true}}">
+  </tl-navbar>
+  <tl-container>
+    <scroll-view class="page-scroll" scroll-y="{{true}}">
+      <view class="page-content">
+        <view class="hero-card card">
+          <view class="hero-icon">
+            <tl-icon name="file-upload-line" size="52" colorKey="primary">
+            </tl-icon>
+          </view>
+          <view>
+            <view class="hero-title">导入到 {{ledgerName}}</view>
+            <view class="hero-copy">上传账单记录，系统将校验并保存至当前账本</view>
+          </view>
+        </view>
+        <view class="import-card card">
+          <view class="card-title">导入设置</view>
+          <view class="field-label">默认账户</view>
+          <picker mode="selector" range="{{accounts}}" value="{{accountIndex}}" bindchange="onAccountChange">
+            <view class="picker-field">
+              {{accounts[accountIndex]}}
+              <tl-icon name="arrow-down-s-line" size="28" colorKey="muted">
+              </tl-icon>
+            </view>
+          </picker>
+          <view class="template-row">
+            <view>
+              <view class="template-title">还没有模板？</view>
+              <view class="template-copy">下载标准模板后填写再导入</view>
+            </view>
+            <view class="template-button" bindtap="downloadTemplate">下载模板</view>
+          </view>
+          <tl-button class="page-submit" block="{{true}}" loading="{{uploading}}" loading-text="正在导入..." bind:tap="chooseAndImport">
+            <tl-icon name="upload-2-line" size="34" colorKey="white">
+            </tl-icon>
+            <text>选择账单文件</text>
+          </tl-button>
+          <view class="import-note">支持 .xls / .xlsx；必填：日期、收支类型、金额。</view>
+        </view>
+      </view>
+    </scroll-view>
+    <tl-dialog visible="{{resultVisible}}" close-on-mask="{{false}}">
+      <view class="result-dialog">
+        <view class="result-title">导入结果</view>
+        <view class="result-copy">{{resultDateText}}</view>
+        <view class="result-grid">
+          <view>
+            <text class="result-number success">{{result.imported}}</text>
+            <text>成功导入（笔）</text>
+          </view>
+          <view>
+            <text class="result-number fail">{{result.skipped}}</text>
+            <text>失败导入（笔）</text>
+          </view>
+        </view>
+        <view wx:if="{{result.errors.length}}" class="error-list">
+          <text wx:for="{{result.errors}}" wx:key="*this">{{item}}</text>
+        </view>
+        <view class="dialog-actions">
+          <tl-button variant="secondary" block="{{true}}" bind:tap="continueImport">继续导入</tl-button>
+          <tl-button block="{{true}}" bind:tap="viewRecords">查看记录</tl-button>
+        </view>
+      </view>
+    </tl-dialog>
+  </tl-container>
+</view>

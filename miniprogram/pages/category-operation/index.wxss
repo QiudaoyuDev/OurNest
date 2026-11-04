@@ -1,0 +1,101 @@
+.category-operation-page .page-content {
+  padding: 28rpx 30rpx calc(24px + 84rpx);
+}
+.operation-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18rpx;
+  padding: 22rpx 24rpx;
+}
+.operation-left {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-body);
+  font-weight: var(--tl-font-weight-bold);
+}
+.operation-icon {
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--tl-radius-control);
+  background: var(--tl-color-primary-soft);
+}
+.default-tag {
+  margin-left: 12rpx;
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-caption);
+  font-weight: var(--tl-font-weight-bold);
+}
+.operation-actions {
+  display: flex;
+  gap: 20rpx;
+  color: var(--tl-color-primary);
+  font-size: var(--tl-font-body-sm);
+  font-weight: var(--tl-font-weight-bold);
+}
+
+.editor-sheet {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sheet-title {
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-heading);
+  font-weight: var(--tl-font-weight-bold);
+  text-align: center;
+}
+.editor-icon {
+  width: 124rpx;
+  height: 124rpx;
+  margin: 34rpx auto 10rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3rpx dashed #f6b7aa;
+  border-radius: 50%;
+  background: var(--tl-color-primary-soft);
+  color: var(--tl-color-primary);
+  font-size: var(--tl-font-data-lg);
+  line-height: 1;
+}
+.editor-icon.chosen {
+  border-style: solid;
+}
+.icon-helper {
+  margin-bottom: 28rpx;
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-caption);
+  text-align: center;
+}
+.name-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--tl-control-height-md);
+  padding: 0 24rpx;
+  border-radius: var(--tl-radius-control);
+  background: var(--tl-color-surface);
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-body);
+}
+.name-count {
+  margin: 10rpx 8rpx 26rpx;
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-caption);
+  text-align: right;
+}
+
+.page-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+.page-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}

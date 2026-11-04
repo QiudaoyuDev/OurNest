@@ -1,0 +1,43 @@
+<view class="page plain-page category-operation-page">
+  <tl-navbar title="{{title}}" showBack="{{true}}">
+  </tl-navbar>
+  <tl-container safe-area="{{false}}">
+    <scroll-view class="page-scroll" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+      <view class="page-content">
+        <view wx:for="{{items}}" wx:key="_id" class="operation-row card">
+          <view class="operation-left">
+            <view class="operation-icon">
+              <tl-icon name="{{item.icon}}" size="38" colorKey="{{type==='income'?'income':'primary'}}">
+              </tl-icon>
+            </view>
+            <view>
+              <text>{{item.name}}</text>
+              <text wx:if="{{item.isDefaultChild}}" class="default-tag">默认</text>
+            </view>
+          </view>
+          <view wx:if="{{role==='owner' && !item.isProtected}}" class="operation-actions">
+            <text data-item="{{item}}" bindtap="openEdit">编辑</text>
+            <text wx:if="{{!item.isOther}}" data-item="{{item}}" bindtap="remove">删除</text>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+    <tl-bottom-sheet visible="{{showEditor}}" bind:close="closeEditor">
+      <view class="editor-sheet">
+        <view class="sheet-title">{{editingItem?'编辑分类':'新增分类'}}</view>
+        <view class="editor-icon {{draftIcon?'chosen':''}}" bindtap="chooseIcon">
+          <tl-icon wx:if="{{draftIcon}}" name="{{draftIcon}}" size="46" colorKey="{{type==='income'?'income':'primary'}}">
+          </tl-icon>
+          <text wx:else>+</text>
+        </view>
+        <view class="icon-helper">{{draftIcon?'更换图标':'选择图标（必选）'}}</view>
+        <input class="name-input" value="{{draftName}}" placeholder="请输入分类名称" bindinput="bindNameInput"/>
+        <view class="name-count">{{draftName.length}}/6</view>
+        <tl-button block="{{true}}" loading="{{saving}}" loading-text="保存中..." bind:tap="saveEditor">保存</tl-button>
+      </view>
+    </tl-bottom-sheet>
+  </tl-container>
+  <tl-page-actions wx:if="{{role==='owner'||role==='member'}}">
+    <tl-button block="{{true}}" bind:tap="openCreate">新增分类</tl-button>
+  </tl-page-actions>
+</view>

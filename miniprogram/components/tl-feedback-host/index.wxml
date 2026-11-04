@@ -1,0 +1,14 @@
+<view wx:if="{{loadingVisible}}" class="tl-loading-mask" catchtap="stopTap">
+  <view class="tl-loading-panel">
+    <view class="tl-loading-spinner">
+    </view>
+    <text class="tl-loading-message">{{loadingMessage}}</text>
+  </view>
+</view>
+<view wx:if="{{toastVisible}}" class="tl-toast tl-toast--{{toastType}}">
+  <view class="tl-toast-icon">
+    <tl-icon name="{{toastIconName}}" size="30" color="currentColor">
+    </tl-icon>
+  </view>
+  <text class="tl-toast-message">{{toastMessage}}</text>
+</view>

@@ -1,0 +1,61 @@
+.edit-card {
+  padding: 10rpx 30rpx;
+  background: var(--tl-color-surface);
+}
+
+.form-group {
+  min-height: var(--tl-list-row-height);
+  display: flex;
+  align-items: center;
+  border-top: 1rpx solid var(--tl-color-divider);
+}
+
+.form-group:first-child {
+  border-top: none;
+}
+
+.form-label {
+  width: 132rpx;
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-body);
+  font-weight: var(--tl-font-weight-bold);
+}
+
+.avatar-field {
+  flex: 1;
+  min-width: 0;
+  height: 94rpx;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  line-height: 1;
+}
+
+.avatar-field::after {
+  border: none;
+}
+
+.edit-avatar {
+  width: 78rpx;
+  height: 78rpx;
+  border-radius: var(--tl-radius-control);
+  background: var(--tl-color-primary-soft);
+}
+
+.edit-avatar.default {
+  transform: scale(1.08);
+}
+
+.profile-input {
+  flex: 1;
+  min-width: 0;
+  height: 78rpx;
+  display: flex;
+  align-items: center;
+  color: #5d4942;
+  font-size: var(--tl-font-body);
+  font-weight: var(--tl-font-weight-bold);
+}

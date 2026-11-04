@@ -1,0 +1,88 @@
+.setting-card,
+.amount-card {
+  padding: 32rpx;
+}
+.setting-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+.setting-title {
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-heading);
+  font-weight: var(--tl-font-weight-bold);
+}
+.setting-subtitle {
+  margin-top: 10rpx;
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-body-sm);
+  line-height: 1.45;
+}
+.amount-card {
+  margin-top: 24rpx;
+}
+.amount-card.is-disabled {
+  opacity: 0.58;
+}
+.amount-head {
+  display: flex;
+  justify-content: space-between;
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-body-sm);
+  font-weight: var(--tl-font-weight-bold);
+}
+.amount-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin: 26rpx 0;
+}
+.amount-pill {
+  padding: 14rpx 18rpx 14rpx 22rpx;
+  border-radius: var(--tl-radius-pill);
+  color: var(--tl-color-primary);
+  background: var(--tl-color-primary-soft);
+  font-size: var(--tl-font-body);
+  font-weight: var(--tl-font-weight-bold);
+}
+.amount-pill text {
+  margin-left: 16rpx;
+  color: #b78b80;
+}
+.amount-add {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  height: var(--tl-control-height-md);
+  padding: 0 14rpx 0 24rpx;
+  border: 1rpx solid #f1ddd5;
+  border-radius: var(--tl-radius-control);
+  color: var(--tl-color-primary);
+  background: var(--tl-color-page);
+  font-size: var(--tl-font-heading);
+  font-weight: var(--tl-font-weight-bold);
+}
+.amount-add input {
+  flex: 1;
+  min-width: 0;
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-body);
+}
+.add-button {
+  display: inline-flex;
+  min-height: 58rpx;
+  padding: 12rpx 22rpx;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border-radius: var(--tl-radius-xs);
+  color: var(--tl-color-text-inverse);
+  background: var(--tl-color-primary);
+  font-size: var(--tl-font-body-sm);
+}
+.default-link {
+  margin-top: 22rpx;
+  color: #e66a53;
+  font-size: var(--tl-font-body-sm);
+}

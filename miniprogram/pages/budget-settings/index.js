@@ -1,0 +1,87 @@
+const feedback = require("../../services/feedback-ui");
+const app = getApp();
+const ledgerStore = require("../../services/ledger.store");
+
+function normalizeBudget(value) {
+  const numberValue = Math.round(Number(value) * 100) / 100;
+  return Number.isFinite(numberValue) ? numberValue : 0;
+}
+
+function isValidBudget(value) {
+  return (
+    /^\d+(?:\.\d{1,2})?$/.test(String(value)) &&
+    normalizeBudget(value) >= 1 &&
+    normalizeBudget(value) <= 999999
+  );
+}
+
+Page({
+  data: {
+    ledgerId: "",
+    ledgerName: "我的账本",
+    budgetEnabled: false,
+    monthlyBudget: 3000,
+    saving: false,
+    readonly: false,
+  },
+
+  onLoad() {
+    const ledger = app.globalData.currentLedger || {};
+    this.setData({
+      ledgerId: ledger._id || "",
+      ledgerName: ledger.name || "我的账本",
+      budgetEnabled: Boolean(ledger.budgetEnabled),
+      monthlyBudget: String(ledger.monthlyBudget || 3000),
+      readonly: Boolean(ledger.readonly),
+    });
+  },
+
+  onEnableChange(event) {
+    this.setData({ budgetEnabled: Boolean(event.detail.value) });
+  },
+
+  onBudgetInput(event) {
+    this.setData({ monthlyBudget: event.detail.value });
+  },
+
+  async saveBudget() {
+    if (this.data.readonly) {
+      feedback.showReadonlyToast();
+      return;
+    }
+    if (this.data.saving) return;
+    if (this.data.budgetEnabled && !isValidBudget(this.data.monthlyBudget)) {
+      feedback.showToast({ type: "warning", message: "预算金额需为 1-999999，最多两位小数" });
+      return;
+    }
+    this.setData({ saving: true });
+    try {
+      const data = await ledgerStore.updateBudget({
+        ledgerId: this.data.ledgerId,
+        budgetEnabled: this.data.budgetEnabled,
+        monthlyBudget: normalizeBudget(this.data.monthlyBudget),
+      });
+      const ledger = data.ledger;
+      if (ledger) {
+        app.globalData.currentLedger = {
+          ...(app.globalData.currentLedger || {}),
+          ...ledger,
+        };
+        app.persistAuthState();
+      }
+      if (ledger) {
+        const pages = getCurrentPages();
+        const previousPage = pages[pages.length - 2];
+        if (previousPage && typeof previousPage.loadDashboard === "function") {
+          await previousPage.loadDashboard(ledger._id);
+        }
+      }
+      feedback.showToast({ type: "success", message: "已保存" });
+      setTimeout(() => wx.navigateBack(), 650);
+    } catch (error) {
+      feedback.showToast({ type: "error", message: error.message || "保存失败" });
+    } finally {
+      this.setData({ saving: false });
+    }
+  },
+});

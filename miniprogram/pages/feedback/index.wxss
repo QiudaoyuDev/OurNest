@@ -1,0 +1,113 @@
+.history-entry {
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6rpx;
+  color: var(--tl-color-primary);
+  font-size: var(--tl-font-body-sm);
+  font-weight: var(--tl-font-weight-bold);
+}
+.feedback-card {
+  padding: 30rpx;
+}
+.field-label {
+  margin-top: 30rpx;
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-body);
+  font-weight: var(--tl-font-weight-bold);
+}
+.field-label:first-child {
+  margin-top: 0;
+}
+.required::before {
+  content: "*";
+  margin-right: 6rpx;
+  color: var(--tl-color-primary);
+}
+.content-input {
+  width: 100%;
+  min-height: 220rpx;
+  margin-top: 20rpx;
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-body);
+  line-height: 1.55;
+}
+.input-placeholder {
+  color: #b7a29a;
+}
+.counter {
+  margin-top: 8rpx;
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-caption);
+  text-align: right;
+}
+.type-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+.type-option {
+  padding: 16rpx 24rpx;
+  border-radius: var(--tl-radius-pill);
+  color: #806b63;
+  background: #fff2ed;
+  font-size: var(--tl-font-body-sm);
+  font-weight: var(--tl-font-weight-bold);
+}
+.type-option.selected {
+  color: var(--tl-color-text-inverse);
+  background: var(--tl-color-primary);
+}
+.image-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+.image-item,
+.add-image {
+  position: relative;
+  width: 150rpx;
+  height: 150rpx;
+  border-radius: var(--tl-radius-control);
+  overflow: hidden;
+}
+.image-item image {
+  width: 100%;
+  height: 100%;
+}
+.add-image {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4rpx;
+  color: var(--tl-color-text-tertiary);
+  background: var(--tl-color-primary-soft);
+  font-size: var(--tl-font-caption);
+  font-weight: var(--tl-font-weight-bold);
+}
+.remove-image {
+  position: absolute;
+  top: 6rpx;
+  right: 6rpx;
+  width: 38rpx;
+  height: 38rpx;
+  border-radius: 50%;
+  background: rgba(49, 37, 34, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hint {
+  margin: 24rpx 8rpx;
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-caption);
+  line-height: 1.5;
+}
+
+.disabled {
+  opacity: 0.92;
+}

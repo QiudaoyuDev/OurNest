@@ -1,0 +1,127 @@
+.category-manage-page .page-content {
+  padding: 26rpx 30rpx 24px;
+}
+.category-tabs {
+  position: relative;
+  display: flex;
+  margin-top: 0;
+  padding: 8rpx;
+  border-radius: var(--tl-radius-pill);
+  background: var(--tl-color-surface-muted);
+  overflow: hidden;
+}
+.tab {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  padding: 18rpx;
+  color: var(--tl-color-text-tertiary);
+  text-align: center;
+  font-size: var(--tl-font-body);
+  font-weight: var(--tl-font-weight-bold);
+}
+.tab-indicator {
+  position: absolute;
+  z-index: 0;
+  left: 8rpx;
+  top: 8rpx;
+  bottom: 8rpx;
+  width: calc(50% - 8rpx);
+  border-radius: var(--tl-radius-pill);
+  background: var(--tl-color-primary);
+
+  transition:
+    transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background 260ms ease;
+}
+.tab-indicator.to-income {
+  transform: translateX(100%);
+  background: var(--tl-color-income);
+}
+.tab.active {
+  color: var(--tl-color-text-inverse);
+}
+.category-panel {
+  margin-top: 26rpx;
+}
+.category-panel {
+  padding-top: 8rpx;
+}
+.parent-grid,
+.children-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: 14rpx;
+  row-gap: 34rpx;
+}
+.parent-grid {
+  margin-bottom: 42rpx;
+}
+.category-item {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-caption);
+  font-weight: var(--tl-font-weight-bold);
+  text-align: center;
+}
+.category-item text {
+  width: 100%;
+  margin-top: 10rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.category-icon,
+.add-icon {
+  box-sizing: border-box;
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: var(--tl-radius-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tl-color-primary-soft);
+}
+.category-icon.income {
+  background: var(--tl-color-income-soft);
+}
+.category-item.selected .category-icon {
+}
+.category-item.selected.income .category-icon {
+}
+.add-icon {
+  color: var(--tl-color-primary);
+  background: var(--tl-palette-warm-100);
+  border: 2rpx dashed #f6b7aa;
+  font-size: var(--tl-font-data-lg);
+  font-weight: var(--tl-font-weight-regular);
+}
+.income-add .add-icon {
+  color: var(--tl-color-income);
+  border-color: #9bd9b8;
+}
+.children-panel {
+  margin: 0 0 42rpx;
+  padding: 24rpx;
+  border-radius: var(--tl-radius-md);
+  background: var(--tl-color-surface);
+  border: 1rpx solid #f3e3dc;
+}
+.children-title {
+  margin-bottom: 22rpx;
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-body);
+  font-weight: var(--tl-font-weight-bold);
+}
+.page-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+.page-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}

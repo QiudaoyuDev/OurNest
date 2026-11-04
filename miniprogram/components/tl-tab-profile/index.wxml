@@ -1,0 +1,139 @@
+<view class="tab-panel profile-page">
+  <scroll-view class="page-scroll" scroll-y="{{true}}" enhanced="{{true}}" enable-flex="{{true}}" show-scrollbar="{{false}}">
+    <view class="page-content">
+      <view class="profile-hero-card card fade-up">
+        <view class="profile-setting" bindtap="handleIdentityTap">
+          <tl-icon name="settings-3-line" size="30" colorKey="primary">
+          </tl-icon>
+        </view>
+        <view class="identity-row" bindtap="handleIdentityTap">
+          <image class="avatar-img" src="{{userAvatar}}" mode="aspectFill">
+          </image>
+          <view class="identity-main">
+            <view class="user-name-row">
+              <text class="user-name">{{userName}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="stats-grid">
+          <view class="stat-item">
+            <view class="stat-value">{{usageDays}}</view>
+            <view class="stat-label">使用天数</view>
+          </view>
+          <view class="stat-item">
+            <view class="stat-value">{{recordCount}}</view>
+            <view class="stat-label">记录笔数</view>
+          </view>
+          <view class="stat-item">
+            <view class="stat-value">{{ledgerCount}}</view>
+            <view class="stat-label">账本总数</view>
+          </view>
+        </view>
+      </view>
+      <view class="tools-panel card fade-up">
+        <view class="section-title">账本设置</view>
+        <view class="tool-grid common-grid">
+          <view class="tool-tile" bindtap="ledgerSettings">
+            <view class="tool-icon">
+              <tl-icon name="settings-3-line" size="32" colorKey="primary">
+              </tl-icon>
+            </view>
+            <view class="tool-title">账本管理</view>
+          </view>
+          <view class="tool-tile" bindtap="manageMembers">
+            <view class="tool-icon">
+              <tl-icon name="team-line" size="32" colorKey="primary">
+              </tl-icon>
+            </view>
+            <view class="tool-title">成员管理</view>
+          </view>
+          <view class="tool-tile" bindtap="manageCategories">
+            <view class="tool-icon">
+              <tl-icon name="price-tag-3-line" size="32" colorKey="primary">
+              </tl-icon>
+            </view>
+            <view class="tool-title">分类管理</view>
+          </view>
+          <view class="tool-tile" bindtap="manageAccounts">
+            <view class="tool-icon">
+              <tl-icon name="bank-card-line" size="32" colorKey="primary">
+              </tl-icon>
+            </view>
+            <view class="tool-title">支付账户</view>
+          </view>
+          <view class="tool-tile" bindtap="manageQuickAmounts">
+            <view class="tool-icon">
+              <tl-icon name="wallet-3-line" size="32" colorKey="primary">
+              </tl-icon>
+            </view>
+            <view class="tool-title">快捷金额</view>
+          </view>
+          <view class="tool-tile" bindtap="importBill">
+            <view class="tool-icon">
+              <tl-icon name="upload-2-line" size="32" colorKey="primary">
+              </tl-icon>
+            </view>
+            <view class="tool-title">导入账单</view>
+          </view>
+          <view class="tool-tile" bindtap="exportBill">
+            <view class="tool-icon">
+              <tl-icon name="download-2-line" size="32" colorKey="primary">
+              </tl-icon>
+            </view>
+            <view class="tool-title">导出账单</view>
+          </view>
+        </view>
+      </view>
+      <view class="more-panel card fade-up">
+        <view class="section-title">其他</view>
+        <view class="function-list">
+          <view class="function-row" bindtap="syncData">
+            <view class="function-icon">
+              <tl-icon name="refresh-line" size="30" colorKey="primary">
+              </tl-icon>
+            </view>
+            <view class="function-main">
+              <view class="function-title">同步数据</view>
+              <view class="function-tip">{{syncing ? '正在更新账号、账本和分类...' : lastSyncedText}}</view>
+            </view>
+            <view class="function-arrow">
+              <tl-icon name="loader-4-line" size="32" colorKey="primary" wx:if="{{syncing}}">
+              </tl-icon>
+              <tl-icon name="arrow-right-s-line" size="32" colorKey="primary" wx:else>
+              </tl-icon>
+            </view>
+          </view>
+          <view class="function-row" bindtap="feedback">
+            <view class="function-icon">
+              <tl-icon name="message-3-line" size="30" colorKey="primary">
+              </tl-icon>
+            </view>
+            <view class="function-main">
+              <view class="function-title">意见反馈</view>
+              <view class="function-tip">告诉我们哪里还可以更好用</view>
+            </view>
+            <view class="function-arrow">
+              <tl-icon name="arrow-right-s-line" size="32" colorKey="primary">
+              </tl-icon>
+            </view>
+          </view>
+          <view class="function-row" bindtap="viewChangelog">
+            <view class="function-icon">
+              <tl-icon name="history-line" size="30" colorKey="primary">
+              </tl-icon>
+            </view>
+            <view class="function-main">
+              <view class="function-title">更新日志</view>
+              <view class="function-tip">查看咱家小账最近变化</view>
+            </view>
+            <view class="function-arrow">
+              <tl-icon name="arrow-right-s-line" size="32" colorKey="primary">
+              </tl-icon>
+            </view>
+          </view>
+        </view>
+      </view>
+      <tl-button class="logout-button" variant="primary" block="{{true}}" bind:tap="logout">退出账号</tl-button>
+    </view>
+  </scroll-view>
+</view>

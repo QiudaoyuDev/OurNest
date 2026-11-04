@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "tl-record-form": "/components/tl-record-form/index"
+  },
+  "navigationBarTitleText": "记一笔"
+}

@@ -1,0 +1,33 @@
+.type-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14rpx;
+  padding: 8rpx;
+  border-radius: var(--tl-radius-pill);
+  background: var(--tl-color-surface-muted);
+}
+
+.type-item {
+  height: 76rpx;
+  border-radius: var(--tl-radius-pill);
+  color: var(--tl-color-text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  font-size: var(--tl-font-body);
+  font-weight: var(--tl-font-weight-bold);
+}
+
+.type-item.active.expense {
+  color: var(--tl-color-text-inverse);
+  background: var(--tl-color-primary);
+}
+
+.type-item.active.income {
+  color: var(--tl-color-text-inverse);
+  background: var(--tl-color-income);
+}
+.category-page .page-content {
+  padding-bottom: var(--tl-page-content-bottom);
+}

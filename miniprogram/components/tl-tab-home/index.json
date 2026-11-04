@@ -1,0 +1,8 @@
+{
+  "component": true,
+  "styleIsolation": "apply-shared",
+  "usingComponents": {
+    "tl-budget-progress": "/components/tl-budget-progress/index",
+    "tl-ledger-switcher": "/components/tl-ledger-switcher/index"
+  }
+}

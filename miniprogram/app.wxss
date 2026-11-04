@@ -1,0 +1,236 @@
+page {
+  /* Base palette */
+  --tl-palette-white: #ffffff;
+  --tl-palette-warm-50: #fffdfc;
+  --tl-palette-warm-100: #fff7f2;
+  --tl-palette-warm-200: #fff0ea;
+  --tl-palette-warm-300: #ffe1d6;
+  --tl-palette-brown-400: #9a8278;
+  --tl-palette-brown-600: #6f625d;
+  --tl-palette-brown-900: #312522;
+  --tl-palette-tomato-500: #f0442f;
+  --tl-palette-tomato-600: #d9483b;
+  --tl-palette-green-500: #25a66a;
+
+  /* Semantic colors */
+  --tl-color-page: #fff7f2;
+  --tl-color-surface: #fffdfc;
+  --tl-color-surface-soft: #fff0ea;
+  --tl-color-surface-muted: #f7eee8;
+  --tl-color-primary: #f0442f;
+  --tl-color-primary-pressed: #d9483b;
+  --tl-color-primary-soft: #fff0ea;
+  --tl-color-income: #25a66a;
+  --tl-color-income-soft: #edf9f2;
+  --tl-color-expense: #f0442f;
+  --tl-color-danger: #d9483b;
+  --tl-color-danger-soft: #fff1ef;
+  --tl-color-warning: #b56a13;
+  --tl-color-warning-soft: #fff3e0;
+  --tl-color-text: #312522;
+  --tl-color-text-secondary: #6f625d;
+  --tl-color-text-tertiary: #9a8278;
+  --tl-color-text-inverse: #ffffff;
+  --tl-color-warning-alt: #d58a18;
+  --tl-color-warning-accent: #e86f30;
+  --tl-color-surface-warm: #fff4ef;
+  --tl-color-surface-warm-light: #fff2ee;
+  --tl-color-border-warm: #ffe1d9;
+  --tl-color-border-divider: #f7e4dc;
+  --tl-color-divider-warm: #f2e9e3;
+  --tl-color-tab-inactive: #b39a90;
+  --tl-color-tab-divider: #d8cbc4;
+  --tl-color-text-muted: #4c3a34;
+  --tl-color-surface-income: #effaf2;
+  --tl-color-tag-personal: #8a5a30;
+  --tl-color-tag-personal-bg: #fff1df;
+  --tl-color-tag-shared: #2f7163;
+  --tl-color-tag-owner-bg: #ffe9e4;
+  --tl-color-tag-member: #5f6f7d;
+  --tl-color-tag-member-bg: #eef3f6;
+  --tl-color-tag-visitor: #7a6a90;
+  --tl-color-tag-visitor-bg: #f1edf7;
+  --tl-color-join-warning: #d99058;
+  --tl-color-join-danger: #b9554e;
+  --tl-color-join-accent: #c85d4a;
+  --tl-color-join-muted: #7c6b64;
+  --tl-color-border: rgba(240, 68, 47, 0.08);
+  --tl-color-divider: rgba(49, 37, 34, 0.08);
+  --tl-color-mask: rgba(49, 37, 34, 0.36);
+
+  /* Base spacing */
+  --tl-space-xs: 8rpx;
+  --tl-space-sm: 16rpx;
+  --tl-space-md: 24rpx;
+  --tl-space-lg: 32rpx;
+  --tl-space-xl: 48rpx;
+  --tl-space-2xl: 64rpx;
+
+  /* Semantic spacing */
+  --tl-page-inline: 28rpx;
+  --tl-page-content-bottom: 48rpx;
+
+  /* Base radii */
+  --tl-radius-xs: 16rpx;
+  --tl-radius-sm: 20rpx;
+  --tl-radius-md: 28rpx;
+  --tl-radius-lg: 34rpx;
+  --tl-radius-pill: 999rpx;
+
+  /* Semantic radii */
+  --tl-radius-control: 20rpx;
+  --tl-radius-card: 34rpx;
+  --tl-radius-sheet: 34rpx 34rpx 0 0;
+
+  /* Base typography */
+  --tl-font-size-xs: 22rpx;
+  --tl-font-size-sm: 24rpx;
+  --tl-font-size-md: 28rpx;
+  --tl-font-size-lg: 32rpx;
+  --tl-font-size-xl: 40rpx;
+  --tl-font-size-2xl: 48rpx;
+  --tl-font-size-3xl: 56rpx;
+  --tl-font-size-4xl: 72rpx;
+  --tl-font-weight-regular: 400;
+  --tl-font-weight-medium: 500;
+  --tl-font-weight-semibold: 600;
+  --tl-font-weight-bold: 700;
+  --tl-line-height-tight: 1.25;
+  --tl-line-height-normal: 1.5;
+
+  /* Semantic typography */
+  --tl-font-caption: 22rpx;
+  --tl-font-caption-compact: 18rpx;
+  --tl-font-body-sm: 24rpx;
+  --tl-font-body: 28rpx;
+  --tl-font-heading: 32rpx;
+  --tl-font-data: 40rpx;
+  --tl-font-data-lg: 56rpx;
+  --tl-font-data-xl: 72rpx;
+  --tl-font-action: 30rpx;
+
+  /* Controls and borders */
+  --tl-control-height-sm: 78rpx;
+  --tl-control-height-md: 92rpx;
+  --tl-tabbar-shell-height: 108rpx;
+  --tl-list-row-height: 112rpx;
+  --tl-border-width: 1rpx;
+
+  /* Background and elevation */
+  --tl-background-page:
+    radial-gradient(circle at 12% -70rpx, rgba(255, 112, 88, 0.28), transparent 360rpx),
+    linear-gradient(180deg, #ffe1d6 0%, #fff0ea 260rpx, #fff7f2 520rpx, #fff7f2 100%);
+  --tl-shadow-tabbar: 0 -8rpx 24rpx rgba(49, 37, 34, 0.06);
+
+  /* Layering */
+  --tl-z-content: 1;
+  --tl-z-sticky: 20;
+  --tl-z-bottom: 40;
+  --tl-z-mask: 80;
+  --tl-z-overlay: 90;
+  --tl-z-keyboard: 100;
+  --tl-z-keyboard-action: 110;
+  --tl-z-feedback-loading: 120;
+  --tl-z-feedback-toast: 130;
+
+  /* Motion */
+  --tl-duration-fast: 180ms;
+  --tl-duration-normal: 220ms;
+  --tl-easing-standard: ease;
+}
+page {
+  min-height: 100%;
+  background: var(--tl-color-page);
+  color: var(--tl-color-text);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+}
+
+view,
+text,
+button,
+input {
+  box-sizing: border-box;
+}
+
+button {
+  background: initial;
+  padding: 0;
+  margin: 0;
+  line-height: normal;
+}
+
+button::after {
+  border: none;
+}
+
+/* Layout convention:
+ * Page shells contain tl-navbar, tl-container and, when needed, tl-tabbar.
+ * tl-container owns the remaining viewport height; pages decide whether their
+ * content is a scroll-view or a naturally laid out view.
+ */
+.page {
+  box-sizing: border-box;
+  height: 100vh;
+  min-height: 100vh;
+  padding: 0 var(--tl-page-inline);
+  background: var(--tl-background-page);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tabbar-page,
+.plain-page {
+  padding-bottom: 0;
+}
+
+.page-scroll {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 0;
+  overflow: hidden;
+}
+
+.page-content {
+  width: 100%;
+  min-height: 100%;
+  padding-bottom: var(--tl-page-content-bottom);
+}
+
+.card {
+  border: var(--tl-border-width) solid var(--tl-color-border);
+  border-radius: var(--tl-radius-card);
+  background: var(--tl-color-surface);
+}
+
+.page-submit {
+  margin-top: var(--tl-space-lg);
+}
+
+.fade-up {
+  animation: fadeUp var(--tl-duration-fast) var(--tl-easing-standard) both;
+}
+
+.soft-pop {
+  animation: softPop var(--tl-duration-normal) var(--tl-easing-standard) both;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes softPop {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

@@ -1,0 +1,151 @@
+const feedback = require("../../services/feedback-ui");
+const app = getApp();
+const categoryService = require("../../services/category.service");
+Page({
+  data: {
+    ledgerId: "",
+    type: "expense",
+    level: "parent",
+    parentId: "",
+    title: "分类管理",
+    role: "",
+    items: [],
+    parentName: "",
+    showEditor: false,
+    saving: false,
+    editingItem: null,
+    draftName: "",
+    draftIcon: "",
+  },
+  onLoad(o) {
+    const ledger = app.globalData.currentLedger || {};
+    this.setData({
+      ledgerId: o.ledgerId || ledger._id || "",
+      title: ledger.name || "分类管理",
+      type: o.type === "income" ? "income" : "expense",
+      level: o.level === "child" ? "child" : "parent",
+      parentId: o.parentId || "",
+    });
+    this.load();
+  },
+  onShow() {
+    if (this.data.ledgerId) this.load();
+  },
+  async load() {
+    const allItems = await categoryService.listCategories(this.data.ledgerId);
+    const cs = allItems || [];
+    const parentMap = cs.reduce((map, item) => {
+      if (item.level === "parent") map[item._id] = item;
+      return map;
+    }, {});
+    const items = cs
+      .filter(
+        (item) =>
+          item.type === this.data.type &&
+          item.level === this.data.level &&
+          (this.data.level !== "child" || item.parentId === this.data.parentId)
+      )
+      .map((item) => ({
+        ...item,
+        isProtected:
+          Boolean(item.isOther) ||
+          Boolean(
+            item.isDefaultChild && parentMap[item.parentId] && parentMap[item.parentId].isOther
+          ),
+      }));
+    const p = cs.find((item) => item._id === this.data.parentId);
+    const ledger = app.globalData.currentLedger || {};
+    this.setData({ items, role: ledger.role || "", parentName: p ? p.name : "" });
+  },
+  openCreate() {
+    if (!["owner", "member"].includes(this.data.role)) return;
+    this.setData({ showEditor: true, editingItem: null, draftName: "", draftIcon: "" });
+  },
+  openEdit(e) {
+    if (this.data.role !== "owner") return;
+    const item = e.currentTarget.dataset.item;
+    if (item.isProtected) return;
+    this.setData({
+      showEditor: true,
+      editingItem: item,
+      draftName: item.name,
+      draftIcon: item.icon,
+    });
+  },
+  closeEditor() {
+    if (this.data.saving) return;
+    this.setData({ showEditor: false });
+  },
+  noop() {},
+  bindNameInput(e) {
+    const draftName = Array.from(e.detail.value || "")
+      .slice(0, 6)
+      .join("");
+    this.setData({ draftName });
+  },
+  chooseIcon() {
+    wx.navigateTo({
+      url: `/pages/category-icon-picker/index?icon=${encodeURIComponent(this.data.draftIcon)}`,
+    });
+  },
+  onIconSelected(icon) {
+    this.setData({ draftIcon: icon });
+  },
+  async saveEditor() {
+    if (this.data.saving) return;
+    const name = this.data.draftName.trim();
+    if (!name) {
+      feedback.showToast({ type: "warning", message: "请输入分类名称" });
+      return;
+    }
+    if (!this.data.draftIcon) {
+      feedback.showToast({ type: "warning", message: "请选择图标" });
+      return;
+    }
+    this.setData({ saving: true });
+    try {
+      await categoryService.saveCategory({
+        ledgerId: this.data.ledgerId,
+        categoryId: this.data.editingItem && this.data.editingItem._id,
+        type: this.data.type,
+        level: this.data.level,
+        parentId: this.data.parentId,
+        name,
+        icon: this.data.draftIcon,
+      });
+      this.setData({ showEditor: false });
+      await this.load();
+    } catch (error) {
+      feedback.showToast({ type: "error", message: error.message || "保存失败" });
+    } finally {
+      this.setData({ saving: false });
+    }
+  },
+  async remove(e) {
+    if (this.data.role !== "owner") return;
+    const item = e.currentTarget.dataset.item;
+    if (item.isProtected) return;
+    if (item.level === "child" && item.isDefaultChild) {
+      const hasOtherChildren = this.data.items.some(
+        (child) => child._id !== item._id && !child.isDefaultChild
+      );
+      if (hasOtherChildren) {
+        feedback.showToast({ type: "warning", message: "请先删除该分类下其他自定义分类" });
+        return;
+      }
+    }
+    const movesToOther = item.level === "parent" || item.isDefaultChild;
+    const content = movesToOther
+      ? "关联记录会自动保留并转入其他分类"
+      : "关联记录会自动保留并转入默认分类";
+    wx.showModal({
+      title: "删除分类",
+      content,
+      success: async (r) => {
+        if (!r.confirm) return;
+        await categoryService.removeCategory(item._id, this.data.ledgerId);
+        this.load();
+      },
+    });
+  },
+});

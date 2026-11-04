@@ -1,0 +1,116 @@
+.join-result-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: var(--tl-color-page);
+}
+
+.join-result-content {
+  flex: 1;
+  min-height: 0;
+  padding: 28rpx 34rpx 40rpx;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.join-result-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx 0 44rpx;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.result-icon {
+  width: 136rpx;
+  height: 136rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--tl-color-primary);
+}
+
+.result-icon.login,
+.result-icon.checking,
+.result-icon.joining {
+  background: #d99058;
+}
+
+.result-icon.error {
+  background: #b9554e;
+}
+
+.result-symbol {
+  color: var(--tl-color-text-inverse);
+  font-size: var(--tl-font-data-xl);
+  font-weight: var(--tl-font-weight-bold);
+  line-height: 1;
+  text-align: center;
+}
+
+.result-symbol.small {
+  padding-bottom: 22rpx;
+  font-size: var(--tl-font-data-lg);
+  letter-spacing: 0;
+}
+
+.result-title {
+  margin-top: 32rpx;
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-data);
+  font-weight: var(--tl-font-weight-bold);
+  line-height: 1.35;
+}
+
+.join-result-main.is-notice {
+  padding-left: 30rpx;
+  padding-right: 30rpx;
+}
+
+.notice-title {
+  max-width: 560rpx;
+  margin-top: 0;
+  font-size: var(--tl-font-heading);
+  line-height: 1.55;
+}
+.result-ledger {
+  max-width: 100%;
+  margin-top: 14rpx;
+  color: #c85d4a;
+  font-size: var(--tl-font-body);
+  font-weight: var(--tl-font-weight-bold);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result-desc {
+  max-width: 560rpx;
+  margin-top: 20rpx;
+  color: #7c6b64;
+  font-size: var(--tl-font-body);
+  font-weight: var(--tl-font-weight-bold);
+  line-height: 1.6;
+}
+
+.join-actions {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+  padding-bottom: 24px;
+}
+
+.result-icon tl-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

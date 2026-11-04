@@ -1,0 +1,59 @@
+.account-card {
+  padding: 30rpx;
+}
+.account-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+.account-title {
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-heading);
+  font-weight: var(--tl-font-weight-bold);
+}
+.account-subtitle,
+.readonly-tip {
+  margin-top: 10rpx;
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-body-sm);
+}
+.account-list {
+  margin-top: 24rpx;
+  border-top: 1rpx solid var(--tl-color-divider);
+}
+.account-row {
+  min-height: var(--tl-list-row-height);
+  display: flex;
+  align-items: center;
+  border-bottom: 1rpx solid var(--tl-color-divider);
+}
+.account-icon {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: var(--tl-radius-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tl-color-primary-soft);
+}
+.account-name {
+  flex: 1;
+  min-width: 0;
+  margin-left: 18rpx;
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-body);
+  font-weight: var(--tl-font-weight-bold);
+}
+.delete-text {
+  padding: 12rpx 0 12rpx 24rpx;
+  color: var(--tl-color-danger);
+  font-size: var(--tl-font-body-sm);
+  font-weight: var(--tl-font-weight-bold);
+}
+.readonly-tip {
+  padding: 20rpx 8rpx;
+}
+.payment-account-page .page-content {
+  padding-bottom: var(--tl-page-content-bottom);
+}

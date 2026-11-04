@@ -1,0 +1,11 @@
+node_modules/
+miniprogram/miniprogram_npm/
+work/
+.codegraph/
+.codex/
+.agents/
+project.private.config.json
+*.log
+*.zip
+*.tgz
+miniprogram/components/ec-canvas/

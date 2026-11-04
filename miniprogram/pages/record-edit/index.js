@@ -1,0 +1,372 @@
+const feedback = require("../../services/feedback-ui");
+const app = getApp();
+const recordService = require("../../services/record.service");
+const { getPaymentAccounts } = require("../../services/payment-account.service");
+const { markNavigation } = require("../../utils/navigation-timing");
+const {
+  evaluateAmountExpression,
+  getAmountValidationMessage,
+} = require("../../utils/amount-expression");
+
+function today() {
+  const now = new Date();
+  const month = `${now.getMonth() + 1}`.padStart(2, "0");
+  const day = `${now.getDate()}`.padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+function formatRecordTimestamp(value) {
+  if (!value) return "";
+  const date =
+    value instanceof Date ? value : new Date(value.$date || (value.seconds || 0) * 1000 || value);
+  if (Number.isNaN(date.getTime())) return "";
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  const hours = `${date.getHours()}`.padStart(2, "0");
+  const minutes = `${date.getMinutes()}`.padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day} ${hours}:${minutes}`;
+}
+
+function quickAmountsFor(ledger) {
+  return ledger && ledger.quickAmountsEnabled && Array.isArray(ledger.quickAmounts)
+    ? ledger.quickAmounts
+    : [];
+}
+
+function quickNotesFor(type, category) {
+  if (type === "income") return [category, "工资", "奖金", "报销", "红包"].filter(Boolean);
+  return [category, "早餐", "午餐", "晚餐", "通勤", "买菜"].filter(Boolean);
+}
+
+function normalizeTags(input) {
+  return String(input || "")
+    .split(/[\s,，]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 8);
+}
+
+Page({
+  data: {
+    recordLoading: false,
+    recordLoadError: false,
+    readonly: false,
+    recordId: "",
+    isEditing: false,
+    type: "expense",
+    typeLabel: "支出",
+    typeIcon: "price-tag-3-line",
+    categoryName: "其他支出",
+    categoryLabel: "其他",
+    categoryIcon: "price-tag-3-line",
+    parentCategory: "生活",
+    parentIcon: "book-2-line",
+    amount: "",
+    amountResult: "",
+    showAmountResult: false,
+    canSave: false,
+    saving: false,
+    deleting: false,
+    keypadOpen: false,
+    note: "",
+    tagInput: "",
+    tags: [],
+    date: today(),
+
+    ledgerName: "我家账本",
+    ledgerId: "",
+    accountIndex: 0,
+    accounts: getPaymentAccounts(),
+    quickAmounts: [],
+    quickNotes: quickNotesFor("expense", "其他支出"),
+    createdDate: "",
+    updatedDate: "",
+    syncVersion: 0,
+  },
+
+  onLoad(options = {}) {
+    markNavigation("编辑页", "onLoad");
+    const type = options.type === "income" ? "income" : "expense";
+    const fallbackCategory = type === "income" ? "其他收入" : "其他支出";
+    const fallbackLabel = type === "income" ? "其他" : "其他";
+    const categoryName = options.category ? decodeURIComponent(options.category) : fallbackCategory;
+    const categoryLabel = options.categoryLabel
+      ? decodeURIComponent(options.categoryLabel)
+      : fallbackLabel;
+    const categoryIcon = options.categoryIcon
+      ? decodeURIComponent(options.categoryIcon)
+      : "price-tag-3-line";
+    const parentCategory = options.parentCategory
+      ? decodeURIComponent(options.parentCategory)
+      : type === "income"
+        ? "其他收入"
+        : "生活";
+    const parentIcon = options.parentIcon
+      ? decodeURIComponent(options.parentIcon)
+      : type === "income"
+        ? "price-tag-3-line"
+        : "book-2-line";
+    const currentLedger = app.globalData.currentLedger || {};
+    const ledgerId = options.ledgerId || currentLedger._id || "";
+    const targetLedger =
+      ledgerId === currentLedger._id
+        ? currentLedger
+        : (app.globalData.ledgers || []).find((ledger) => (ledger._id || ledger.id) === ledgerId) ||
+          {};
+    if (!options.id && (targetLedger.readonly || targetLedger.role === "readonly")) {
+      this.setData({ readonly: true });
+      feedback.showReadonlyToast();
+      if (getCurrentPages().length > 1) wx.navigateBack();
+      else wx.reLaunch({ url: "/pages/index/index" });
+      return;
+    }
+    const date = options.id ? this.data.date : today();
+    this.setData({
+      type,
+      typeLabel: type === "income" ? "收入" : "支出",
+      typeIcon: type === "income" ? "funds-line" : "price-tag-3-line",
+      categoryName,
+      categoryLabel,
+      categoryIcon,
+      parentCategory,
+      parentIcon,
+      ledgerName: currentLedger.name || "我家账本",
+      ledgerId: options.ledgerId || currentLedger._id || "",
+      accounts: getPaymentAccounts(currentLedger),
+      quickAmounts: quickAmountsFor(currentLedger),
+      quickNotes: quickNotesFor(type, categoryName),
+      date,
+    });
+    if (options.id) {
+      this.setData({ recordId: decodeURIComponent(options.id), isEditing: true });
+      this.loadRecord(this.data.recordId);
+    }
+  },
+
+  onReady() {
+    markNavigation("编辑页", "onReady");
+  },
+
+  async loadRecord(recordId) {
+    this.setData({ recordLoading: true, recordLoadError: false });
+    try {
+      const data = await recordService.getRecord(recordId);
+      const record = data.record;
+      const ledgerInfo = data.ledger || app.globalData.currentLedger || {};
+      if (!record) throw new Error("记录加载失败");
+      const readonly = Boolean(data.readonly || data.role === "readonly");
+      this.setData({ readonly });
+      if (readonly) {
+        await wx.redirectTo({
+          url: `/pages/record-detail/index?id=${encodeURIComponent(recordId)}`,
+        });
+        return;
+      }
+      const recordType = record.type === "income" ? "income" : "expense";
+      const recordAccounts = Array.from(
+        new Set([...getPaymentAccounts(ledgerInfo), record.account].filter(Boolean))
+      );
+      const accountIndex = Math.max(0, recordAccounts.indexOf(record.account));
+      this.setData({
+        recordId,
+        isEditing: true,
+        type: recordType,
+        typeLabel: recordType === "income" ? "收入" : "支出",
+        typeIcon: recordType === "income" ? "funds-line" : "price-tag-3-line",
+        categoryName: record.categoryName || "其他",
+        categoryLabel: record.categoryLabel || record.categoryName || "其他",
+        categoryIcon: record.categoryIcon || "price-tag-3-line",
+        parentCategory: record.parentCategory || "",
+        parentIcon: record.parentIcon || "",
+        amount: String(record.amount || ""),
+        note: record.note || "",
+        tags: Array.isArray(record.tags) ? record.tags : [],
+        date: record.date || today(),
+        ledgerId: record.ledgerId || "",
+        ledgerName: (ledgerInfo && ledgerInfo.name) || "我的账本",
+        accountIndex,
+        quickAmounts: quickAmountsFor(ledgerInfo),
+        quickNotes: quickNotesFor(recordType, record.categoryName),
+        createdDate: formatRecordTimestamp(record.createdAt),
+        updatedDate: formatRecordTimestamp(record.updatedAt),
+        syncVersion: Number(record.syncVersion || 0),
+      });
+      this.setAmountExpression(String(record.amount || ""));
+    } catch (error) {
+      feedback.showToast({ type: "error", message: error.message || "记录加载失败" });
+      this.setData({ recordLoadError: true });
+    } finally {
+      this.setData({ recordLoading: false });
+    }
+  },
+  reloadRecord() {
+    return this.loadRecord(this.data.recordId);
+  },
+  applyCategorySelection(selection = {}) {
+    const type = selection.type === "income" ? "income" : "expense";
+    this.setData({
+      type,
+      typeLabel: type === "income" ? "收入" : "支出",
+      typeIcon: type === "income" ? "funds-line" : "price-tag-3-line",
+      categoryName: selection.categoryName || this.data.categoryName,
+      categoryLabel: selection.categoryLabel || selection.categoryName || this.data.categoryLabel,
+      categoryIcon: selection.categoryIcon || this.data.categoryIcon,
+      parentCategory: selection.parentCategory || this.data.parentCategory,
+      parentIcon: selection.parentIcon || this.data.parentIcon,
+      quickNotes: quickNotesFor(type, selection.categoryName || this.data.categoryName),
+    });
+  },
+
+  setQuickAmount(event) {
+    const amount = String(event.detail.amount || event.currentTarget.dataset.amount);
+    this.setAmountExpression(amount);
+  },
+
+  setQuickNote(event) {
+    this.setData({ note: event.currentTarget.dataset.note });
+  },
+
+  setAmountExpression(amount) {
+    const result = evaluateAmountExpression(amount);
+    this.setData({
+      amount,
+      amountResult: result.text,
+      showAmountResult: /[+-]/.test(amount) && result.valid,
+      canSave: result.valid,
+    });
+  },
+
+  reselectCategory() {
+    if (this.data.readonly) return;
+    const params = [`type=${this.data.type}`, "mode=reselect"];
+    if (this.data.ledgerId) params.push(`ledgerId=${encodeURIComponent(this.data.ledgerId)}`);
+    wx.navigateTo({ url: `/pages/record-category/index?${params.join("&")}` });
+  },
+
+  onAmountInput(event) {
+    this.setAmountExpression(event.detail.value);
+  },
+  onKeypadChange(event) {
+    this.setData({ keypadOpen: Boolean(event.detail.open) });
+  },
+  onNoteInput(event) {
+    this.setData({ note: String(event.detail.value || "").slice(0, 100) });
+  },
+  onDateChange(event) {
+    this.setData({ date: event.detail.value });
+  },
+  onAccountChange(event) {
+    this.setData({ accountIndex: Number(event.detail.value) });
+  },
+  onTagInput(event) {
+    this.setData({ tagInput: event.detail.value });
+  },
+
+  addTag() {
+    const incoming = normalizeTags(this.data.tagInput);
+    if (!incoming.length) return;
+    const tags = Array.from(new Set([...this.data.tags, ...incoming])).slice(0, 8);
+    this.setData({ tags, tagInput: "" });
+  },
+
+  removeTag(event) {
+    const index = Number(
+      event.detail.index !== undefined ? event.detail.index : event.currentTarget.dataset.index
+    );
+    const tags = this.data.tags.filter((_, itemIndex) => itemIndex !== index);
+    this.setData({ tags });
+  },
+
+  async deleteRecord() {
+    if (this.data.readonly || this.data.recordLoading || this.data.recordLoadError) return;
+    if (!this.data.isEditing || !this.data.recordId || this.data.saving || this.data.deleting)
+      return;
+    const confirmed = await new Promise((resolve) => {
+      wx.showModal({
+        title: "删除记录",
+        content: "删除后无法恢复，确定删除这条记录吗？",
+        confirmText: "删除",
+        confirmColor: "#f0442f",
+        success: (result) => resolve(Boolean(result.confirm)),
+        fail: () => resolve(false),
+      });
+    });
+    if (!confirmed) return;
+
+    this.setData({ deleting: true });
+    const recordId = this.data.recordId;
+    const ledgerId = this.data.ledgerId;
+    try {
+      await recordService.deleteRecord({ recordId, ledgerId, syncVersion: this.data.syncVersion });
+      feedback.showToast({ type: "success", message: "已删除" });
+      wx.navigateBack();
+    } catch (error) {
+      this.setData({ deleting: false });
+      feedback.showToast({
+        type: "error",
+        message:
+          error.code === "RECORD_CONFLICT"
+            ? "记录已被其他成员修改，请重新打开后操作"
+            : "删除失败，请重试",
+      });
+    }
+  },
+
+  async saveRecord() {
+    if (this.data.readonly) return;
+    if (
+      this.data.saving ||
+      this.data.deleting ||
+      this.data.recordLoading ||
+      this.data.recordLoadError
+    )
+      return;
+    const finalTags = Array.from(
+      new Set([...this.data.tags, ...normalizeTags(this.data.tagInput)])
+    ).slice(0, 8);
+    this.setData({ tags: finalTags, tagInput: "" });
+    const result = evaluateAmountExpression(this.data.amount);
+    if (!result.valid) {
+      feedback.showToast({
+        type: "warning",
+        message: getAmountValidationMessage(this.data.type, result),
+      });
+      return;
+    }
+
+    this.setData({ saving: true });
+    const ledgerId = this.data.ledgerId;
+    const payload = {
+      recordId: this.data.recordId,
+      ledgerId,
+      type: this.data.type,
+      amount: result.value,
+      note: this.data.note,
+      tags: finalTags,
+      date: this.data.date,
+      categoryName: this.data.categoryName,
+      categoryLabel: this.data.categoryLabel,
+      categoryIcon: this.data.categoryIcon,
+      parentCategory: this.data.parentCategory,
+      parentIcon: this.data.parentIcon,
+      account: this.data.accounts[this.data.accountIndex],
+      syncVersion: this.data.syncVersion || 0,
+    };
+
+    try {
+      if (this.data.isEditing) await recordService.updateRecord(payload);
+      else await recordService.createRecord(payload);
+      feedback.showToast({ type: "success", message: this.data.isEditing ? "已保存" : "已记账" });
+      wx.navigateBack();
+    } catch (error) {
+      this.setData({ saving: false });
+      feedback.showToast({
+        type: "error",
+        message:
+          error.code === "RECORD_CONFLICT"
+            ? "记录已被其他成员修改，输入已保留，请重新确认"
+            : "保存失败，输入已保留，请重试",
+      });
+    }
+  },
+});

@@ -1,0 +1,51 @@
+<view class="page plain-page member-manage-page">
+  <tl-navbar title="成员管理" showBack="{{true}}">
+  </tl-navbar>
+  <tl-container>
+    <scroll-view class="page-scroll" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+      <view class="page-content">
+        <view class="page-head fade-up">
+          <view class="ledger-name">{{ledgerName}}</view>
+          <view class="ledger-tip">当前账本的所有成员与访客</view>
+        </view>
+        <tl-skeleton wx:if="{{loading}}" variant="list">
+        </tl-skeleton>
+        <tl-empty-state wx:elif="{{error}}" variant="error" title="加载失败" description="成员信息暂时无法加载">
+          <tl-button variant="secondary" size="small" bind:tap="loadMembers">重新加载</tl-button>
+        </tl-empty-state>
+        <block wx:else>
+          <view class="member-card card fade-up">
+            <view wx:for="{{members}}" wx:key="openid" class="member-row">
+              <image class="member-avatar" src="{{item.avatarUrl}}" mode="aspectFill">
+              </image>
+              <view class="member-info">
+                <view class="member-name">{{item.nickName}}</view>
+                <view class="member-role {{item.roleClass}}">{{item.roleText}}</view>
+              </view>
+              <view wx:if="{{canManage && !item.isOwner}}" class="member-remove" data-openid="{{item.openid}}" data-name="{{item.nickName}}" bindtap="removeMember">移除</view>
+            </view>
+          </view>
+          <tl-button wx:if="{{canManage}}" class="page-submit" block="{{true}}" bind:tap="inviteLedger">
+            <tl-icon name="user-add-line" size="34" colorKey="white">
+            </tl-icon>
+            <text>邀请成员</text>
+          </tl-button>
+          <view wx:else class="readonly-tip">仅账本拥有者可以邀请或移除成员</view>
+        </block>
+      </view>
+    </scroll-view>
+    <tl-bottom-sheet visible="{{shareSheetVisible}}" bind:close="closeShareSheet">
+      <view class="share-sheet">
+        <view class="sheet-title">选择邀请方式</view>
+        <button wx:for="{{shareOptions}}" wx:key="mode" class="share-option" open-type="share" data-mode="{{item.mode}}" bindtap="selectShareMode">
+          <tl-icon name="{{item.icon}}" size="34" colorKey="primaryDark">
+          </tl-icon>
+          <view>
+            <view>{{item.title}}</view>
+            <text>{{item.desc}}</text>
+          </view>
+        </button>
+      </view>
+    </tl-bottom-sheet>
+  </tl-container>
+</view>

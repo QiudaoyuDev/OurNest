@@ -1,0 +1,5 @@
+{
+  "usingComponents": {
+    "tl-category-tree": "/components/tl-category-tree/index"
+  }
+}

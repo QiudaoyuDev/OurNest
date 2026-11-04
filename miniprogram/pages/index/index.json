@@ -1,0 +1,10 @@
+{
+  "usingComponents": {
+    "tl-tab-home": "/components/tl-tab-home/index",
+    "tl-tab-records": "/components/tl-tab-records/index",
+    "tl-tab-analysis": "/components/tl-tab-analysis/index",
+    "tl-tab-profile": "/components/tl-tab-profile/index",
+    "tl-tabbar": "/components/tl-tabbar/index"
+  },
+  "navigationBarTitleText": "Tomato Ledger"
+}

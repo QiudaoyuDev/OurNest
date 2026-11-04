@@ -1,0 +1,11 @@
+{
+  "name": "tomatoLedger",
+  "version": "1.0.0",
+  "description": "Cloud API for OurNest (咱家小账)",
+  "main": "index.js",
+  "license": "ISC",
+  "dependencies": {
+    "wx-server-sdk": "~2.4.0",
+    "xlsx": "^0.18.5"
+  }
+}

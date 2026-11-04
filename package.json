@@ -1,0 +1,27 @@
+{
+  "name": "our-nest-miniapp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OurNest - 家庭与个人记账小程序",
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write --ignore-unknown . && node scripts/format-wxml.mjs",
+    "format:check": "prettier --check --ignore-unknown . && node scripts/format-wxml.mjs --check",
+    "ui:check": "node scripts/check-ui.mjs",
+    "ui:allowlist": "node scripts/check-ui.mjs --update-allowlist",
+    "visual:check": "node scripts/visual-regression.mjs",
+    "visual:update": "node scripts/visual-regression.mjs --update",
+    "check": "npm run format:check && npm run lint && npm run ui:check",
+    "test": "node --test tests/money.test.js tests/amount-expression.test.js tests/mapper.test.js tests/tl-button.test.js tests/category-operation.test.js tests/feedback-ui.test.js tests/cloud-route.test.js tests/cloud-env.test.js tests/ledger-store.test.js tests/analysis-helpers.test.js tests/dashboard-helpers.test.js tests/shared-helpers.test.js tests/component-contracts.test.js tests/analysis-view.test.js tests/home-summary.test.js tests/cache-flow.test.js tests/visitor-records.test.js",
+    "cloud:check": "node scripts/check-cloud.mjs",
+    "verify": "npm run check && npm run test && npm run cloud:check"
+  },
+  "devDependencies": {
+    "eslint": "^9.30.1",
+    "miniprogram-automator": "^0.12.1",
+    "pixelmatch": "^4.0.2",
+    "pngjs": "^3.4.0",
+    "prettier": "^3.5.3"
+  }
+}

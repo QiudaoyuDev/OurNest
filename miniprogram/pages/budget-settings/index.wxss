@@ -1,0 +1,61 @@
+.setting-card,
+.budget-card {
+  padding: 32rpx;
+}
+
+.setting-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.setting-title {
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-heading);
+  font-weight: var(--tl-font-weight-bold);
+}
+
+.setting-subtitle {
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-body-sm);
+  font-weight: var(--tl-font-weight-bold);
+  margin-top: 10rpx;
+  line-height: 1.45;
+}
+
+.budget-card {
+  margin-top: 24rpx;
+}
+
+.budget-card.is-disabled {
+  opacity: 0.58;
+}
+
+.amount-label {
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-body-sm);
+  font-weight: var(--tl-font-weight-bold);
+}
+
+.amount-input-row {
+  height: 112rpx;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  border-bottom: 1rpx solid #f3e5df;
+}
+
+.currency {
+  color: var(--tl-color-primary);
+  font-size: var(--tl-font-data);
+  font-weight: var(--tl-font-weight-bold);
+}
+
+.amount-input {
+  flex: 1;
+  min-width: 0;
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-data-lg);
+  font-weight: var(--tl-font-weight-bold);
+}
