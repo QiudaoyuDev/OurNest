@@ -1,3 +1,13 @@
+---
+id: database-contract
+type: module-design
+title: 数据模型与索引
+status: draft
+parent: ledger-cloud
+references:
+  - write-safety
+---
+
 # 数据模型与索引
 
 云函数是字段契约和权限判断的唯一事实来源。修改集合、字段、索引或角色边界时，必须同步更新云函数、全部调用方、相关测试和本文。

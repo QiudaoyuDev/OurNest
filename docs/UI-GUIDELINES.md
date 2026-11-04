@@ -1,6 +1,14 @@
+---
+id: ui-guidelines
+type: module-design
+title: UI 视觉与语义规则
+status: draft
+parent: miniprogram
+---
+
 # UI 视觉与语义规则
 
-> 状态：已定稿并落地  
+> 状态：现行 UI 规则；规格图纳入待审阅  
 > 更新日期：2026-08-12  
 > 依据：[UI 现状盘点](./UI-AUDIT.md)
 
