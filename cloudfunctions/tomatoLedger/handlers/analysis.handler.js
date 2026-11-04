@@ -83,6 +83,27 @@ function getAnalysisRange(mode, anchor, customStart, customEnd) {
   };
 }
 
+function getTrendRange(mode, range, current) {
+  if (mode === "month" && range.start === current.start) {
+    return {
+      ...range,
+      end: addAnalysisDays(makeDateText(current.year, current.month, current.day), 1),
+      isPartial: true,
+      asOf: makeDateText(current.year, current.month, current.day),
+    };
+  }
+  if (mode === "year" && Number(range.start.slice(0, 4)) === current.year) {
+    const nextMonth = addMonth(current.year, current.month, 1);
+    return {
+      ...range,
+      end: makeDateText(nextMonth.year, nextMonth.month, 1),
+      isPartial: true,
+      asOf: makeDateText(current.year, current.month, current.day),
+    };
+  }
+  return { ...range, isPartial: false, asOf: "" };
+}
+
 function getMonthDayCount(year, month) {
   return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
@@ -190,6 +211,10 @@ async function getAnalysis(openid, data = {}) {
           )
         )
     : 0;
+  const trendRange = getTrendRange(mode, range, currentMonthRange);
+  const trendRecords = records.filter(
+    (record) => !trendRange.start || (record.date >= trendRange.start && record.date < trendRange.end)
+  );
   const overview = summarizeAnalysisRecords(records);
   const previousOverview = summarizeAnalysisRecords(previousRecords);
   const expense = overview.expense;
@@ -360,7 +385,11 @@ async function getAnalysis(openid, data = {}) {
           ? Math.round((expense * 100) / Number(ledger.monthlyBudget || 0))
           : 0,
     },
-    trend: makeAnalysisTrendBuckets(mode, range, records),
+    trend: makeAnalysisTrendBuckets(mode, trendRange, trendRecords),
+    trendMeta: {
+      isPartial: trendRange.isPartial,
+      asOf: trendRange.asOf,
+    },
     recentYearTrend:
       mode === "year" ? makeAnalysisRecentYearTrend(currentMonthRange.year, recentYearRecords) : [],
     calendarDays:
@@ -447,4 +476,6 @@ async function getAnalysis(openid, data = {}) {
 
 module.exports = {
   getAnalysis,
+  getAnalysisRange,
+  getTrendRange,
 };

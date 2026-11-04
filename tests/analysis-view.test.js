@@ -114,6 +114,7 @@ test("an older analysis response cannot replace a newer ledger selection", async
   const result = (name, expense) => ({
     ledger: { name, type: "personal" },
     range: { label: "2026年10月" },
+    trendMeta: { isPartial: true, asOf: "2026-10-13" },
     overview: { recordCount: 1, expense },
   });
   pending[1](result("新账本", 20));
@@ -122,4 +123,5 @@ test("an older analysis response cannot replace a newer ledger selection", async
   await first;
   assert.equal(instance.data.ledgerName, "新账本");
   assert.equal(instance.data.overview.expense, 20);
+  assert.equal(instance.data.trendCaption, "截至2026-10-13");
 });

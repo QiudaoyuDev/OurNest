@@ -87,6 +87,7 @@
           <view class="chart-card card fade-up">
             <view class="chart-heading">
               <text class="card-title">{{chartTitle}}</text>
+              <text wx:if="{{activeChart === 'monthTrend' && trendCaption}}" class="chart-caption">{{trendCaption}}</text>
             </view>
             <view class="analysis-chart-canvas">
               <ec-canvas id="analysis-chart" canvas-id="analysis-chart" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError" force-use-old-canvas="true">
@@ -152,6 +153,7 @@
           <view class="chart-card card fade-up">
             <view class="chart-heading">
               <text class="card-title">{{chartTitle}}</text>
+              <text wx:if="{{activeChart === 'yearCashflow' && trendCaption}}" class="chart-caption">{{trendCaption}}</text>
             </view>
             <view class="analysis-chart-canvas">
               <ec-canvas id="analysis-chart" canvas-id="analysis-chart" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError" force-use-old-canvas="true">

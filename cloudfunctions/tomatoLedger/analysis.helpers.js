@@ -69,7 +69,10 @@ function makeTrendBuckets(mode, range, records = []) {
     }
   } else if (mode === "year") {
     const year = range.start.slice(0, 4);
-    for (let month = 1; month <= 12; month += 1) {
+    const lastDate = new Date(`${range.end}T00:00:00Z`);
+    lastDate.setUTCDate(lastDate.getUTCDate() - 1);
+    const lastMonth = lastDate.getUTCFullYear() === Number(year) ? lastDate.getUTCMonth() + 1 : 12;
+    for (let month = 1; month <= lastMonth; month += 1) {
       const key = `${year}-${String(month).padStart(2, "0")}`;
       ensureBucket(key, `${month}月`);
     }
