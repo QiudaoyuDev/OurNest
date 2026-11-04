@@ -19,7 +19,8 @@ async function listCategories(openid, data = {}) {
   const ledger = await getLedgerForUser(openid, data.ledgerId);
   const role = getLedgerRole(openid, ledger);
   assertReadable(role);
-  await ensureLedgerCategoryTree(ledger._id, ledger.ownerOpenid);
+  const repaired = await ensureLedgerCategoryTree(ledger._id, ledger.ownerOpenid);
+  if (repaired) await bumpLedgerSyncRevision(ledger._id);
   const result = await db
     .collection("categories")
     .where({ ledgerId: ledger._id })

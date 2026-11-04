@@ -6,7 +6,11 @@ const categoryTreeDefaults = {
   expense: [
     ["餐饮", "restaurant-2-line", ["早餐", "午餐", "晚餐", "买菜", "咖啡奶茶"]],
     ["购物", "shopping-bag-3-line", ["日用品", "服饰鞋包", "数码电器", "美妆个护"]],
-    ["交通", "taxi-line", ["公交地铁", "打车", "加油充电", "停车"]],
+    [
+      "交通",
+      "taxi-line",
+      ["公交地铁", "打车", "火车高铁", "加油充电", "停车", "过路过桥", "维修保养", "车险", "其他车费"],
+    ],
     ["居家", "home-4-line", ["房租房贷", "水电燃气", "物业", "维修"]],
     ["生活", "heart-pulse-line", ["医疗", "学习", "娱乐", "旅行"]],
     ["其他", "more-2-line", ["其他支出"]],
@@ -66,6 +70,40 @@ async function addDefaultChild(ledgerId, parent, openid) {
   };
 }
 
+async function ensureSystemChildren(ledgerId, parent, childNames, openid) {
+  const existing = await db
+    .collection("categories")
+    .where({ ledgerId, level: "child", parentId: parent._id })
+    .limit(200)
+    .get();
+  const existingNames = new Set((existing.data || []).map((child) => child.name));
+  const missingChildren = childNames.filter((name) => !existingNames.has(name));
+  if (!missingChildren.length) return false;
+  await Promise.all(
+    missingChildren.map((name) => {
+      const sort = childNames.indexOf(name);
+      return db.collection("categories").add({
+        data: {
+          ledgerId,
+          type: parent.type,
+          level: "child",
+          parentId: parent._id,
+          parentName: parent.name,
+          name,
+          icon: parent.icon || "price-tag-3-line",
+          sort,
+          isDefaultChild: false,
+          source: "system",
+          createdBy: openid,
+          createdAt: now(),
+          updatedAt: now(),
+        },
+      });
+    })
+  );
+  return true;
+}
+
 async function ensureLedgerCategoryTree(ledgerId, openid) {
   const parentResult = await db
     .collection("categories")
@@ -73,8 +111,9 @@ async function ensureLedgerCategoryTree(ledgerId, openid) {
     .limit(200)
     .get();
   if (parentResult.data.length) {
-    await Promise.all(
+    const changes = await Promise.all(
       parentResult.data.map(async (parent) => {
+        let changed = false;
         if (
           parent.isOther &&
           (parent.source !== "system" || Number(parent.sort) !== OTHER_CATEGORY_SORT)
@@ -85,11 +124,20 @@ async function ensureLedgerCategoryTree(ledgerId, openid) {
             .update({
               data: { source: "system", sort: OTHER_CATEGORY_SORT, updatedAt: now() },
             });
+          changed = true;
         }
-        return addDefaultChild(ledgerId, parent, openid);
+        const defaults = (categoryTreeDefaults[parent.type] || []).find(
+          ([name]) => name === parent.name
+        );
+        if (defaults) {
+          const [, , childNames] = defaults;
+          changed = (await ensureSystemChildren(ledgerId, parent, childNames, openid)) || changed;
+        }
+        await addDefaultChild(ledgerId, parent, openid);
+        return changed;
       })
     );
-    return;
+    return changes.some(Boolean);
   }
   for (const type of ["expense", "income"])
     for (let index = 0; index < categoryTreeDefaults[type].length; index += 1) {
@@ -133,6 +181,7 @@ async function ensureLedgerCategoryTree(ledgerId, openid) {
         )
       );
     }
+  return true;
 }
 
 async function createDefaultCategories(ledgerId, openid) {
@@ -142,6 +191,7 @@ async function createDefaultCategories(ledgerId, openid) {
 module.exports = {
   categoryTreeDefaults,
   addDefaultChild,
+  ensureSystemChildren,
   ensureLedgerCategoryTree,
   createDefaultCategories,
 };
