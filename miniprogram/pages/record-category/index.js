@@ -96,7 +96,8 @@ Page({
     wx.navigateTo({ url: `/pages/category-manage/index?${params.join("&")}` });
   },
   chooseCategory(event) {
-    const { category, categoryLabel, categoryIcon, parent, parentIcon } = event.detail.category
+    const { categoryId, category, categoryLabel, categoryIcon, parent, parentIcon } = event.detail
+      .category
       ? event.detail
       : event.currentTarget.dataset;
     if (this.data.mode === "reselect") {
@@ -104,6 +105,7 @@ Page({
       if (previous && previous.applyCategorySelection)
         previous.applyCategorySelection({
           type: this.data.type,
+          categoryId: categoryId || "",
           categoryName: category,
           categoryLabel,
           categoryIcon,
@@ -115,6 +117,7 @@ Page({
     }
     const params = [
       `type=${this.data.type}`,
+      `categoryId=${encodeURIComponent(categoryId || "")}`,
       `category=${encodeURIComponent(category)}`,
       `categoryLabel=${encodeURIComponent(categoryLabel)}`,
       `categoryIcon=${encodeURIComponent(categoryIcon)}`,

@@ -20,7 +20,7 @@ function comparisonText(comparison = {}, metric) {
   if (!comparison.enabled) return "";
   const item = comparison[metric] || {};
   if (item.direction === "flat") return "持平";
-  if (item.rate === null) return item.direction === "up" ? "上期为 0" : "本期归零";
+  if (item.rate === null) return "上期为 0";
   return `${item.direction === "up" ? "↑" : "↓"} ${Math.abs(item.rate)}%`;
 }
 
@@ -190,7 +190,26 @@ function decorate(data = {}) {
     incomeCategories: decorateRanking(data.incomeCategories || []),
     incomeCategoryChart: data.incomeCategoryChart || data.incomeCategories || [],
     accounts: decorateRanking(data.accounts || []),
-    members: decorateRanking(data.members || []),
+    family: data.family
+      ? {
+          ...data.family,
+          totalText: formatDisplayMoney(data.family.total),
+          payers: decorateRanking(data.family.payers || []).map((item) => ({
+            ...item,
+            categories: decorateRanking(item.categories || []),
+          })),
+          consumers: decorateRanking(data.family.consumers || []).map((item) => ({
+            ...item,
+            publicText: formatDisplayMoney(item.publicAmount),
+            multipleText: formatDisplayMoney(item.multipleAmount),
+            categories: decorateRanking(item.categories || []),
+          })),
+        }
+      : null,
+    members: decorateRanking(data.members || []).map((item) => ({
+      ...item,
+      categories: decorateRanking(item.categories || []),
+    })),
     insightGroups,
     insights: data.insights || [],
   };

@@ -20,7 +20,7 @@ const CHART_META = {
   },
   yearBalance: {
     title: "\u7ed3\u4f59\u8d8b\u52bf",
-    subtitle: "\u5305\u62ec\u5f53\u524d\u5e74\u7684\u6700\u8fd1 5 \u5e74\u7ed3\u4f59",
+    subtitle: "以所选年份为终点的近 5 年结余",
   },
   yearRatio: {
     title: "\u5168\u5e74\u652f\u51fa\u5360\u6bd4",
@@ -204,7 +204,7 @@ function getTrendOption(data) {
 function getMonthlyExpenseTrendOption(data) {
   const trend = data.trend || [];
   const expenses = trend.map((item) => amount(item.expense));
-  const expenseDays = expenses.map((value) => (value > 0 ? value : null));
+  const expenseDays = expenses;
   return {
     color: [CHART_THEME.expense],
     animationDuration: 350,

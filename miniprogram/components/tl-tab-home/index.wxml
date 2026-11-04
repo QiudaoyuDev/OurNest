@@ -39,6 +39,7 @@
               </view>
               <view class="budget-right">
                 <view class="budget-left" wx:if="{{budgetEnabled}}">剩 ¥{{budgetLeft}}</view>
+                <view wx:if="{{budgetEnabled}}" class="budget-setting-link" bindtap="goBudgetRecords">查看支出</view>
                 <view wx:if="{{canManageBudget}}" class="budget-setting-link" bindtap="goBudgetSettings">设置</view>
               </view>
             </view>
@@ -113,6 +114,7 @@
               </view>
               <view class="budget-right">
                 <view class="budget-left" wx:if="{{budgetEnabled}}">剩 ¥{{budgetLeft}}</view>
+                <view wx:if="{{budgetEnabled}}" class="budget-setting-link" bindtap="goBudgetRecords">查看支出</view>
                 <view wx:if="{{canManageBudget}}" class="budget-setting-link" bindtap="goBudgetSettings">设置</view>
               </view>
             </view>

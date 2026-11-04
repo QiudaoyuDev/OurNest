@@ -13,6 +13,7 @@ Page({
     parentName: "",
     showEditor: false,
     saving: false,
+    deleting: false,
     editingItem: null,
     draftName: "",
     draftIcon: "",
@@ -62,7 +63,7 @@ Page({
     this.setData({ showEditor: true, editingItem: null, draftName: "", draftIcon: "" });
   },
   openEdit(e) {
-    if (this.data.role !== "owner") return;
+    if (this.data.role !== "owner" || this.data.deleting) return;
     const item = e.currentTarget.dataset.item;
     if (item.isProtected) return;
     this.setData({
@@ -122,7 +123,7 @@ Page({
     }
   },
   async remove(e) {
-    if (this.data.role !== "owner") return;
+    if (this.data.role !== "owner" || this.data.deleting) return;
     const item = e.currentTarget.dataset.item;
     if (item.isProtected) return;
     if (item.level === "child" && item.isDefaultChild) {
@@ -134,17 +135,22 @@ Page({
         return;
       }
     }
-    const movesToOther = item.level === "parent" || item.isDefaultChild;
-    const content = movesToOther
-      ? "关联记录会自动保留并转入其他分类"
-      : "关联记录会自动保留并转入默认分类";
+    const content = "关联记录会自动保留并转入其他分类";
     wx.showModal({
       title: "删除分类",
       content,
       success: async (r) => {
         if (!r.confirm) return;
-        await categoryService.removeCategory(item._id, this.data.ledgerId);
-        this.load();
+        if (this.data.deleting) return;
+        this.setData({ deleting: true });
+        try {
+          await categoryService.removeCategory(item._id, this.data.ledgerId);
+          await this.load();
+        } catch (_error) {
+          feedback.showToast({ type: "error", message: "分类删除未完成，请再次删除以继续" });
+        } finally {
+          this.setData({ deleting: false });
+        }
       },
     });
   },

@@ -32,6 +32,18 @@
               <text class="detail-label">账本类型</text>
               <text class="detail-value">{{record.ledgerTypeText}}</text>
             </view>
+            <view wx:if="{{record.sourceText}}" class="detail-row">
+              <text class="detail-label">来源</text>
+              <text class="detail-value">{{record.sourceText}}</text>
+            </view>
+            <view wx:if="{{record.sourceTransactionId}}" class="detail-row">
+              <text class="detail-label">来源交易号</text>
+              <text class="detail-value">{{record.sourceTransactionId}}</text>
+            </view>
+            <view wx:if="{{record.importBatchId}}" class="detail-row">
+              <text class="detail-label">导入批次</text>
+              <text class="detail-value">{{record.importBatchId}}</text>
+            </view>
             <view class="detail-row">
               <text class="detail-label">账户</text>
               <text class="detail-value">{{record.accountText}}</text>
@@ -45,6 +57,14 @@
                 </image>
                 <text class="member-name">{{record.memberName}}</text>
               </view>
+            </view>
+            <view wx:if="{{record.ledgerTypeText === '共享账本' && record.type === 'expense'}}" class="detail-row">
+              <text class="detail-label">付款人</text>
+              <text class="detail-value">{{record.familyDisplay.payerName}}</text>
+            </view>
+            <view wx:if="{{record.ledgerTypeText === '共享账本' && record.type === 'expense'}}" class="detail-row">
+              <text class="detail-label">消费归属</text>
+              <text class="detail-value">{{record.familyDisplay.consumerName}}</text>
             </view>
             <view class="note-block">
               <view class="detail-label">备注</view>

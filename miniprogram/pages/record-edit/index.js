@@ -1,6 +1,7 @@
 const feedback = require("../../services/feedback-ui");
 const app = getApp();
 const recordService = require("../../services/record.service");
+const ledgerService = require("../../services/ledger.service");
 const { getPaymentAccounts } = require("../../services/payment-account.service");
 const { markNavigation } = require("../../utils/navigation-timing");
 const {
@@ -56,6 +57,7 @@ Page({
     type: "expense",
     typeLabel: "支出",
     typeIcon: "price-tag-3-line",
+    categoryId: "",
     categoryName: "其他支出",
     categoryLabel: "其他",
     categoryIcon: "price-tag-3-line",
@@ -79,9 +81,25 @@ Page({
     accounts: getPaymentAccounts(),
     quickAmounts: [],
     quickNotes: quickNotesFor("expense", "其他支出"),
+    sourceText: "",
+    sourceTransactionId: "",
+    importBatchId: "",
     createdDate: "",
     updatedDate: "",
     syncVersion: 0,
+    familyEnabled: false,
+    familyLoading: false,
+    familyError: false,
+    familyMembers: [],
+    familyPayerIndex: 0,
+    familyConsumerIndex: 0,
+    familyKindIndex: 0,
+    familyKinds: [
+      { value: "unknown", label: "其他" },
+      { value: "personal", label: "个人消费" },
+      { value: "public", label: "公共消费（按记录人展示）" },
+      { value: "multiple", label: "多人消费（按记录人展示）" },
+    ],
   },
 
   onLoad(options = {}) {
@@ -123,23 +141,28 @@ Page({
     const date = options.id ? this.data.date : today();
     this.setData({
       type,
+      familyEnabled: !options.id && targetLedger.type === "shared",
+      familyLoading: !options.id && (targetLedger.type === "shared" || !targetLedger._id),
       typeLabel: type === "income" ? "收入" : "支出",
       typeIcon: type === "income" ? "funds-line" : "price-tag-3-line",
+      categoryId: options.categoryId ? decodeURIComponent(options.categoryId) : "",
       categoryName,
       categoryLabel,
       categoryIcon,
       parentCategory,
       parentIcon,
-      ledgerName: currentLedger.name || "我家账本",
+      ledgerName: targetLedger.name || "我家账本",
       ledgerId: options.ledgerId || currentLedger._id || "",
-      accounts: getPaymentAccounts(currentLedger),
-      quickAmounts: quickAmountsFor(currentLedger),
+      accounts: getPaymentAccounts(targetLedger),
+      quickAmounts: quickAmountsFor(targetLedger),
       quickNotes: quickNotesFor(type, categoryName),
       date,
     });
     if (options.id) {
       this.setData({ recordId: decodeURIComponent(options.id), isEditing: true });
       this.loadRecord(this.data.recordId);
+    } else if (targetLedger.type === "shared" || !targetLedger._id) {
+      this.loadFamilyContext(ledgerId);
     }
   },
 
@@ -170,9 +193,12 @@ Page({
       this.setData({
         recordId,
         isEditing: true,
+        familyEnabled: ledgerInfo.type === "shared",
+        familyLoading: ledgerInfo.type === "shared",
         type: recordType,
         typeLabel: recordType === "income" ? "收入" : "支出",
         typeIcon: recordType === "income" ? "funds-line" : "price-tag-3-line",
+        categoryId: record.categoryId || "",
         categoryName: record.categoryName || "其他",
         categoryLabel: record.categoryLabel || record.categoryName || "其他",
         categoryIcon: record.categoryIcon || "price-tag-3-line",
@@ -187,11 +213,28 @@ Page({
         accountIndex,
         quickAmounts: quickAmountsFor(ledgerInfo),
         quickNotes: quickNotesFor(recordType, record.categoryName),
+        sourceText:
+          record.source === "wechat"
+            ? "微信支付"
+            : record.source === "alipay"
+              ? "支付宝"
+              : record.importBatchId
+                ? "模板导入"
+                : "",
+        sourceTransactionId: record.sourceTransactionId || "",
+        importBatchId: record.importBatchId || "",
         createdDate: formatRecordTimestamp(record.createdAt),
         updatedDate: formatRecordTimestamp(record.updatedAt),
         syncVersion: Number(record.syncVersion || 0),
       });
       this.setAmountExpression(String(record.amount || ""));
+      if (ledgerInfo.type === "shared") {
+        await this.loadFamilyContext(
+          record.ledgerId,
+          record.familyAttribution,
+          record.familyDisplay
+        );
+      }
     } catch (error) {
       feedback.showToast({ type: "error", message: error.message || "记录加载失败" });
       this.setData({ recordLoadError: true });
@@ -202,12 +245,76 @@ Page({
   reloadRecord() {
     return this.loadRecord(this.data.recordId);
   },
+  async loadFamilyContext(ledgerId, existing, display = {}) {
+    this.familyExisting = existing || null;
+    this.familyDisplay = display || {};
+    this.setData({ familyLoading: true, familyError: false });
+    try {
+      const result = await ledgerService.getLedgerMembers(ledgerId);
+      if (!result.ledger || result.ledger.type !== "shared") {
+        this.setData({ familyEnabled: false, familyLoading: false });
+        return;
+      }
+      this.setData({ familyEnabled: true });
+      const members = [
+        { openid: "", nickName: "其他" },
+        ...(result.members || []).filter((item) => ["owner", "member"].includes(item.role)),
+      ];
+      const attribution = existing || {
+        payerOpenid: app.globalData.openid || "",
+        consumerKind: "personal",
+        consumerOpenid: app.globalData.openid || "",
+      };
+      [
+        [attribution.payerOpenid, display.payerName],
+        [attribution.consumerOpenid, display.consumerName],
+      ].forEach(([id, name]) => {
+        if (id && !members.some((item) => item.openid === id))
+          members.push({ openid: id, nickName: name || "历史成员" });
+      });
+      const payerIndex = Math.max(
+        0,
+        members.findIndex((item) => item.openid === (attribution.payerOpenid || ""))
+      );
+      const consumerIndex = Math.max(
+        0,
+        members.findIndex((item) => item.openid === (attribution.consumerOpenid || ""))
+      );
+      const kindIndex = Math.max(
+        0,
+        this.data.familyKinds.findIndex((item) => item.value === attribution.consumerKind)
+      );
+      this.setData({
+        familyMembers: members,
+        familyPayerIndex: payerIndex,
+        familyConsumerIndex: consumerIndex,
+        familyKindIndex: kindIndex,
+        familyLoading: false,
+      });
+    } catch (_error) {
+      this.setData({ familyLoading: false, familyError: true });
+    }
+  },
+  retryFamilyContext() {
+    return this.loadFamilyContext(this.data.ledgerId, this.familyExisting, this.familyDisplay);
+  },
+  changeFamilyPayer(event) {
+    this.setData({ familyPayerIndex: Number(event.detail.value) });
+  },
+  changeFamilyKind(event) {
+    this.setData({ familyKindIndex: Number(event.detail.value) });
+  },
+  changeFamilyConsumer(event) {
+    this.setData({ familyConsumerIndex: Number(event.detail.value) });
+  },
+
   applyCategorySelection(selection = {}) {
     const type = selection.type === "income" ? "income" : "expense";
     this.setData({
       type,
       typeLabel: type === "income" ? "收入" : "支出",
       typeIcon: type === "income" ? "funds-line" : "price-tag-3-line",
+      categoryId: selection.categoryId || "",
       categoryName: selection.categoryName || this.data.categoryName,
       categoryLabel: selection.categoryLabel || selection.categoryName || this.data.categoryLabel,
       categoryIcon: selection.categoryIcon || this.data.categoryIcon,
@@ -339,7 +446,9 @@ Page({
       this.data.saving ||
       this.data.deleting ||
       this.data.recordLoading ||
-      this.data.recordLoadError
+      this.data.recordLoadError ||
+      this.data.familyLoading ||
+      this.data.familyError
     )
       return;
     const finalTags = Array.from(
@@ -354,6 +463,22 @@ Page({
       return;
     }
 
+    let familyAttribution;
+    if (this.data.familyEnabled && this.data.type === "expense") {
+      const kind = this.data.familyKinds[this.data.familyKindIndex].value;
+      const payer = this.data.familyMembers[this.data.familyPayerIndex] || {};
+      const consumer = this.data.familyMembers[this.data.familyConsumerIndex] || {};
+      if (kind === "personal" && !consumer.openid) {
+        feedback.showToast({ type: "warning", message: "请选择消费归属成员" });
+        return;
+      }
+      familyAttribution = {
+        payerOpenid: payer.openid || "",
+        consumerKind: kind,
+        consumerOpenid: kind === "personal" ? consumer.openid : "",
+      };
+    }
+
     this.setData({ saving: true });
     const ledgerId = this.data.ledgerId;
     const payload = {
@@ -364,6 +489,7 @@ Page({
       note: this.data.note,
       tags: finalTags,
       date: this.data.date,
+      categoryId: this.data.categoryId,
       categoryName: this.data.categoryName,
       categoryLabel: this.data.categoryLabel,
       categoryIcon: this.data.categoryIcon,
@@ -371,6 +497,7 @@ Page({
       parentIcon: this.data.parentIcon,
       account: this.data.accounts[this.data.accountIndex],
       syncVersion: this.data.syncVersion || 0,
+      ...(familyAttribution ? { familyAttribution } : {}),
     };
 
     try {

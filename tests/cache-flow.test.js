@@ -117,6 +117,33 @@ test("partial record pages preserve server totals, cursor and records beyond 50"
   assert.equal(component.data.monthRecordCount, 71);
 });
 
+test("record type filter queries the server and ignores stale pages", async () => {
+  const calls = [];
+  const pending = [deferred(), deferred()];
+  const component = recordsComponent({
+    listRecords: (payload) => {
+      calls.push(payload);
+      return pending[calls.length - 1].promise;
+    },
+  });
+  component.data.ledgerId = "ledger";
+  component.data.currentRange = { start: "2026-10-01", end: "2026-11-01" };
+  const oldRequest = component.loadRecords();
+  const filtered = component.switchType({ currentTarget: { dataset: { type: "income" } } });
+  assert.equal(calls[0].type, "all");
+  assert.equal(calls[1].type, "income");
+  assert.equal(calls[1].cursor, null);
+  pending[1].resolve({
+    records: [{ _id: "income", type: "income", amount: 5, date: "2026-10-01" }],
+  });
+  await filtered;
+  pending[0].resolve({
+    records: [{ _id: "expense", type: "expense", amount: 2, date: "2026-10-01" }],
+  });
+  await oldRequest;
+  assert.equal(component.data.records[0].id, "income");
+});
+
 test("an old record month response cannot overwrite a newly selected month", async () => {
   const pending = [deferred(), deferred()];
   let i = 0;
@@ -399,4 +426,454 @@ test("logout rejects pending ledger reads without restoring their cache", async 
   request.resolve({ ledgers: [{ _id: "old" }] });
   await assert.rejects(pending, /登录状态已变化/);
   assert.equal(storage.tomatoLedgerLedgerCache, undefined);
+});
+
+test("import page previews before writing and submits only selected rows", async () => {
+  let imports = 0;
+  let sent;
+  let uploadPath;
+  const service = {
+    createImportUpload: async () => ({ ticketId: "ticket", cloudPath: "imports/user/random.xls" }),
+    previewImport: async () => ({
+      fileHash: "hash",
+      batchId: "batch",
+      errors: [],
+      rows: [
+        { rowNumber: 2, date: "2026-01-01", type: "expense", amount: 1 },
+        { rowNumber: 3, date: "2026-01-02", type: "income", amount: 2 },
+      ],
+    }),
+    importRecords: async (payload) => {
+      imports += 1;
+      sent = payload;
+      return { imported: 1 };
+    },
+  };
+  const page = instance(
+    load(
+      "miniprogram/pages/record-import/index.js",
+      {
+        "../../services/record.service": service,
+        "../../services/payment-account.service": { getPaymentAccounts: () => ["微信"] },
+        "../../services/feedback-ui": { showToast() {} },
+      },
+      { globalData: { openid: "user" } },
+      {
+        chooseMessageFile: async () => ({
+          tempFiles: [{ path: "local", name: "../私人账单.xls", size: 100 }],
+        }),
+        cloud: {
+          uploadFile: async ({ cloudPath }) => {
+            uploadPath = cloudPath;
+            return { fileID: "cloud://env/imports/user/bill.xls" };
+          },
+        },
+        setStorageSync() {},
+        removeStorageSync() {},
+      }
+    )
+  );
+  page.data.ledgerId = "ledger";
+  await page.chooseAndImport();
+  assert.equal(uploadPath, "imports/user/random.xls");
+  assert.equal(imports, 0);
+  assert.equal(page.data.previewVisible, true);
+  page.togglePreviewRow({ currentTarget: { dataset: { row: 3 } } });
+  await page.confirmImport();
+  assert.equal(imports, 1);
+  assert.deepEqual(Array.from(sent.selectedRows), [2]);
+  assert.equal(sent.batchId, "batch");
+  assert.equal(page.data.resultVisible, true);
+});
+
+test("failed preview releases its server-issued upload when no batch was created", async () => {
+  let abandoned;
+  const definition = load(
+    "miniprogram/pages/record-import/index.js",
+    {
+      "../../services/record.service": {
+        createImportUpload: async () => ({
+          ticketId: "ticket",
+          cloudPath: "imports/user/random.csv",
+        }),
+        previewImport: async () => {
+          throw new Error("bad file");
+        },
+        abandonImportUpload: async (payload) => {
+          abandoned = payload;
+          return { cleanupStatus: "done" };
+        },
+      },
+      "../../services/payment-account.service": { getPaymentAccounts: () => ["微信"] },
+      "../../services/feedback-ui": { showToast() {} },
+    },
+    { globalData: { openid: "user" } },
+    {
+      chooseMessageFile: async () => ({
+        tempFiles: [{ path: "local", name: "bill.csv", size: 1 }],
+      }),
+      cloud: { uploadFile: async () => ({ fileID: "cloud://env/imports/user/random.csv" }) },
+    }
+  );
+  const page = instance(definition);
+  page.data.ledgerId = "ledger";
+  await page.chooseAndImport();
+  assert.equal(abandoned.ticketId, "ticket");
+  assert.equal(abandoned.fileId, "cloud://env/imports/user/random.csv");
+  assert.equal(page.data.uploading, false);
+});
+
+test("preview cleanup cancels its batch if category loading fails after preview", async () => {
+  let cancelled;
+  let abandoned = false;
+  const definition = load(
+    "miniprogram/pages/record-import/index.js",
+    {
+      "../../services/record.service": {
+        createImportUpload: async () => ({
+          ticketId: "ticket",
+          cloudPath: "imports/user/random.csv",
+        }),
+        previewImport: async () => ({ batchId: "batch", rows: [{ categoryChoiceRequired: true }] }),
+        cancelImportPreview: async (payload) => {
+          cancelled = payload;
+          return { cleanupStatus: "done" };
+        },
+        abandonImportUpload: async () => {
+          abandoned = true;
+        },
+      },
+      "../../services/category.service": {
+        listCategories: async () => {
+          throw new Error("network");
+        },
+      },
+      "../../services/payment-account.service": { getPaymentAccounts: () => ["微信"] },
+      "../../services/feedback-ui": { showToast() {} },
+    },
+    { globalData: { openid: "user" } },
+    {
+      chooseMessageFile: async () => ({
+        tempFiles: [{ path: "local", name: "bill.csv", size: 1 }],
+      }),
+      cloud: { uploadFile: async () => ({ fileID: "cloud://env/imports/user/random.csv" }) },
+    }
+  );
+  const page = instance(definition);
+  page.data.ledgerId = "ledger";
+  await page.chooseAndImport();
+  assert.equal(cancelled.batchId, "batch");
+  assert.equal(abandoned, false);
+  assert.equal(page.data.previewVisible, false);
+});
+
+test("import resumes the same saved batch after a network failure", async () => {
+  const storage = {};
+  let attempts = 0;
+  const payloads = [];
+  const service = {
+    createImportUpload: async () => ({ ticketId: "ticket", cloudPath: "imports/user/random.xls" }),
+    previewImport: async () => ({
+      batchId: "batch",
+      fileHash: "hash",
+      rows: [{ rowNumber: 2 }],
+      errors: [],
+    }),
+    importRecords: async (payload) => {
+      payloads.push(payload);
+      attempts += 1;
+      if (attempts === 1) throw new Error("network");
+      return { imported: 1, hasMore: false };
+    },
+  };
+  const wx = {
+    getStorageSync: (key) => storage[key],
+    setStorageSync: (key, value) => {
+      storage[key] = value;
+    },
+    removeStorageSync: (key) => {
+      delete storage[key];
+    },
+    chooseMessageFile: async () => ({ tempFiles: [{ path: "local", name: "bill.xls", size: 1 }] }),
+    cloud: { uploadFile: async () => ({ fileID: "cloud://env/imports/user/bill.xls" }) },
+  };
+  const app = {
+    globalData: {
+      openid: "user",
+      loggedIn: true,
+      environment: { id: "test" },
+      currentLedger: { _id: "ledger" },
+    },
+  };
+  const definition = load(
+    "miniprogram/pages/record-import/index.js",
+    {
+      "../../services/record.service": service,
+      "../../services/payment-account.service": { getPaymentAccounts: () => ["微信"] },
+      "../../services/feedback-ui": { showToast() {} },
+    },
+    app,
+    wx
+  );
+  const first = instance(definition);
+  first.onLoad();
+  await first.chooseAndImport();
+  await first.confirmImport();
+  assert.equal(first.data.pendingImport.batchId, "batch");
+  const reopened = instance(definition);
+  reopened.onLoad();
+  await reopened.resumeImport();
+  assert.equal(reopened.data.resultVisible, true);
+  assert.equal(reopened.data.pendingImport, null);
+  assert.equal(payloads[1].batchId, "batch");
+  assert.deepEqual(Array.from(payloads[1].selectedRows), [2]);
+  assert.equal(Object.keys(storage).length, 0);
+});
+
+test("category recovery persists its new choices before resuming an import", async () => {
+  const storage = {};
+  const payloads = [];
+  const definition = load(
+    "miniprogram/pages/record-import/index.js",
+    {
+      "../../services/record.service": {
+        importRecords: async (payload) => {
+          payloads.push(structuredClone(payload));
+          if (payload.recoverCategories)
+            return { recovered: true, categoryChoices: { 2: "" }, hasMore: true };
+          assert.equal(storage.key.categoryChoices[2], "");
+          return { imported: 1, hasMore: false };
+        },
+      },
+      "../../services/payment-account.service": { getPaymentAccounts: () => ["微信"] },
+      "../../services/feedback-ui": { showToast() {} },
+    },
+    { globalData: {} },
+    {
+      setStorageSync: (key, value) => {
+        storage[key] = structuredClone(value);
+      },
+      removeStorageSync: (key) => {
+        delete storage[key];
+      },
+    }
+  );
+  const page = instance(definition);
+  page.importStorageKey = "key";
+  page.data.pendingImport = {
+    batchId: "batch",
+    selectedRows: [2],
+    categoryChoices: { 2: "deleted" },
+  };
+  await page.recoverImportCategories();
+  assert.equal(payloads[0].recoverCategories, true);
+  assert.equal(payloads[1].recoverCategories, undefined);
+  assert.equal(payloads[1].categoryChoices[2], "");
+  assert.equal(page.data.resultVisible, true);
+  assert.equal(storage.key, undefined);
+});
+
+test("category service continues a bounded deletion until the server confirms completion", async () => {
+  let calls = 0;
+  const service = load("miniprogram/services/category.service.js", {
+    "./api": {
+      callApi: async (route, payload) => {
+        assert.equal(route, "category/delete");
+        assert.equal(payload.categoryId, "child");
+        calls += 1;
+        return { hasMore: calls < 3 };
+      },
+    },
+    "./ledger.store": { syncLedgers: async () => {}, markSyncRequired() {} },
+    "./category.store": { invalidate() {}, refreshCategories: async () => [] },
+    "../utils/event-bus": { emit() {} },
+  });
+  const result = await service.removeCategory("child", "ledger");
+  assert.equal(result.hasMore, false);
+  assert.equal(calls, 3);
+});
+
+test("import cleanup retry preserves files queued while a retry is in flight", async () => {
+  const storage = {};
+  const request = deferred();
+  const definition = load(
+    "miniprogram/pages/record-import/index.js",
+    {
+      "../../services/record.service": { retryImportFileCleanup: () => request.promise },
+      "../../services/payment-account.service": { getPaymentAccounts: () => ["微信"] },
+      "../../services/feedback-ui": { showToast() {} },
+    },
+    { globalData: {} },
+    {
+      setStorageSync: (key, value) => {
+        storage[key] = structuredClone(value);
+      },
+    }
+  );
+  const page = instance(definition);
+  page.cleanupStorageKey = "cleanup";
+  page.data.pendingCleanup = ["first"];
+  const pending = page.retryPendingCleanup();
+  assert.equal(page.rememberPendingCleanup("second"), true);
+  request.resolve({ cleanupStatus: "done" });
+  await pending;
+  assert.deepEqual(Array.from(page.data.pendingCleanup), ["second"]);
+  assert.deepEqual(Array.from(storage.cleanup), ["second"]);
+});
+
+test("cleanup of abandoned previews preserves the locally pending batch", async () => {
+  let modal;
+  const cancelled = [];
+  let previews = [{ batchId: "pending" }, { batchId: "abandoned" }];
+  const definition = load(
+    "miniprogram/pages/record-import/index.js",
+    {
+      "../../services/record.service": {
+        listImportPreviews: async () => ({ previews }),
+        cancelImportPreview: async ({ batchId }) => {
+          cancelled.push(batchId);
+          previews = previews.filter((item) => item.batchId !== batchId);
+          return { cleanupStatus: "pending" };
+        },
+      },
+      "../../services/payment-account.service": { getPaymentAccounts: () => ["微信"] },
+      "../../services/feedback-ui": { showToast() {} },
+    },
+    { globalData: {} },
+    {
+      showModal: (options) => {
+        modal = options;
+      },
+      setStorageSync() {},
+    }
+  );
+  const page = instance(definition);
+  page.data.ledgerId = "ledger";
+  page.data.pendingImport = { batchId: "pending" };
+  page.cleanupStorageKey = "cleanup";
+  await page.refreshAbandonedPreviews();
+  assert.deepEqual(Array.from(page.data.abandonedPreviewIds), ["abandoned"]);
+  page.cleanAbandonedPreviews();
+  await modal.success({ confirm: true });
+  assert.deepEqual(cancelled, ["abandoned"]);
+  assert.deepEqual(Array.from(page.data.pendingCleanup), ["abandoned"]);
+  assert.equal(page.data.pendingImport.batchId, "pending");
+});
+
+test("category detail sends exact range and identity for every page", async () => {
+  const calls = [];
+  const definition = load("miniprogram/pages/record-filtered/index.js", {
+    "../../services/record.service": {
+      listRecords: async (payload) => {
+        calls.push(payload);
+        return {
+          records: [{ _id: String(calls.length), amount: 5, date: "2026-02-01" }],
+          rangeSummary: { expense: 10 },
+          rangeRecordCount: 2,
+          hasMore: calls.length === 1,
+          nextCursor: { date: "2026-02-01", id: "1" },
+          readonly: true,
+        };
+      },
+    },
+  });
+  const page = instance(definition);
+  page.onLoad({
+    ledgerId: "shared",
+    start: "2026-02-01",
+    end: "2026-03-01",
+    type: "expense",
+    filter: encodeURIComponent(JSON.stringify({ kind: "id", id: "food" })),
+    name: "餐饮",
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await page.loadMore();
+  assert.equal(calls.length, 2);
+  assert.equal(calls[1].categoryFilter.id, "food");
+  assert.equal(calls[1].ledgerId, "shared");
+  assert.equal(calls[1].cursor.id, "1");
+  assert.equal(page.data.records.length, 2);
+  assert.equal(page.data.expenseText, "10");
+  assert.equal(page.data.readonly, true);
+});
+
+test("comparison ignores an older response after switching the time range", async () => {
+  const pending = [deferred(), deferred()];
+  let call = 0;
+  const definition = load("miniprogram/pages/analysis-comparison/index.js", {
+    "../../services/ledger.service": { getPeriodComparison: () => pending[call++].promise },
+  });
+  const page = instance(definition);
+  page.ledgerId = "ledger";
+  page.requestId = 0;
+  page.data.selected = ["2025-01", "2025-02"];
+  const old = page.load();
+  page.data.selected = ["2025-03", "2025-04"];
+  const current = page.load();
+  const period = (key, expense) => ({
+    key,
+    overview: { income: 0, expense, balance: -expense },
+    expenseCategories: [],
+    incomeCategories: [],
+  });
+  pending[1].resolve({
+    ledger: { name: "新账本" },
+    periods: [period("2025-03", 3), period("2025-04", 4)],
+  });
+  await current;
+  pending[0].resolve({
+    ledger: { name: "旧数据" },
+    periods: [period("2025-01", 1), period("2025-02", 2)],
+  });
+  await old;
+  assert.equal(page.data.ledgerName, "新账本");
+  assert.equal(page.data.rows[0].key, "2025-03");
+});
+
+test("source import requires an explicit category choice before submitting", async () => {
+  let submitted;
+  const notices = [];
+  const service = {
+    createImportUpload: async () => ({ ticketId: "ticket", cloudPath: "imports/user/random.csv" }),
+    previewImport: async () => ({
+      batchId: "batch",
+      fileHash: "hash",
+      rows: [{ rowNumber: 2, type: "expense", categoryChoiceRequired: true }],
+      errors: [],
+    }),
+    importRecords: async (payload) => {
+      submitted = payload;
+      return { imported: 1, hasMore: false };
+    },
+  };
+  const definition = load(
+    "miniprogram/pages/record-import/index.js",
+    {
+      "../../services/record.service": service,
+      "../../services/category.service": {
+        listCategories: async () => [
+          { _id: "p", type: "expense", level: "parent", name: "餐饮" },
+          { _id: "c", type: "expense", level: "child", parentId: "p", name: "午餐" },
+        ],
+      },
+      "../../services/payment-account.service": { getPaymentAccounts: () => ["微信"] },
+      "../../services/feedback-ui": { showToast: (item) => notices.push(item) },
+    },
+    { globalData: { openid: "user" } },
+    {
+      chooseMessageFile: async () => ({ tempFiles: [{ path: "local", name: "bill.csv" }] }),
+      cloud: { uploadFile: async () => ({ fileID: "cloud://env/imports/user/bill.csv" }) },
+      setStorageSync() {},
+      removeStorageSync() {},
+    }
+  );
+  const page = instance(definition);
+  page.data.ledgerId = "ledger";
+  await page.chooseAndImport();
+  await page.confirmImport();
+  assert.equal(submitted, undefined);
+  assert.match(notices.at(-1).message, /分类/);
+  page.choosePreviewCategory({ currentTarget: { dataset: { row: 2 } }, detail: { value: "1" } });
+  await page.confirmImport();
+  assert.equal(submitted.categoryChoices[2], "c");
 });

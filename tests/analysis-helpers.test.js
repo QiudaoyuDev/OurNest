@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 const {
   collapseRanking,
+  groupCategories,
   makeComparison,
   makeRecentYearTrend,
   makeTrendBuckets,
@@ -33,8 +34,7 @@ test("analysis handler marks current month and year trends as partial", () => {
   );
   const current = { year: 2026, month: 3, day: 13, start: "2026-03-01" };
   assert.equal(
-    module.exports.getTrendRange("month", { start: "2026-03-01", end: "2026-04-01" }, current)
-      .end,
+    module.exports.getTrendRange("month", { start: "2026-03-01", end: "2026-04-01" }, current).end,
     "2026-03-14"
   );
   assert.equal(
@@ -89,6 +89,14 @@ test("current analysis trends stop at the supplied partial period", () => {
   );
 });
 
+test("custom trends show unambiguous cross-month dates", () => {
+  const rows = makeTrendBuckets("custom", { start: "2025-12-31", end: "2026-01-02" }, []);
+  assert.deepEqual(
+    rows.map((item) => item.label),
+    ["12-31", "01-01"]
+  );
+});
+
 test("recent year trend always includes current year and the previous four years", () => {
   const trend = makeRecentYearTrend(2026, [
     { date: "2021-12-31", type: "income", amount: 999 },
@@ -123,6 +131,44 @@ test("analysis overview and comparison handle expense-only periods", () => {
   assert.equal(comparison.expense.rate, 75);
 });
 
+test("large repeated amounts conserve cents across summaries, trends and family groups", () => {
+  const {
+    familyExpenseGroups,
+    creatorExpenseGroups,
+  } = require("../cloudfunctions/tomatoLedger/family.helpers");
+  const rows = Array.from({ length: 5000 }, (_, index) => ({
+    date: "2026-03-01",
+    type: "expense",
+    amount: 12345678.91,
+    categoryId: "lunch",
+    categoryName: "午餐",
+    ownerOpenid: index % 2 ? "a" : "b",
+    familyAttribution: { payerOpenid: index % 2 ? "a" : "b", consumerKind: "public" },
+  }));
+  const total = 61728394550;
+  assert.equal(summarizeRecords(rows).expense, total);
+  assert.equal(groupCategories(rows, "expense")[0].amount, total);
+  assert.equal(
+    makeTrendBuckets("month", { start: "2026-03-01", end: "2026-03-02" }, rows)[0].expense,
+    total
+  );
+  assert.equal(makeRecentYearTrend(2026, rows).at(-1).expense, total);
+  const family = familyExpenseGroups(rows);
+  assert.equal(family.total, total);
+  assert.equal(
+    family.payers.reduce((sum, item) => sum + item.amount, 0),
+    total
+  );
+  assert.equal(
+    family.consumers.reduce((sum, item) => sum + item.amount, 0),
+    total
+  );
+  assert.equal(
+    creatorExpenseGroups(rows).reduce((sum, item) => sum + item.amount, 0),
+    total
+  );
+});
+
 test("chart ranking keeps top five and combines the remainder", () => {
   const rows = [60, 50, 40, 30, 20, 10, 5].map((amount, index) => ({
     name: `分类${index + 1}`,
@@ -135,4 +181,260 @@ test("chart ranking keeps top five and combines the remainder", () => {
   assert.equal(ranking[5].name, "其余分类");
   assert.equal(ranking[5].amount, 15);
   assert.equal(ranking[5].rate, 7);
+});
+
+test("empty current periods still compare with real previous records", async () => {
+  const module = { exports: {} };
+  const rows = [{ date: "2026-02-10", type: "expense", amount: 42, ownerOpenid: "user" }];
+  const command = { gte: (start) => ({ and: (end) => ({ start, end }) }), lt: (end) => end };
+  const helpers = {
+    db: {
+      collection: () => ({
+        where: (query) => ({
+          orderBy: () => ({
+            orderBy: () => ({
+              skip: () => ({
+                limit: () => ({
+                  get: async () => ({
+                    data: rows.filter(
+                      (row) => row.date >= query.date.start && row.date < query.date.end
+                    ),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }),
+      }),
+    },
+    _: command,
+    ok: (data) => data,
+    getLedgerForUser: async () => ({ _id: "ledger", type: "shared" }),
+    getLedgerRole: () => "owner",
+    assertReadable: () => {},
+    getUsersByOpenids: async () => ({}),
+    getCurrentMonthRange: () => ({ year: 2026, month: 3, day: 13, start: "2026-03-01" }),
+    makeDateText: (year, month, day) =>
+      `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+    addMonth: (year, month, delta) => {
+      const date = new Date(Date.UTC(year, month - 1 + delta, 1));
+      return { year: date.getUTCFullYear(), month: date.getUTCMonth() + 1 };
+    },
+  };
+  vm.runInNewContext(
+    fs.readFileSync("cloudfunctions/tomatoLedger/handlers/analysis.handler.js", "utf8"),
+    {
+      module,
+      exports: module.exports,
+      require: (path) =>
+        path.includes("shared/helpers")
+          ? helpers
+          : path.includes("family.helpers")
+            ? require("../cloudfunctions/tomatoLedger/family.helpers")
+            : require("../cloudfunctions/tomatoLedger/analysis.helpers"),
+    }
+  );
+  const previous = module.exports.getPreviousAnalysisRange;
+  const feb = previous(
+    "month",
+    { year: 2024, month: 3, start: "2024-03-01" },
+    {
+      year: 2024,
+      month: 3,
+      day: 31,
+      start: "2024-03-01",
+    }
+  );
+  assert.equal(feb.start, "2024-02-01");
+  assert.equal(feb.end, "2024-03-01");
+  const leap = previous(
+    "year",
+    { start: "2024-01-01" },
+    {
+      year: 2024,
+      month: 2,
+      day: 29,
+    }
+  );
+  assert.equal(leap.end, "2023-03-01");
+  const custom = previous("custom", { start: "2026-01-01", end: "2026-01-04" }, {});
+  assert.equal(custom.start, "2025-12-29");
+  assert.equal(custom.end, "2026-01-01");
+  const customRange = module.exports.getAnalysisRange("custom", "", "2025-12-30", "2026-01-02");
+  assert.equal(customRange.end, "2026-01-03");
+  assert.throws(
+    () => module.exports.getAnalysisRange("custom", "", "2024-01-01", "2026-01-01"),
+    /INVALID_ANALYSIS_RANGE/
+  );
+  assert.throws(
+    () => module.exports.getAnalysisRange("custom", "", "2026-03-01", "2026-03-14"),
+    /INVALID_ANALYSIS_RANGE/
+  );
+  const result = await module.exports.getAnalysis("user", { mode: "month", anchor: "2026-03" });
+  assert.equal(result.overview.expense, 0);
+  assert.equal(result.previousOverview.expense, 42);
+  assert.equal(result.comparisonRange.start, "2026-02-01");
+  assert.equal(result.comparisonRange.end, "2026-02-14");
+  assert.equal(result.comparison.expense.delta, -42);
+  assert.equal(result.comparison.expense.rate, -100);
+  rows.push({ date: "2026-03-20", type: "expense", amount: 999, ownerOpenid: "user" });
+  const currentMonth = await module.exports.getAnalysis("user", {
+    mode: "month",
+    anchor: "2026-03",
+  });
+  assert.equal(currentMonth.range.end, "2026-03-14");
+  assert.equal(currentMonth.overview.expense, 0);
+  const currentYear = await module.exports.getAnalysis("user", { mode: "year", anchor: "2026" });
+  assert.equal(currentYear.range.end, "2026-03-14");
+  assert.equal(currentYear.overview.expense, 42);
+  assert.equal(currentYear.recentYearTrend.at(-1).expense, 42);
+  const comparison = await module.exports.getPeriodComparison("user", {
+    ledgerId: "ledger",
+    unit: "month",
+    periods: ["2026-02", "2026-03"],
+  });
+  assert.equal(comparison.periods[0].overview.expense, 42);
+  assert.equal(comparison.periods[1].overview.expense, 0);
+  assert.equal(comparison.periods[1].end, "2026-03-14");
+  assert.equal(comparison.periods[1].partial, true);
+  await assert.rejects(
+    module.exports.getPeriodComparison("user", {
+      ledgerId: "ledger",
+      unit: "month",
+      periods: ["2026-02", "2026-04"],
+    }),
+    /INVALID_COMPARISON_PERIODS/
+  );
+  const february = await module.exports.getAnalysis("user", { mode: "month", anchor: "2026-02" });
+  assert.equal(february.members[0].amount, 42);
+  assert.equal(february.members[0].recordCount, 1);
+  assert.equal(february.members[0].openid, "user");
+  assert.equal(february.family.total, 42);
+  assert.equal(february.family.payers[0].name, "其他");
+  assert.equal(february.family.consumers[0].name, "其他");
+  const historic = await module.exports.getAnalysis("user", { mode: "year", anchor: "2023" });
+  assert.deepEqual(
+    Array.from(historic.recentYearTrend, (item) => item.key),
+    ["2019", "2020", "2021", "2022", "2023"]
+  );
+  const future = await module.exports.getAnalysis("user", { mode: "year", anchor: "2027" });
+  assert.equal(future.recentYearTrend.length, 0);
+});
+
+test("category grouping uses stable identifiers and distinguishes unlinked parents", () => {
+  const rows = groupCategories(
+    [
+      {
+        type: "expense",
+        categoryId: "c1",
+        categoryName: "旧名",
+        parentCategory: "餐饮",
+        amount: 3,
+      },
+      {
+        type: "expense",
+        categoryId: "c1",
+        categoryName: "新名",
+        parentCategory: "餐饮",
+        amount: 4,
+      },
+      { type: "expense", categoryName: "其他", parentCategory: "餐饮", amount: 5 },
+      { type: "expense", categoryName: "其他", parentCategory: "交通", amount: 6 },
+      { type: "income", categoryId: "c1", amount: 100 },
+    ],
+    "expense"
+  );
+  assert.equal(rows.length, 3);
+  assert.equal(rows[0].categoryId, "c1");
+  assert.equal(rows[0].name, "新名");
+  assert.equal(rows[0].amount, 7);
+  assert.equal(rows[1].parentCategory, "交通");
+  assert.equal(rows[2].parentCategory, "餐饮");
+});
+
+test("family attribution validates members and preserves unknown historical values", () => {
+  const { normalizeFamilyAttribution } = require("../cloudfunctions/tomatoLedger/family.helpers");
+  const ledger = {
+    type: "shared",
+    ownerOpenid: "a",
+    memberOpenids: ["a", "b"],
+    viewerOpenids: ["v"],
+  };
+  assert.deepEqual(normalizeFamilyAttribution({ ledger, openid: "a", isImport: true }), {
+    payerOpenid: "",
+    consumerKind: "unknown",
+    consumerOpenid: "",
+  });
+  assert.deepEqual(
+    normalizeFamilyAttribution({
+      ledger,
+      openid: "a",
+      input: { payerOpenid: "b", consumerKind: "personal", consumerOpenid: "a" },
+    }),
+    { payerOpenid: "b", consumerKind: "personal", consumerOpenid: "a" }
+  );
+  assert.throws(
+    () =>
+      normalizeFamilyAttribution({
+        ledger,
+        openid: "a",
+        input: { payerOpenid: "v", consumerKind: "personal", consumerOpenid: "a" },
+      }),
+    /INVALID_FAMILY_MEMBER/
+  );
+  const existing = { payerOpenid: "removed", consumerKind: "personal", consumerOpenid: "removed" };
+  assert.deepEqual(
+    normalizeFamilyAttribution({ ledger, openid: "a", existing, input: existing }),
+    existing
+  );
+});
+
+test("family payer and consumption totals count each expense once with public attributed to recorder", () => {
+  const { familyExpenseGroups } = require("../cloudfunctions/tomatoLedger/family.helpers");
+  const rows = [
+    {
+      type: "expense",
+      amount: 10,
+      ownerOpenid: "a",
+      categoryId: "food",
+      familyAttribution: { payerOpenid: "b", consumerKind: "personal", consumerOpenid: "a" },
+    },
+    {
+      type: "expense",
+      amount: 20,
+      ownerOpenid: "a",
+      categoryId: "food",
+      familyAttribution: { payerOpenid: "a", consumerKind: "public" },
+    },
+    {
+      type: "expense",
+      amount: 30,
+      ownerOpenid: "b",
+      categoryId: "travel",
+      familyAttribution: { payerOpenid: "b", consumerKind: "multiple" },
+    },
+    { type: "expense", amount: 5, ownerOpenid: "a" },
+    { type: "income", amount: 100, ownerOpenid: "a" },
+  ];
+  const result = familyExpenseGroups(rows);
+  assert.equal(result.total, 65);
+  assert.deepEqual(
+    result.payers.map((row) => [row.openid, row.amount]),
+    [
+      ["b", 40],
+      ["a", 20],
+      ["", 5],
+    ]
+  );
+  assert.deepEqual(
+    result.consumers.map((row) => [row.openid, row.amount]),
+    [
+      ["a", 30],
+      ["b", 30],
+      ["", 5],
+    ]
+  );
+  assert.equal(result.consumers[0].publicAmount, 20);
+  assert.equal(result.consumers[1].multipleAmount, 30);
+  assert.equal(result.consumers[0].categories[0].amount, 30);
 });

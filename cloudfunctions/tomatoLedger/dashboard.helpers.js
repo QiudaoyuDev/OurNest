@@ -1,4 +1,4 @@
-const { summarizeRecords } = require("./analysis.helpers");
+const { summarizeRecords, moneyCents } = require("./analysis.helpers");
 
 async function loadAllMonthRecords(fetchPage, pageSize = 100) {
   const records = [];
@@ -17,7 +17,7 @@ function summarizeDashboardRecords(records) {
   records.forEach((record) => {
     if (record.type !== "expense") return;
     const category = record.parentCategory || record.categoryName || "其他";
-    expenseMap[category] = (expenseMap[category] || 0) + Number(record.amount || 0);
+    expenseMap[category] = (expenseMap[category] || 0) + moneyCents(record.amount);
   });
   const topExpenseCategory =
     Object.keys(expenseMap).sort((a, b) => expenseMap[b] - expenseMap[a])[0] || "其他";

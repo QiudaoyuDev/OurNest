@@ -9,7 +9,17 @@ const categoryTreeDefaults = {
     [
       "交通",
       "taxi-line",
-      ["公交地铁", "打车", "火车高铁", "加油充电", "停车", "过路过桥", "维修保养", "车险", "其他车费"],
+      [
+        "公交地铁",
+        "打车",
+        "火车高铁",
+        "加油充电",
+        "停车",
+        "过路过桥",
+        "维修保养",
+        "车险",
+        "其他车费",
+      ],
     ],
     ["居家", "home-4-line", ["房租房贷", "水电燃气", "物业", "维修"]],
     ["生活", "heart-pulse-line", ["医疗", "学习", "娱乐", "旅行"]],
@@ -113,6 +123,7 @@ async function ensureLedgerCategoryTree(ledgerId, openid) {
   if (parentResult.data.length) {
     const changes = await Promise.all(
       parentResult.data.map(async (parent) => {
+        if (parent.deletionState === "deleting") return false;
         let changed = false;
         if (
           parent.isOther &&

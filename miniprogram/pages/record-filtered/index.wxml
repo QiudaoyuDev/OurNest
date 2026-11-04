@@ -1,0 +1,35 @@
+<view class="page plain-page">
+  <tl-navbar title="{{title}}" showBack="{{true}}">
+  </tl-navbar>
+  <tl-container>
+    <scroll-view class="page-scroll" scroll-y="{{true}}" bindscrolltolower="loadMore">
+      <view class="page-content">
+        <tl-skeleton wx:if="{{loading}}" variant="records">
+        </tl-skeleton>
+        <block wx:elif="{{error}}">
+          <tl-empty-state variant="error" title="明细加载失败" description="请检查网络后重试">
+          </tl-empty-state>
+          <tl-button variant="secondary" block="{{true}}" bind:tap="reload">重新加载</tl-button>
+        </block>
+        <block wx:else>
+          <view class="filtered-summary card">
+            <view>{{rangeLabel}}</view>
+            <view>共 {{count}} 笔 · 收入 ¥{{incomeText}} · 支出 ¥{{expenseText}}</view>
+          </view>
+          <view wx:if="{{records.length}}" class="filtered-list card">
+            <view wx:for="{{records}}" wx:key="id" class="filtered-row" data-id="{{item.id}}" bindtap="openRecord">
+              <view>
+                <view>{{item.categoryName || '其他'}}</view>
+                <view class="filtered-meta">{{item.date}} · {{item.note || item.account}}</view>
+              </view>
+              <text>¥{{item.amountText}}</text>
+            </view>
+            <view wx:if="{{loadingMore}}" class="filtered-meta">正在加载更多…</view>
+          </view>
+          <tl-empty-state wx:else title="暂无明细" description="此范围内没有匹配的记录">
+          </tl-empty-state>
+        </block>
+      </view>
+    </scroll-view>
+  </tl-container>
+</view>

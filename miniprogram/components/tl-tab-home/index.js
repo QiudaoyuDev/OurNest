@@ -83,6 +83,7 @@ function normalizeDashboard(data = {}) {
     balanceCompact: compactMoney(data.balance),
     budget: formatDisplayMoney(data.budget),
     budgetEnabled: Boolean(data.budgetEnabled),
+    monthRange: data.monthRange || null,
     budgetLeft: formatDisplayMoney(data.budgetLeft),
     budgetRate: Number(data.budgetRate || 0),
     budgetRateText: Number(data.budgetRate || 0).toFixed(2),
@@ -125,6 +126,7 @@ Component({
     balanceCompact: "0",
     budget: "0",
     budgetEnabled: false,
+    monthRange: null,
     budgetLeft: "0",
     budgetRate: 0,
     recordCount: 0,
@@ -361,6 +363,22 @@ Component({
           message: "\u5207\u6362\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5",
         });
       }
+    },
+
+    goBudgetRecords() {
+      const range = this.data.monthRange || {};
+      if (!this.data.budgetEnabled || !this.data.ledgerId || !range.start || !range.end) return;
+      const query = {
+        ledgerId: this.data.ledgerId,
+        start: range.start,
+        end: range.end,
+        type: "expense",
+        name: "本月预算支出",
+      };
+      const params = Object.keys(query)
+        .map((key) => `${key}=${encodeURIComponent(query[key])}`)
+        .join("&");
+      wx.navigateTo({ url: `/pages/record-filtered/index?${params}` });
     },
 
     goBudgetSettings() {

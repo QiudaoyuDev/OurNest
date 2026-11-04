@@ -11,11 +11,19 @@
           </view>
           <view>
             <view class="hero-title">导入到 {{ledgerName}}</view>
-            <view class="hero-copy">上传账单记录，系统将校验并保存至当前账本</view>
+            <view class="hero-copy">上传后先核对记录，确认后保存至当前账本</view>
           </view>
         </view>
-        <view class="import-card card">
+        <view wx:if="{{!previewVisible}}" class="import-card card">
           <view class="card-title">导入设置</view>
+          <view wx:if="{{pendingCleanup.length || serverCleanupPending}}" class="import-note">有临时文件等待清理，重新进入页面时会自动重试。</view>
+          <tl-button wx:if="{{pendingCleanup.length || serverCleanupPending}}" variant="secondary" size="small" loading="{{cleaning}}" bind:tap="retryPendingCleanup">重试清理</tl-button>
+          <view wx:if="{{abandonedPreviewIds.length}}" class="import-note">有 {{abandonedPreviewIds.length}} 个未确认预览，可按需取消并清理临时文件。</view>
+          <tl-button wx:if="{{abandonedPreviewIds.length}}" variant="secondary" size="small" disabled="{{uploading}}" bind:tap="cleanAbandonedPreviews">清理未确认预览</tl-button>
+          <view wx:if="{{pendingImport}}" class="import-note">有一批导入尚未确认完成，请继续处理。</view>
+          <tl-button wx:if="{{pendingImport}}" block="{{true}}" loading="{{uploading}}" bind:tap="resumeImport">继续上次导入</tl-button>
+          <view wx:if="{{pendingImport}}" class="import-note">若所选分类已删除导致无法继续，可将尚未处理的记录归入“其他”，已导入的记录保持不变。</view>
+          <tl-button wx:if="{{pendingImport}}" variant="secondary" block="{{true}}" disabled="{{uploading}}" bind:tap="recoverImportCategories">剩余记录归入其他并继续</tl-button>
           <view class="field-label">默认账户</view>
           <picker mode="selector" range="{{accounts}}" value="{{accountIndex}}" bindchange="onAccountChange">
             <view class="picker-field">
@@ -31,12 +39,50 @@
             </view>
             <view class="template-button" bindtap="downloadTemplate">下载模板</view>
           </view>
-          <tl-button class="page-submit" block="{{true}}" loading="{{uploading}}" loading-text="正在导入..." bind:tap="chooseAndImport">
+          <tl-button class="page-submit" block="{{true}}" disabled="{{pendingImport}}" loading="{{uploading}}" loading-text="正在导入..." bind:tap="chooseAndImport">
             <tl-icon name="upload-2-line" size="34" colorKey="white">
             </tl-icon>
             <text>选择账单文件</text>
           </tl-button>
-          <view class="import-note">支持 .xls / .xlsx；必填：日期、收支类型、金额。</view>
+          <view class="import-note">支持模板及微信、支付宝账单（.xls / .xlsx / .csv），最多 5 MB、200 行。</view>
+        </view>
+        <view wx:else class="import-card card">
+          <view class="card-title">核对导入记录</view>
+          <view class="import-note">点击记录可取消选择；确认后写入账本。</view>
+          <tl-button wx:if="{{hasCategoryChoices}}" variant="secondary" size="small" bind:tap="confirmUnmappedCategories">未确认分类全部保持其他</tl-button>
+          <view wx:if="{{duplicatesIncomplete}}" class="import-note">账本记录较多，未完成跨来源疑似重复核对，请自行检查。</view>
+          <view wx:for="{{previewRows}}" wx:key="rowNumber" class="preview-row" data-row="{{item.rowNumber}}" bindtap="togglePreviewRow">
+            <view class="preview-heading">
+              <text>{{item.excluded ? '不计入' : item.selected ? '已选择' : '未选择'}} · 第 {{item.rowNumber}} 行</text>
+              <text>{{(item.manualType || item.type) === 'income' ? '收入' : '支出'}} ¥{{item.amount}}</text>
+            </view>
+            <view>{{item.date}} · {{item.parentCategory}} / {{item.categoryName}} · {{item.account}}</view>
+            <view wx:if="{{item.note}}">备注：{{item.note}}</view>
+            <view wx:if="{{item.categoryWarning}}">{{item.categoryWarning}}</view>
+            <view wx:if="{{item.duplicateWarning}}">{{item.duplicateWarning}}</view>
+            <view wx:if="{{item.source}}">来源：{{item.sourceText}} · 对方：{{item.merchant}} · 状态：{{item.status}}</view>
+            <view wx:if="{{item.sourceCategory}}">来源分类：{{item.sourceCategory}}</view>
+            <picker wx:if="{{item.categoryChoiceRequired}}" mode="selector" range="{{item.categoryOptions}}" range-key="label" value="{{item.categoryIndex}}" data-row="{{item.rowNumber}}" catchtap="stopPreviewTap" bindchange="choosePreviewCategory">
+              <view>账本分类：{{item.categoryOptions[item.categoryIndex].label}} · {{item.categoryConfirmed ? '已确认' : '待确认'}} ▾</view>
+            </picker>
+            <view wx:if="{{item.reviewReason}}">{{item.reviewReason}}</view>
+            <view wx:if="{{item.sourceIdWarning}}">{{item.sourceIdWarning}}</view>
+            <view wx:if="{{item.confirmedDuplicate}}">该来源交易已导入，将自动跳过</view>
+            <view wx:if="{{item.sourceDuplicateWarning}}">{{item.sourceDuplicateWarning}}</view>
+            <view wx:if="{{item.crossSourceWarning}}">{{item.crossSourceWarning}}</view>
+            <view wx:if="{{item.needsReview}}" class="dialog-actions">
+              <tl-button variant="secondary" size="small" data-row="{{item.rowNumber}}" data-type="income" catch:tap="chooseReviewType">确认成功并计收入</tl-button>
+              <tl-button variant="secondary" size="small" data-row="{{item.rowNumber}}" data-type="expense" catch:tap="chooseReviewType">确认成功并计支出</tl-button>
+            </view>
+          </view>
+          <view wx:if="{{previewErrors.length}}" class="error-list">
+            <text wx:for="{{previewErrors}}" wx:key="*this">{{item}}</text>
+          </view>
+          <view class="dialog-actions">
+            <tl-button variant="secondary" block="{{true}}" disabled="{{uploading}}" bind:tap="cancelPreview">取消</tl-button>
+            <tl-button block="{{true}}" loading="{{uploading}}" loading-text="正在导入..." bind:tap="confirmImport">确认导入</tl-button>
+          </view>
+          <view class="import-note">导入中断后可继续上次导入。</view>
         </view>
       </view>
     </scroll-view>
@@ -51,9 +97,10 @@
           </view>
           <view>
             <text class="result-number fail">{{result.skipped}}</text>
-            <text>失败导入（笔）</text>
+            <text>未导入（笔）</text>
           </view>
         </view>
+        <view wx:if="{{result.duplicates}}" class="result-copy">其中 {{result.duplicates}} 笔同源交易已导入，本次跳过。</view>
         <view wx:if="{{result.errors.length}}" class="error-list">
           <text wx:for="{{result.errors}}" wx:key="*this">{{item}}</text>
         </view>

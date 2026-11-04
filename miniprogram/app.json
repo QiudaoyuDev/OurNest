@@ -18,7 +18,9 @@
     "pages/category-icon-picker/index",
     "pages/record-detail/index",
     "pages/record-edit/index",
-    "pages/record-import/index"
+    "pages/record-import/index",
+    "pages/record-filtered/index",
+    "pages/analysis-comparison/index"
   ],
   "window": {
     "backgroundColor": "#FFF7F2",

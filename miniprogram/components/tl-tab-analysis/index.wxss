@@ -33,6 +33,27 @@
   padding-top: 12rpx;
 }
 
+.custom-range {
+  margin-bottom: 20rpx;
+  padding: 24rpx;
+}
+
+.custom-range__dates {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-top: 20rpx;
+  color: var(--tl-color-text);
+}
+
+.custom-range__note {
+  display: block;
+  margin-top: 14rpx;
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-caption);
+}
+
 .ledger-name {
   overflow: hidden;
   color: var(--tl-color-text);
@@ -814,5 +835,14 @@
 .analysis-ratio-row text:last-child {
   flex: 0 0 auto;
   color: var(--tl-color-text-secondary);
+  font-size: var(--tl-font-caption);
+}
+
+.family-category-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 12rpx 0 12rpx 32rpx;
+  color: var(--tl-color-text-tertiary);
   font-size: var(--tl-font-caption);
 }

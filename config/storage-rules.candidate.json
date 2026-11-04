@@ -1,0 +1,4 @@
+{
+  "read": "/^avatars\\//.test(resource.path) || /^templates\\//.test(resource.path) || (auth != null && /^imports\\//.test(resource.path) && resource.openid == auth.openid) || (auth != null && /^feedback\\//.test(resource.path) && resource.openid == auth.openid)",
+  "write": "auth != null && resource.openid == auth.openid && (/^avatars\\//.test(resource.path) || /^imports\\//.test(resource.path) || /^feedback\\//.test(resource.path))"
+}

@@ -2,10 +2,12 @@ import * as echarts from "../ec-canvas/echarts";
 const app = getApp();
 const ledgerService = require("../../services/ledger.service");
 const ledgerStore = require("../../services/ledger.store");
+const feedback = require("../../services/feedback-ui");
 const { on: onEvent, off: offEvent } = require("../../utils/event-bus");
 const { formatDisplayMoney } = require("../../utils/money");
 const {
   monthAnchor,
+  dateAnchor,
   customRangeDefaults,
   shiftMonth,
   formatCalendarDateLabel,
@@ -40,6 +42,7 @@ Component({
       { value: "month", label: "\u6708\u5ea6" },
       { value: "year", label: "\u5e74\u5ea6" },
       { value: "calendar", label: "\u65e5\u5386" },
+      { value: "custom", label: "自定义" },
     ],
     modeIndex: 0,
     modeLabel: "\u6708\u5ea6",
@@ -47,6 +50,7 @@ Component({
     anchor: "",
     customStart: "",
     customEnd: "",
+    customToday: "",
     rangeLabel: "",
     trendCaption: "",
     activeChart: "monthTrend",
@@ -172,7 +176,7 @@ Component({
         anchor: monthAnchor(),
         ...(() => {
           const range = customRangeDefaults();
-          return { customStart: range.start, customEnd: range.end };
+          return { customStart: range.start, customEnd: range.end, customToday: dateAnchor() };
         })(),
         noLedger: !ledger._id,
       });
@@ -223,7 +227,7 @@ Component({
           hasRecords: request.mode === "calendar" || Number(result.overview.recordCount || 0) > 0,
           hasChartData: hasChartData(result, chartType),
           activeRanking: decorateRanking(
-            chartType === "category"
+            ["category", "monthRatio", "yearRatio"].includes(chartType)
               ? result.categories
               : chartType === "income"
                 ? result.incomeCategories
@@ -371,6 +375,7 @@ Component({
       if (mode === "custom") {
         nextData.customStart = this.data.customStart || customRange.start;
         nextData.customEnd = this.data.customEnd || customRange.end;
+        nextData.customToday = dateAnchor();
       }
       this.setData(nextData);
       this.loadAnalysis();
@@ -379,6 +384,13 @@ Component({
     changeCustomStart(event) {
       const customStart = event.detail.value;
       const customEnd = customStart > this.data.customEnd ? customStart : this.data.customEnd;
+      if (
+        (new Date(`${customEnd}T00:00:00Z`) - new Date(`${customStart}T00:00:00Z`)) / 86400000 >=
+        366
+      ) {
+        feedback.showToast({ type: "warning", message: "自定义范围最多 366 天" });
+        return;
+      }
       this.setData({ customStart, customEnd });
       this.loadAnalysis();
     },
@@ -386,6 +398,13 @@ Component({
     changeCustomEnd(event) {
       const customEnd = event.detail.value;
       const customStart = customEnd < this.data.customStart ? customEnd : this.data.customStart;
+      if (
+        (new Date(`${customEnd}T00:00:00Z`) - new Date(`${customStart}T00:00:00Z`)) / 86400000 >=
+        366
+      ) {
+        feedback.showToast({ type: "warning", message: "自定义范围最多 366 天" });
+        return;
+      }
       this.setData({ customStart, customEnd });
       this.loadAnalysis();
     },
@@ -438,12 +457,11 @@ Component({
       const meta = CHART_META[activeChart];
       const nextData = { ...this.data, activeChart };
       const detailRows = getDetailRows(nextData, activeChart);
-      const ranking =
-        activeChart === "category"
-          ? nextData.categories
-          : activeChart === "income"
-            ? nextData.incomeCategories
-            : getRanking(nextData, activeChart);
+      const ranking = ["category", "monthRatio", "yearRatio"].includes(activeChart)
+        ? nextData.categories
+        : activeChart === "income"
+          ? nextData.incomeCategories
+          : getRanking(nextData, activeChart);
       this.setData(
         {
           activeChart,
@@ -456,6 +474,120 @@ Component({
         },
         () => this.renderChart()
       );
+    },
+
+    openComparison() {
+      if (!this.data.ledgerId) return;
+      wx.navigateTo({
+        url: `/pages/analysis-comparison/index?ledgerId=${encodeURIComponent(this.data.ledgerId)}`,
+      });
+    },
+
+    openCategoryRecords(event) {
+      const source = event.currentTarget.dataset.source;
+      const rows =
+        source === "year"
+          ? this.data.yearRankingRows
+          : source === "custom"
+            ? this.data.categories
+            : this.data.activeRanking;
+      const item = rows[Number(event.currentTarget.dataset.index)];
+      const range = this.data.range || {};
+      if (!item || !range.start || !range.end || !this.data.ledgerId) return;
+      const categoryFilter = item.categoryId
+        ? { kind: "id", id: item.categoryId }
+        : { kind: "legacy", name: item.categoryName || "", parent: item.parentCategory || "" };
+      const type = source === "year" ? this.data.yearRankingType : "expense";
+      const query = {
+        ledgerId: this.data.ledgerId,
+        start: range.start,
+        end: range.end,
+        type,
+        filter: JSON.stringify(categoryFilter),
+        name: item.name || "其他",
+      };
+      const params = Object.keys(query)
+        .map((key) => `${key}=${encodeURIComponent(query[key])}`)
+        .join("&");
+      wx.navigateTo({ url: `/pages/record-filtered/index?${params}` });
+    },
+
+    openFamilyRecords(event) {
+      const dimension = event.currentTarget.dataset.dimension;
+      const family = this.data.family || {};
+      const rows =
+        dimension === "payer"
+          ? family.payers
+          : dimension === "consumer"
+            ? family.consumers
+            : this.data.members;
+      const item = rows && rows[Number(event.currentTarget.dataset.index)];
+      const range = this.data.range || {};
+      if (
+        !item ||
+        !range.start ||
+        !range.end ||
+        !["payer", "consumer", "creator"].includes(dimension)
+      )
+        return;
+      const query = {
+        ledgerId: this.data.ledgerId,
+        start: range.start,
+        end: range.end,
+        type: "expense",
+        family: JSON.stringify({ dimension, openid: item.openid || "" }),
+        name: `${item.name}明细`,
+      };
+      const categoryIndex = event.currentTarget.dataset.categoryIndex;
+      if (categoryIndex !== undefined && categoryIndex !== "") {
+        const category = (item.categories || [])[Number(categoryIndex)];
+        if (!category) return;
+        query.filter = JSON.stringify(
+          category.categoryId
+            ? { kind: "id", id: category.categoryId }
+            : {
+                kind: "legacy",
+                name: category.categoryName || "",
+                parent: category.parentCategory || "",
+              }
+        );
+      }
+      const params = Object.keys(query)
+        .map((key) => `${key}=${encodeURIComponent(query[key])}`)
+        .join("&");
+      wx.navigateTo({ url: `/pages/record-filtered/index?${params}` });
+    },
+
+    openTrendRecords(params = {}) {
+      const chart = this.data.activeChart;
+      const rows = chart === "yearBalance" ? this.data.recentYearTrend : this.data.trend;
+      if (
+        !["yearCashflow", "yearBalance", "monthTrend", "trend"].includes(chart) ||
+        !Array.isArray(rows)
+      )
+        return;
+      const row = rows[Number(params.dataIndex)];
+      const key = row && String(row.key || "");
+      if (!key || !/^(?:\d{4}|\d{4}-\d{2}|\d{4}-\d{2}-\d{2})$/.test(key)) return;
+      const start = key.length === 4 ? `${key}-01-01` : key.length === 7 ? `${key}-01` : key;
+      const date = new Date(`${start}T00:00:00Z`);
+      if (key.length === 4) date.setUTCFullYear(date.getUTCFullYear() + 1);
+      else if (key.length === 7) date.setUTCMonth(date.getUTCMonth() + 1);
+      else date.setUTCDate(date.getUTCDate() + 1);
+      let end = date.toISOString().slice(0, 10);
+      const range = this.data.range || {};
+      if (range.end && start < range.end && end > range.end) end = range.end;
+      const query = {
+        ledgerId: this.data.ledgerId,
+        start,
+        end,
+        type: chart === "monthTrend" ? "expense" : "all",
+        name: `${row.label}明细`,
+      };
+      const paramsText = Object.keys(query)
+        .map((name) => `${name}=${encodeURIComponent(query[name])}`)
+        .join("&");
+      wx.navigateTo({ url: `/pages/record-filtered/index?${paramsText}` });
     },
 
     renderChart() {
@@ -490,6 +622,7 @@ Component({
       });
       canvas.setChart(chart);
       chart.setOption(getChartOption(this.data), true);
+      chart.on("click", (params) => this.openTrendRecords(params));
       this.chart = chart;
       const component = this.selectComponent("#analysis-chart");
       if (component && typeof component.setChart === "function") component.setChart(chart);

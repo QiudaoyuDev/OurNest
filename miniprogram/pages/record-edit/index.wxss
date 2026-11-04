@@ -110,3 +110,25 @@
 .record-actions:not(.has-delete) {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+
+.family-card {
+  padding: 24rpx;
+  margin-bottom: 22rpx;
+}
+.family-title {
+  color: var(--tl-color-text);
+  font-weight: var(--tl-font-weight-bold);
+}
+.family-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid var(--tl-color-border-warm);
+  color: var(--tl-color-text-secondary);
+}
+.family-note {
+  margin-top: 12rpx;
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-caption);
+}

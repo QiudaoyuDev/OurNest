@@ -2,13 +2,17 @@ function roundMoney(value) {
   return Number(Number(value || 0).toFixed(2));
 }
 
+function moneyCents(value) {
+  return Math.round(Number(value || 0) * 100);
+}
+
 function summarizeRecords(records = []) {
   let income = 0;
   let expense = 0;
   let expenseCount = 0;
   let largestExpense = 0;
   records.forEach((record) => {
-    const amount = Number(record.amount || 0);
+    const amount = moneyCents(record.amount);
     if (record.type === "income") income += amount;
     if (record.type === "expense") {
       expense += amount;
@@ -17,13 +21,13 @@ function summarizeRecords(records = []) {
     }
   });
   return {
-    income: roundMoney(income),
-    expense: roundMoney(expense),
-    balance: roundMoney(income - expense),
+    income: income / 100,
+    expense: expense / 100,
+    balance: (income - expense) / 100,
     recordCount: records.length,
     expenseCount,
-    averageExpense: expenseCount ? roundMoney(expense / expenseCount) : 0,
-    largestExpense: roundMoney(largestExpense),
+    averageExpense: expenseCount ? Math.round(expense / expenseCount) / 100 : 0,
+    largestExpense: largestExpense / 100,
     saveRateAvailable: income > 0,
     saveRate: income ? Math.round(((income - expense) * 100) / income) : 0,
   };
@@ -35,7 +39,7 @@ function makeComparison(current, previous, enabled) {
     (result, metric) => {
       const currentValue = Number(current[metric] || 0);
       const previousValue = Number(previous[metric] || 0);
-      const delta = roundMoney(currentValue - previousValue);
+      const delta = (moneyCents(currentValue) - moneyCents(previousValue)) / 100;
       result[metric] = {
         current: currentValue,
         previous: previousValue,
@@ -65,7 +69,7 @@ function makeTrendBuckets(mode, range, records = []) {
       )
         .toISOString()
         .slice(0, 10);
-      ensureBucket(key, `${Number(key.slice(8, 10))}\u65e5`);
+      ensureBucket(key, mode === "custom" ? key.slice(5) : `${Number(key.slice(8, 10))}\u65e5`);
     }
   } else if (mode === "year") {
     const year = range.start.slice(0, 4);
@@ -89,21 +93,23 @@ function makeTrendBuckets(mode, range, records = []) {
         ? record.date.slice(0, 7)
         : record.date.slice(0, 4);
     const label = ["month", "calendar", "custom"].includes(mode)
-      ? `${Number(record.date.slice(8, 10))}日`
+      ? mode === "custom"
+        ? record.date.slice(5)
+        : `${Number(record.date.slice(8, 10))}日`
       : mode === "year"
         ? `${Number(record.date.slice(5, 7))}月`
         : `${key}年`;
     ensureBucket(key, label);
-    const amount = Number(record.amount || 0);
+    const amount = moneyCents(record.amount);
     buckets[key][record.type === "income" ? "income" : "expense"] += amount;
   });
   return Object.keys(buckets)
     .sort()
     .map((key) => ({
       ...buckets[key],
-      income: roundMoney(buckets[key].income),
-      expense: roundMoney(buckets[key].expense),
-      balance: roundMoney(buckets[key].income - buckets[key].expense),
+      income: buckets[key].income / 100,
+      expense: buckets[key].expense / 100,
+      balance: (buckets[key].income - buckets[key].expense) / 100,
     }));
 }
 
@@ -120,33 +126,69 @@ function makeRecentYearTrend(currentYear, records = [], yearCount = 5) {
     const year = Number(String(record.date || "").slice(0, 4));
     if (!buckets[year]) return;
     const metric = record.type === "income" ? "income" : "expense";
-    buckets[year][metric] += Number(record.amount || 0);
+    buckets[year][metric] += moneyCents(record.amount);
   });
   return Object.values(buckets).map((item) => ({
     ...item,
-    income: roundMoney(item.income),
-    expense: roundMoney(item.expense),
-    balance: roundMoney(item.income - item.expense),
+    income: item.income / 100,
+    expense: item.expense / 100,
+    balance: (item.income - item.expense) / 100,
   }));
+}
+
+function groupCategories(records = [], type) {
+  const grouped = new Map();
+  let total = 0;
+  records
+    .filter((record) => record.type === type)
+    .forEach((record) => {
+      const categoryId = String(record.categoryId || "");
+      const categoryName = String(record.categoryName || "");
+      const parentCategory = String(record.parentCategory || "");
+      const key = categoryId
+        ? JSON.stringify(["id", categoryId])
+        : JSON.stringify(["legacy", parentCategory, categoryName]);
+      const item = grouped.get(key) || { key, categoryId, categoryName, parentCategory, amount: 0 };
+      item.categoryName = categoryName;
+      item.parentCategory = parentCategory;
+      item.name = categoryName || parentCategory || "其他";
+      item.amount += moneyCents(record.amount);
+      total += moneyCents(record.amount);
+      grouped.set(key, item);
+    });
+  return Array.from(grouped.values())
+    .filter((item) => item.amount > 0)
+    .map((item) => ({
+      ...item,
+      amount: item.amount / 100,
+      rate: total ? Math.round((item.amount * 100) / total) : 0,
+    }))
+    .sort((a, b) => b.amount - a.amount);
 }
 
 function collapseRanking(rows = [], limit = 5) {
   if (rows.length <= limit) return rows;
   const visible = rows.slice(0, limit);
   const hidden = rows.slice(limit);
-  const amount = roundMoney(hidden.reduce((sum, item) => sum + Number(item.amount || 0), 0));
-  const total = rows.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const amount = hidden.reduce((sum, item) => sum + moneyCents(item.amount), 0);
+  const total = rows.reduce((sum, item) => sum + moneyCents(item.amount), 0);
   return [
     ...visible,
-    { name: "其余分类", amount, rate: total ? Math.round((amount * 100) / total) : 0 },
+    {
+      name: "其余分类",
+      amount: amount / 100,
+      rate: total ? Math.round((amount * 100) / total) : 0,
+    },
   ];
 }
 
 module.exports = {
   collapseRanking,
+  groupCategories,
   makeComparison,
   makeRecentYearTrend,
   makeTrendBuckets,
+  moneyCents,
   roundMoney,
   summarizeRecords,
 };

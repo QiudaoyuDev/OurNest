@@ -143,3 +143,18 @@
   gap: 18rpx;
   margin-top: 32rpx;
 }
+
+.preview-row {
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid var(--tl-color-border-warm);
+  color: var(--tl-color-text-secondary);
+  font-size: var(--tl-font-caption);
+  line-height: 1.6;
+}
+.preview-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16rpx;
+  color: var(--tl-color-text);
+  font-weight: var(--tl-font-weight-bold);
+}

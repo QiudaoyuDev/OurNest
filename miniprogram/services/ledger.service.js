@@ -11,6 +11,7 @@ const removeLedgerMember = (targetOpenid, ledgerId) =>
   callApi("ledger/members/remove", { targetOpenid, ledgerId });
 const getDashboard = (ledgerId) => callApi("ledger/dashboard/get", { ledgerId });
 const getAnalysis = (data) => callApi("ledger/analysis/get", data);
+const getPeriodComparison = (data) => callApi("ledger/analysis/compare", data);
 const updateBudget = (data) => callApi("ledger/budget/update", data);
 const updateQuickAmounts = (data) => callApi("ledger/quick-amounts/update", data);
 const updateAccounts = (data) => callApi("ledger/accounts/update", data);
@@ -31,6 +32,7 @@ module.exports = {
   removeLedgerMember,
   getDashboard,
   getAnalysis,
+  getPeriodComparison,
   updateBudget,
   updateQuickAmounts,
   updateAccounts,

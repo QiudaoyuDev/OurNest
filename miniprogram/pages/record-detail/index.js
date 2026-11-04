@@ -34,6 +34,16 @@ function normalizeRecord(record = {}, ledger = {}) {
     memberName: record.memberName || "我",
     memberAvatar: record.memberAvatar || "/images/brand/tomato-ledger-logo-256-transparent.png",
     accountText: record.account || "未选择账户",
+    sourceText:
+      record.source === "wechat"
+        ? "微信支付"
+        : record.source === "alipay"
+          ? "支付宝"
+          : record.importBatchId
+            ? "模板导入"
+            : "",
+    sourceTransactionId: record.sourceTransactionId || "",
+    importBatchId: record.importBatchId || "",
     noteText: record.note || "未填写备注",
     tags,
     hasTags: tags.length > 0,

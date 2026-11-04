@@ -21,7 +21,12 @@ async function mutateCategory(route, payload) {
 }
 
 const saveCategory = (data) => mutateCategory("category/save", data);
-const removeCategory = (categoryId, ledgerId) =>
-  mutateCategory("category/delete", { categoryId, ledgerId });
+async function removeCategory(categoryId, ledgerId) {
+  let result;
+  do {
+    result = await mutateCategory("category/delete", { categoryId, ledgerId });
+  } while (result.hasMore);
+  return result;
+}
 
 module.exports = { listCategories, saveCategory, removeCategory };

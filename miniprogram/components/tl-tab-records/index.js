@@ -229,6 +229,7 @@ Component({
           ledgerId,
           start: range.start,
           end: range.end,
+          type: this.data.activeType,
           pageSize: 30,
           cursor: append ? this.data.nextCursor : null,
         });
@@ -276,7 +277,10 @@ Component({
 
     switchType(event) {
       const activeType = event.currentTarget.dataset.type;
-      this.setData({ activeType, ...buildView(this.data.records, activeType) });
+      if (!["all", "expense", "income"].includes(activeType) || activeType === this.data.activeType)
+        return;
+      this.setData({ activeType });
+      return this.loadRecords(this.data.currentRange);
     },
 
     async switchLedger() {

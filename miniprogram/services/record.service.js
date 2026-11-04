@@ -21,6 +21,13 @@ const updateRecord = (data) => mutateRecord("record/update", data);
 const deleteRecord = (data) =>
   mutateRecord("record/delete", typeof data === "string" ? { recordId: data } : data);
 const importRecords = (data) => mutateRecord("record/import", data);
+const previewImport = (data) => callApi("record/import/preview", data);
+const createImportUpload = (data) => callApi("record/import/upload-ticket", data);
+const abandonImportUpload = (data) => callApi("record/import/upload-abandon", data);
+const cancelImportPreview = (data) => callApi("record/import/cancel", data);
+const retryImportFileCleanup = (data) => callApi("record/import/cleanup", data);
+const sweepImportFileCleanup = (data) => callApi("record/import/cleanup/sweep", data);
+const listImportPreviews = (data) => callApi("record/import/previews", data);
 const getImportTemplate = () => callApi("record/import/template");
 
 module.exports = {
@@ -30,5 +37,12 @@ module.exports = {
   updateRecord,
   deleteRecord,
   importRecords,
+  previewImport,
+  createImportUpload,
+  abandonImportUpload,
+  cancelImportPreview,
+  retryImportFileCleanup,
+  sweepImportFileCleanup,
+  listImportPreviews,
   getImportTemplate,
 };

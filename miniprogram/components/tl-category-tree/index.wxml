@@ -10,7 +10,7 @@
       </tl-icon>
     </view>
     <view wx:if="{{expandedGroupId === item.id}}" class="tl-category-tree__children">
-      <view wx:for="{{item.children}}" wx:for-item="child" wx:key="id" class="tl-category-tree__child" data-category="{{child.name}}" data-category-label="{{child.label || child.name}}" data-category-icon="{{child.icon}}" data-parent="{{item.name}}" data-parent-icon="{{item.icon}}" bindtap="select">
+      <view wx:for="{{item.children}}" wx:for-item="child" wx:key="id" class="tl-category-tree__child" data-category-id="{{child._id || child.id}}" data-category="{{child.name}}" data-category-label="{{child.label || child.name}}" data-category-icon="{{child.icon}}" data-parent="{{item.name}}" data-parent-icon="{{item.icon}}" bindtap="select">
         <view class="tl-category-tree__child-icon">
           <tl-icon name="{{child.icon || 'price-tag-3-line'}}" size="32">
           </tl-icon>
