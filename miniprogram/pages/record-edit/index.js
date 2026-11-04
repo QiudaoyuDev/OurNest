@@ -312,7 +312,28 @@ Page({
     }
   },
 
-  async saveRecord() {
+  saveAndLeave() {
+    return this.saveRecord({ continueRecording: false });
+  },
+
+  saveAndContinue() {
+    return this.saveRecord({ continueRecording: true });
+  },
+
+  resetForNextRecord() {
+    this.setData({
+      amount: "",
+      amountResult: "",
+      showAmountResult: false,
+      canSave: false,
+      note: "",
+      tagInput: "",
+      tags: [],
+      saving: false,
+    });
+  },
+
+  async saveRecord({ continueRecording = false } = {}) {
     if (this.data.readonly) return;
     if (
       this.data.saving ||
@@ -324,7 +345,6 @@ Page({
     const finalTags = Array.from(
       new Set([...this.data.tags, ...normalizeTags(this.data.tagInput)])
     ).slice(0, 8);
-    this.setData({ tags: finalTags, tagInput: "" });
     const result = evaluateAmountExpression(this.data.amount);
     if (!result.valid) {
       feedback.showToast({
@@ -354,9 +374,20 @@ Page({
     };
 
     try {
-      if (this.data.isEditing) await recordService.updateRecord(payload);
-      else await recordService.createRecord(payload);
-      feedback.showToast({ type: "success", message: this.data.isEditing ? "已保存" : "已记账" });
+      if (this.data.isEditing) {
+        await recordService.updateRecord(payload);
+        feedback.showToast({ type: "success", message: "已保存" });
+        wx.navigateBack();
+        return;
+      }
+
+      await recordService.createRecord(payload);
+      if (continueRecording) {
+        this.resetForNextRecord();
+        feedback.showToast({ type: "success", message: "已记账，可继续记录" });
+        return;
+      }
+      feedback.showToast({ type: "success", message: "已记账" });
       wx.navigateBack();
     } catch (error) {
       this.setData({ saving: false });
