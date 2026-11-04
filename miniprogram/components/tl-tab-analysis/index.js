@@ -48,6 +48,7 @@ Component({
     customStart: "",
     customEnd: "",
     rangeLabel: "",
+    trendCaption: "",
     activeChart: "monthTrend",
     chartTitle: CHART_META.monthTrend.title,
     chartSubtitle: CHART_META.monthTrend.subtitle,
@@ -235,6 +236,10 @@ Component({
             ? `· ${comparisonLabel(request.mode, request.anchor)} ${comparisonText(result.comparison, "balance")}`
             : "",
           comparisonLabel: comparisonLabel(request.mode, request.anchor),
+          trendCaption:
+            result.trendMeta && result.trendMeta.isPartial && result.trendMeta.asOf
+              ? `截至${result.trendMeta.asOf}`
+              : "",
           activeDetailRows,
           hasDetailRows: activeDetailRows.length > 0,
           hasInsights:

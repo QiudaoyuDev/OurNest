@@ -106,3 +106,7 @@
 .record-actions.has-delete {
   grid-template-columns: 220rpx minmax(0, 1fr);
 }
+
+.record-actions:not(.has-delete) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}

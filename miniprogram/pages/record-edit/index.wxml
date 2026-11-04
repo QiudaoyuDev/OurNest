@@ -41,7 +41,13 @@
   <tl-page-actions wx:if="{{!readonly && !keypadOpen && !recordLoading && !recordLoadError}}">
     <view class="record-actions {{isEditing ? 'has-delete' : ''}}">
       <tl-button wx:if="{{isEditing}}" variant="danger" block="{{true}}" loading="{{deleting}}" loading-text="删除中..." disabled="{{saving}}" bind:tap="deleteRecord">删除记录</tl-button>
-      <tl-button block="{{true}}" loading="{{saving}}" loading-text="保存中..." disabled="{{deleting || !canSave}}" bind:tap="saveRecord">保存记录</tl-button>
+      <block wx:if="{{isEditing}}">
+        <tl-button block="{{true}}" loading="{{saving}}" loading-text="保存中..." disabled="{{deleting || !canSave}}" bind:tap="saveAndLeave">保存记录</tl-button>
+      </block>
+      <block wx:else>
+        <tl-button variant="secondary" block="{{true}}" loading="{{saving}}" loading-text="保存中..." disabled="{{deleting || !canSave}}" bind:tap="saveAndLeave">保存并离开</tl-button>
+        <tl-button block="{{true}}" loading="{{saving}}" loading-text="保存中..." disabled="{{deleting || !canSave}}" bind:tap="saveAndContinue">保存后再记一笔</tl-button>
+      </block>
     </view>
   </tl-page-actions>
 </view>

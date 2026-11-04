@@ -182,6 +182,136 @@ test("direct creation in a readonly viewed ledger is blocked despite an owned cu
   assert.match(toasts[0].message, /访客仅可查看/);
 });
 
+test("continuous recording clears only record-specific fields after cloud confirmation", async () => {
+  const created = [];
+  const toasts = [];
+  const page = load(
+    "miniprogram/pages/record-edit/index.js",
+    { globalData: { currentLedger: { _id: "owned" } } },
+    {},
+    {
+      "../../services/feedback-ui": {
+        showToast: (value) => toasts.push(value),
+      },
+      "../../services/record.service": {
+        createRecord: async (payload) => created.push(payload),
+      },
+    }
+  );
+  Object.assign(page.data, {
+    ledgerId: "owned",
+    type: "expense",
+    categoryName: "午餐",
+    categoryLabel: "餐饮",
+    categoryIcon: "restaurant-line",
+    parentCategory: "餐饮",
+    parentIcon: "restaurant-line",
+    amount: "36",
+    note: "工作日午餐",
+    tagInput: "外卖",
+    tags: ["午餐"],
+    date: "2026-03-13",
+    accounts: ["现金", "银行卡"],
+    accountIndex: 1,
+  });
+
+  await page.saveAndContinue();
+
+  assert.equal(created.length, 1);
+  assert.equal(created[0].account, "银行卡");
+  assert.equal(page.data.amount, "");
+  assert.equal(page.data.note, "");
+  assert.equal(page.data.tagInput, "");
+  assert.equal(page.data.tags.length, 0);
+  assert.equal(page.data.type, "expense");
+  assert.equal(page.data.categoryName, "午餐");
+  assert.equal(page.data.date, "2026-03-13");
+  assert.equal(page.data.accountIndex, 1);
+  assert.equal(page.data.saving, false);
+  assert.equal(toasts[0].message, "已记账，可继续记录");
+});
+
+test("continuous recording submits once and waits for cloud confirmation before resetting", async () => {
+  let resolveCreate;
+  let calls = 0;
+  const toasts = [];
+  const page = load(
+    "miniprogram/pages/record-edit/index.js",
+    { globalData: { currentLedger: { _id: "owned" } } },
+    {},
+    {
+      "../../services/feedback-ui": {
+        showToast: (value) => toasts.push(value),
+      },
+      "../../services/record.service": {
+        createRecord: () => {
+          calls++;
+          return new Promise((resolve) => {
+            resolveCreate = resolve;
+          });
+        },
+      },
+    }
+  );
+  Object.assign(page.data, { ledgerId: "owned", amount: "36", accounts: ["现金"] });
+
+  const first = page.saveAndContinue();
+  const duplicate = page.saveAndContinue();
+  assert.equal(calls, 1);
+  assert.equal(page.data.amount, "36");
+  assert.equal(page.data.saving, true);
+  assert.equal(toasts.length, 0);
+
+  resolveCreate();
+  await Promise.all([first, duplicate]);
+  assert.equal(page.data.amount, "");
+  assert.equal(page.data.saving, false);
+  assert.equal(toasts[0].message, "已记账，可继续记录");
+});
+
+test("failed continuous recording retains all user input and unlocks submission", async () => {
+  const toasts = [];
+  const page = load(
+    "miniprogram/pages/record-edit/index.js",
+    { globalData: { currentLedger: { _id: "owned" } } },
+    {},
+    {
+      "../../services/feedback-ui": {
+        showToast: (value) => toasts.push(value),
+      },
+      "../../services/record.service": {
+        createRecord: async () => {
+          throw new Error("network unavailable");
+        },
+      },
+    }
+  );
+  Object.assign(page.data, {
+    ledgerId: "owned",
+    amount: "36",
+    note: "工作日午餐",
+    tagInput: "外卖",
+    tags: ["午餐"],
+    accounts: ["现金"],
+  });
+
+  await page.saveAndContinue();
+
+  assert.equal(page.data.amount, "36");
+  assert.equal(page.data.note, "工作日午餐");
+  assert.equal(page.data.tagInput, "外卖");
+  assert.deepEqual(page.data.tags, ["午餐"]);
+  assert.equal(page.data.saving, false);
+  assert.equal(toasts[0].message, "保存失败，输入已保留，请重试");
+});
+
+test("record editor exposes separate new-record actions and keeps edit save singular", () => {
+  const template = fs.readFileSync("miniprogram/pages/record-edit/index.wxml", "utf8");
+  assert.match(template, /bind:tap="saveAndLeave">保存并离开/);
+  assert.match(template, /bind:tap="saveAndContinue">保存后再记一笔/);
+  assert.match(template, /wx:if="{{isEditing}}"[\s\S]*保存记录/);
+});
+
 test("cloud handlers reject visitor create/update/delete before any database write", async () => {
   let writes = 0;
   const db = {

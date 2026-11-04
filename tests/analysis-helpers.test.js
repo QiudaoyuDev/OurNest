@@ -1,5 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const vm = require("node:vm");
 const {
   collapseRanking,
   makeComparison,
@@ -7,6 +9,39 @@ const {
   makeTrendBuckets,
   summarizeRecords,
 } = require("../cloudfunctions/tomatoLedger/analysis.helpers");
+
+test("analysis handler marks current month and year trends as partial", () => {
+  const module = { exports: {} };
+  vm.runInNewContext(
+    fs.readFileSync("cloudfunctions/tomatoLedger/handlers/analysis.handler.js", "utf8"),
+    {
+      module,
+      exports: module.exports,
+      require: (modulePath) =>
+        modulePath.includes("shared/helpers")
+          ? {
+              getCurrentMonthRange: () => ({ year: 2026, month: 3, day: 13, start: "2026-03-01" }),
+              makeDateText: (year, month, day) =>
+                `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+              addMonth: (year, month, delta) => {
+                const date = new Date(Date.UTC(year, month - 1 + delta, 1));
+                return { year: date.getUTCFullYear(), month: date.getUTCMonth() + 1 };
+              },
+            }
+          : {},
+    }
+  );
+  const current = { year: 2026, month: 3, day: 13, start: "2026-03-01" };
+  assert.equal(
+    module.exports.getTrendRange("month", { start: "2026-03-01", end: "2026-04-01" }, current)
+      .end,
+    "2026-03-14"
+  );
+  assert.equal(
+    module.exports.getTrendRange("year", { start: "2026-01-01", end: "2027-01-01" }, current).end,
+    "2026-04-01"
+  );
+});
 
 test("monthly analysis fills leap-year days and keeps zero buckets", () => {
   const trend = makeTrendBuckets("month", { start: "2024-02-01", end: "2024-03-01" }, [
@@ -39,6 +74,18 @@ test("yearly and all-time analysis fill stable time buckets", () => {
   assert.deepEqual(
     allTime.map((item) => item.key),
     ["2022", "2023", "2024"]
+  );
+});
+
+test("current analysis trends stop at the supplied partial period", () => {
+  const daily = makeTrendBuckets("month", { start: "2026-03-01", end: "2026-03-14" }, []);
+  assert.equal(daily.length, 13);
+  assert.equal(daily.at(-1).key, "2026-03-13");
+
+  const yearly = makeTrendBuckets("year", { start: "2026-01-01", end: "2026-04-01" }, []);
+  assert.deepEqual(
+    yearly.map((item) => item.key),
+    ["2026-01", "2026-02", "2026-03"]
   );
 });
 

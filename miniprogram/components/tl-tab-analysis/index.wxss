@@ -61,6 +61,15 @@
   font-weight: var(--tl-font-weight-bold);
 }
 
+.chart-caption {
+  padding: 4rpx 12rpx;
+  border-radius: var(--tl-radius-pill);
+  color: var(--tl-color-primary);
+  background: var(--tl-color-primary-soft);
+  font-size: var(--tl-font-caption);
+  font-weight: var(--tl-font-weight-bold);
+}
+
 .chart-card {
   margin-top: 20rpx;
   padding: 28rpx;
