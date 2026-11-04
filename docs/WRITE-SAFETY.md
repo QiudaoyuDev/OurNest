@@ -1,3 +1,11 @@
+---
+id: write-safety
+type: module-design
+title: 写操作一致性策略
+status: draft
+parent: ledger-cloud
+---
+
 # 写操作一致性策略
 
 - 云函数对每个写操作重新读取用户和账本并判定角色，客户端参数不作为权限依据。

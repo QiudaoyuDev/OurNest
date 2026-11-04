@@ -1,3 +1,11 @@
+---
+id: cloud-environments
+type: module-design
+title: 云开发环境切换
+status: draft
+parent: system-architecture
+---
+
 # 云开发环境切换
 
 环境配置的唯一入口是 `miniprogram/config/cloud-env.js`。

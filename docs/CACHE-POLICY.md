@@ -1,3 +1,11 @@
+---
+id: cache-policy
+type: module-design
+title: 缓存与同步规则
+status: draft
+parent: miniprogram
+---
+
 # 缓存与同步规则
 
 ## 数据来源
