@@ -35,7 +35,7 @@ Object.defineProperty(module.exports, "$", {
 const defaultAvatarUrl = "/images/brand/our-nest-logo-256-transparent.png";
 const SCHEMA_VERSION = 1;
 const OTHER_CATEGORY_SORT = 9999999999999;
-const defaultQuickAmounts = [18, 32, 68, 128];
+const defaultQuickAmounts = [9.9, 20, 100, 200, 500];
 const defaultPaymentAccounts = ["微信", "支付宝", "银行卡", "信用卡", "现金"];
 
 // --- 响应工具 ---

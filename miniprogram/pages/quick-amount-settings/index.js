@@ -1,7 +1,7 @@
 const feedback = require("../../services/feedback-ui");
 const app = getApp();
 const ledgerStore = require("../../services/ledger.store");
-const DEFAULT_AMOUNTS = [18, 32, 68, 128];
+const DEFAULT_AMOUNTS = [9.9, 20, 100, 200, 500];
 
 function cleanAmount(value) {
   return String(value || "")
