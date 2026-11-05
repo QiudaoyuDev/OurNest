@@ -204,7 +204,8 @@ function getTrendOption(data) {
 function getMonthlyExpenseTrendOption(data) {
   const trend = data.trend || [];
   const expenses = trend.map((item) => amount(item.expense));
-  const expenseDays = expenses;
+  // Match ECharts' first occurrence for tied extrema, including zero-value days.
+  const extrema = [Math.min(...expenses), Math.max(...expenses)];
   return {
     color: [CHART_THEME.expense],
     animationDuration: 350,
@@ -238,14 +239,22 @@ function getMonthlyExpenseTrendOption(data) {
         showSymbol: false,
         lineStyle: { width: 3 },
         itemStyle: { color: CHART_THEME.expense },
-        data: expenseDays,
+        data: expenses,
         markPoint: {
           symbolSize: 42,
           label: { color: CHART_THEME.inverseText, fontSize: 9, formatter: "{b}" },
-          data: [
-            { type: "min", name: "最低", itemStyle: { color: CHART_THEME.income } },
-            { type: "max", name: "最高", itemStyle: { color: CHART_THEME.expense } },
-          ],
+          data: trend.length
+            ? extrema.map((value, index) => {
+                const bucketIndex = expenses.indexOf(value);
+                return {
+                  type: index === 0 ? "min" : "max",
+                  name: index === 0 ? "最低" : "最高",
+                  coord: [bucketIndex, value],
+                  bucketKey: trend[bucketIndex].key,
+                  itemStyle: { color: index === 0 ? CHART_THEME.income : CHART_THEME.expense },
+                };
+              })
+            : [],
         },
       },
     ],

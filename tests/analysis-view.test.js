@@ -92,7 +92,7 @@ test("custom analysis supports bounded selection and category and day drill-down
   page.changeCustomStart({ detail: { value: "2025-12-31" } });
   assert.equal(loads, 1);
   page.openCategoryRecords({ currentTarget: { dataset: { source: "custom", index: 0 } } });
-  page.openTrendRecords({ dataIndex: 0 });
+  page.openTrendRecords({ componentType: "series", dataIndex: 0 });
   assert.match(destinations[0], /filter=.*c1/);
   assert.match(destinations[1], /start=2026-01-31/);
   assert.match(destinations[1], /end=2026-02-01/);
@@ -294,4 +294,182 @@ test("family comparison preserves payer and consumer views across periods", () =
   assert.equal(rows[1].chartAmount, 20);
   assert.match(rows[1].changeText, /100%/);
   assert.equal(categories[1].categoryFilter.id, "food");
+});
+
+function trendDrillDown(data) {
+  const filename = path.resolve("miniprogram/components/tl-tab-analysis/index.js");
+  const destinations = [];
+  let definition;
+  vm.runInNewContext(fs.readFileSync(filename, "utf8").replace(/^import .*;\r?\n/, ""), {
+    getApp: () => ({ globalData: {} }),
+    require: createRequire(filename),
+    wx: { navigateTo: ({ url }) => destinations.push(new URL(url, "https://ournest.test")) },
+    Component: (value) => {
+      definition = value;
+    },
+    console,
+  });
+  return {
+    page: { ...definition.methods, data: { ledgerId: "ledger", ...data } },
+    destinations,
+  };
+}
+
+function realMarkPointPayloads(data) {
+  const navigatorDescriptor = Object.getOwnPropertyDescriptor(global, "navigator");
+  let chart;
+  try {
+    // ECharts detects its environment when required; Node's navigator is not a browser.
+    delete global.navigator;
+    const echarts = require("../miniprogram/components/ec-canvas/echarts");
+    const context = new Proxy(
+      { measureText: (text) => ({ width: String(text).length * 7 }) },
+      { get: (target, key) => target[key] || (() => {}) }
+    );
+    const canvas = {
+      width: 600,
+      height: 400,
+      style: {},
+      getContext: () => context,
+      addEventListener() {},
+      removeEventListener() {},
+    };
+    echarts.setCanvasCreator(() => canvas);
+    chart = echarts.init(canvas, null, { width: 600, height: 400 });
+    chart.setOption({ ...getChartOption(data), animation: false });
+    const series = chart.getModel().getSeriesByIndex(0);
+    const marker = chart
+      .getModel()
+      .getComponent("markPoint")
+      .constructor.getMarkerModelFromSeries(series, "markPoint");
+    const payloads = [];
+    chart.on("click", (params) => payloads.push(params));
+    for (let index = 0; index < marker.getData().count(); index += 1) {
+      chart.getZr().trigger("click", {
+        target: marker.getData().getItemGraphicEl(index).childAt(0),
+        event: {},
+      });
+    }
+    return payloads;
+  } finally {
+    if (chart) chart.dispose();
+    if (navigatorDescriptor) Object.defineProperty(global, "navigator", navigatorDescriptor);
+    else delete global.navigator;
+  }
+}
+
+test("real ECharts min/max clicks follow bucket keys, not marker ordinals", () => {
+  const navigatorDescriptor = Object.getOwnPropertyDescriptor(global, "navigator");
+  for (const expenses of [
+    [20, 5, 100],
+    [20, 0, 100],
+    [20, 5, 5],
+    [0, 0, 0],
+  ]) {
+    const data = {
+      activeChart: "monthTrend",
+      range: { start: "2026-01-01", end: "2026-02-01" },
+      trend: expenses.map((expense, index) => ({
+        key: `2026-01-0${index + 1}`,
+        label: `${index + 1}日`,
+        expense,
+      })),
+    };
+    const payloads = realMarkPointPayloads(data);
+    assert.equal(payloads.length, 2);
+    assert.deepEqual(
+      payloads.map((params) => params.componentType),
+      ["markPoint", "markPoint"]
+    );
+    assert.deepEqual(
+      payloads.map((params) => params.dataIndex),
+      [0, 1]
+    );
+    const { page, destinations } = trendDrillDown(data);
+    const expected = [Math.min(...expenses), Math.max(...expenses)];
+    payloads.forEach((params, index) => {
+      const bucketIndex = expenses.indexOf(expected[index]);
+      assert.deepEqual(params.data.coord, [bucketIndex, expected[index]]);
+      page.openTrendRecords(params);
+      assert.equal(destinations[index].searchParams.get("start"), data.trend[bucketIndex].key);
+      assert.equal(destinations[index].searchParams.get("type"), "expense");
+      assert.equal(params.data.bucketKey, data.trend[bucketIndex].key);
+      assert.equal(params.data.type, index === 0 ? "min" : "max");
+      assert.equal(params.data.name, index === 0 ? "最低" : "最高");
+      assert.equal(params.data.itemStyle.color, index === 0 ? "#25a66a" : "#f0442f");
+    });
+  }
+  assert.deepEqual(Object.getOwnPropertyDescriptor(global, "navigator"), navigatorDescriptor);
+});
+
+test("ordinary series drill-down preserves daily, monthly, yearly and recent-year buckets", () => {
+  for (const [activeChart, key, end, rangeEnd] of [
+    ["monthTrend", "2024-02-29", "2024-03-01"],
+    ["yearCashflow", "2026-02", "2026-03-01"],
+    ["trend", "2025", "2026-01-01"],
+    ["trend", "2026-01", "2026-01-14", "2026-01-14"],
+    ["yearBalance", "2024", "2025-01-01"],
+  ]) {
+    const row = { key, label: key };
+    const { page, destinations } = trendDrillDown({
+      activeChart,
+      range: { end: rangeEnd },
+      trend: [activeChart === "yearBalance" ? { key: "2026-01" } : row],
+      recentYearTrend: [row],
+    });
+    page.openTrendRecords({ componentType: "series", dataIndex: 0 });
+    assert.equal(destinations.length, 1);
+    const start = key.length === 4 ? `${key}-01-01` : key.length === 7 ? `${key}-01` : key;
+    assert.equal(destinations[0].searchParams.get("start"), start);
+    assert.equal(destinations[0].searchParams.get("end"), end);
+    // Stable keys also resolve independently of label, value, coordinate or marker ordinal.
+    page.openTrendRecords({ componentType: "markPoint", data: { bucketKey: key } });
+    assert.equal(destinations[1].searchParams.get("start"), start);
+    assert.equal(destinations[1].searchParams.get("end"), end);
+  }
+});
+
+test("invalid trend events never navigate or coerce empty indices to the first bucket", () => {
+  const { page, destinations } = trendDrillDown({
+    activeChart: "monthTrend",
+    trend: [{ key: "2026-01-01", label: "1日" }],
+  });
+  const invalidIndices = [
+    undefined,
+    null,
+    "",
+    " ",
+    false,
+    true,
+    [],
+    {},
+    -1,
+    0.5,
+    1,
+    NaN,
+    Infinity,
+    "0",
+  ];
+  for (const dataIndex of invalidIndices) {
+    page.openTrendRecords({ componentType: "series", dataIndex });
+  }
+  for (const event of [
+    null,
+    {},
+    { componentType: "unknown", dataIndex: 0 },
+    { componentType: "markLine", dataIndex: 0 },
+    { componentType: "markPoint", dataIndex: 0 },
+    { componentType: "markPoint", dataIndex: 0, data: { bucketKey: "2026-01-02" } },
+    { componentType: "markPoint", dataIndex: 0, data: { coord: [0, 0] } },
+    { componentType: "markPoint", dataIndex: 0, data: { bucketKey: "" } },
+  ]) {
+    page.openTrendRecords(event);
+  }
+  assert.equal(destinations.length, 0);
+  for (const key of ["", "not-a-date", "2026-13", "2026-02-30", "2026-01-32"]) {
+    page.data.trend = [{ key }];
+    page.openTrendRecords({ componentType: "series", dataIndex: 0 });
+    page.openTrendRecords({ componentType: "markPoint", dataIndex: 0, data: { bucketKey: key } });
+  }
+  assert.equal(destinations.length, 0);
 });

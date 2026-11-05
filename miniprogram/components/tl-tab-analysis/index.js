@@ -577,14 +577,26 @@ Component({
       const rows = chart === "yearBalance" ? this.data.recentYearTrend : this.data.trend;
       if (
         !["yearCashflow", "yearBalance", "monthTrend", "trend"].includes(chart) ||
-        !Array.isArray(rows)
+        !Array.isArray(rows) ||
+        !params
       )
         return;
-      const row = rows[Number(params.dataIndex)];
+      let row;
+      if (params.componentType === "markPoint") {
+        // A markPoint dataIndex is the marker ordinal, not a trend row index.
+        const bucketKey = params.data && params.data.bucketKey;
+        if (typeof bucketKey !== "string" || !bucketKey) return;
+        row = rows.find((item) => item.key === bucketKey);
+      } else if (params.componentType === "series") {
+        const index = params.dataIndex;
+        if (!Number.isInteger(index) || index < 0 || index >= rows.length) return;
+        row = rows[index];
+      } else return;
       const key = row && String(row.key || "");
       if (!key || !/^(?:\d{4}|\d{4}-\d{2}|\d{4}-\d{2}-\d{2})$/.test(key)) return;
       const start = key.length === 4 ? `${key}-01-01` : key.length === 7 ? `${key}-01` : key;
       const date = new Date(`${start}T00:00:00Z`);
+      if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== start) return;
       if (key.length === 4) date.setUTCFullYear(date.getUTCFullYear() + 1);
       else if (key.length === 7) date.setUTCMonth(date.getUTCMonth() + 1);
       else date.setUTCDate(date.getUTCDate() + 1);
