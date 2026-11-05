@@ -123,7 +123,7 @@ test("directly opening edit uses server permission and redirects visitors before
   await page.deleteRecord();
   assert.equal(writes, 0);
   const template = fs.readFileSync("miniprogram/pages/record-edit/index.wxml", "utf8");
-  assert.match(template, /<tl-page-actions wx:if="{{!readonly &&/);
+  assert.match(template, /<tl-page-actions wx:if="{{isEditing && !readonly &&/);
   const detail = fs.readFileSync("miniprogram/pages/record-detail/index.wxml", "utf8");
   assert.doesNotMatch(detail, /bind:tap="(?:saveRecord|deleteRecord)"|tl-record-form/);
 });
@@ -315,11 +315,12 @@ test("failed continuous recording retains all user input and unlocks submission"
   assert.equal(toasts[0].message, "保存失败，输入已保留，请重试");
 });
 
-test("record editor exposes separate new-record actions and keeps edit save singular", () => {
+test("quick entry submits from the keypad while editing keeps its save action", () => {
   const template = fs.readFileSync("miniprogram/pages/record-edit/index.wxml", "utf8");
-  assert.match(template, /bind:tap="saveAndLeave">保存并离开/);
-  assert.match(template, /bind:tap="saveAndContinue">保存后再记一笔/);
+  assert.match(template, /quick-entry="{{!isEditing}}"/);
+  assert.match(template, /saving="{{saving}}" bind:submit="saveAndLeave"/);
   assert.match(template, /wx:if="{{isEditing}}"[\s\S]*保存记录/);
+  assert.doesNotMatch(template, />保存并离开</);
 });
 
 test("cloud handlers reject visitor create/update/delete before any database write", async () => {

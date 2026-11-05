@@ -169,6 +169,7 @@ Page({
   },
 
   stopCategorySync() {
+    this._categoryRequest = (this._categoryRequest || 0) + 1;
     if (this._categoryUnsubscribe) this._categoryUnsubscribe();
     this._categoryUnsubscribe = null;
   },
@@ -211,12 +212,15 @@ Page({
   },
 
   async loadCategories() {
+    const request = (this._categoryRequest || 0) + 1;
+    this._categoryRequest = request;
     this.setData({ categoryLoading: true, categoryError: false });
     try {
       const items = await categoryService.listCategories(this.data.ledgerId);
-      this.renderCategories(items);
+      if (request === this._categoryRequest) this.renderCategories(items);
     } catch (_error) {
-      this.setData({ categoryLoading: false, categoryError: true });
+      if (request === this._categoryRequest)
+        this.setData({ categoryLoading: false, categoryError: true });
     }
   },
 

@@ -36,7 +36,7 @@ function loadDefinition(relative, kind, stubs, globals = {}) {
   return definition;
 }
 
-function pageFixture({ ledger = {}, createRecord } = {}) {
+function pageFixture({ ledger = {}, createRecord, listCategories = async () => categories } = {}) {
   const calls = { creates: [], updates: [], toasts: [], navigation: [] };
   const currentLedger = { _id: "ledger", name: "日常账本", type: "personal", ...ledger };
   const definition = loadDefinition(
@@ -56,7 +56,7 @@ function pageFixture({ ledger = {}, createRecord } = {}) {
           calls.updates.push(plain(payload));
         },
       },
-      "../../services/category.service": { listCategories: async () => categories },
+      "../../services/category.service": { listCategories },
       "../../services/category.store": { subscribeSync: () => () => {} },
       "../../services/ledger.service": {
         getLedgerMembers: async () => ({
@@ -126,6 +126,27 @@ function componentFixture(properties = {}) {
   };
   return { component, events };
 }
+
+test("stale category failures cannot overwrite a newer successful load", async () => {
+  let rejectOld;
+  let resolveNew;
+  let calls = 0;
+  const { page } = pageFixture({
+    listCategories: () =>
+      new Promise((resolve, reject) => {
+        if (calls++ === 0) rejectOld = reject;
+        else resolveNew = resolve;
+      }),
+  });
+  const oldRequest = page.loadCategories();
+  const newRequest = page.loadCategories();
+  resolveNew(categories);
+  await newRequest;
+  rejectOld(new Error("stale"));
+  await oldRequest;
+  assert.equal(page.data.categoryError, false);
+  assert.equal(page.data.groups.length, 1);
+});
 
 test("new entry ignores route category metadata and cannot save without explicit selection", async () => {
   const { page, calls } = pageFixture();
