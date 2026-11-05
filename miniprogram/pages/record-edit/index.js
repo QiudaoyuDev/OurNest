@@ -117,6 +117,7 @@ Page({
     familyLoading: false,
     familyError: false,
     familyMembers: [],
+    familyConsumers: [],
     familyPayerIndex: 0,
     familyConsumerIndex: 0,
     familyKindIndex: 0,
@@ -394,36 +395,43 @@ Page({
       return;
     }
     this.setData({ familyEnabled: true });
-    const members = [
-      { openid: "", nickName: "其他" },
-      ...(result.members || []).filter((item) => ["owner", "member"].includes(item.role)),
-    ];
+    const eligibleMembers = (result.members || []).filter((item) =>
+      ["owner", "member"].includes(item.role)
+    );
+    const payers = [{ openid: "", nickName: "其他" }, ...eligibleMembers];
+    const consumers = [...eligibleMembers];
     const attribution = existing || {
       payerOpenid: app.globalData.openid || "",
       consumerKind: "personal",
       consumerOpenid: app.globalData.openid || "",
     };
     [
-      [attribution.payerOpenid, display.payerName],
-      [attribution.consumerOpenid, display.consumerName],
-    ].forEach(([id, name]) => {
-      if (id && !members.some((item) => item.openid === id))
-        members.push({ openid: id, nickName: name || "历史成员" });
+      [attribution.payerOpenid, display.payerName, payers],
+      [attribution.consumerOpenid, display.consumerName, consumers],
+    ].forEach(([id, name, list]) => {
+      if (id && !list.some((item) => item.openid === id))
+        list.push({ openid: id, nickName: name || "历史成员" });
     });
     const payerIndex = Math.max(
       0,
-      members.findIndex((item) => item.openid === (attribution.payerOpenid || ""))
+      payers.findIndex((item) => item.openid === (attribution.payerOpenid || ""))
     );
+    const targetConsumerOpenid =
+      attribution.consumerOpenid ||
+      app.globalData.openid ||
+      (consumers[0] && consumers[0].openid) ||
+      "";
     const consumerIndex = Math.max(
       0,
-      members.findIndex((item) => item.openid === (attribution.consumerOpenid || ""))
+      consumers.findIndex((item) => item.openid === targetConsumerOpenid)
     );
     const kindIndex = Math.max(
       0,
       this.data.familyKinds.findIndex((item) => item.value === attribution.consumerKind)
     );
     this.setData({
-      familyMembers: members,
+      familyMembers: payers,
+      familyConsumers: consumers,
       familyPayerIndex: payerIndex,
       familyConsumerIndex: consumerIndex,
       familyKindIndex: kindIndex,
@@ -633,7 +641,7 @@ Page({
     if (this.data.familyEnabled && this.data.type === "expense") {
       const kind = this.data.familyKinds[this.data.familyKindIndex].value;
       const payer = this.data.familyMembers[this.data.familyPayerIndex] || {};
-      const consumer = this.data.familyMembers[this.data.familyConsumerIndex] || {};
+      const consumer = this.data.familyConsumers[this.data.familyConsumerIndex] || {};
       if (kind === "personal" && !consumer.openid) {
         feedback.showToast({ type: "warning", message: "请选择消费归属成员" });
         return;

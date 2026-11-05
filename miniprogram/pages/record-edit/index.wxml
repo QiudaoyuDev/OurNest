@@ -113,8 +113,8 @@
               </view>
               <view wx:if="{{familyKinds[familyKindIndex].value === 'personal'}}" class="family-row">
                 <text>消费成员</text>
-                <picker mode="selector" range="{{familyMembers}}" range-key="nickName" value="{{familyConsumerIndex}}" bindchange="changeFamilyConsumer">
-                  <view>{{familyMembers[familyConsumerIndex].nickName}} ▾</view>
+                <picker mode="selector" range="{{familyConsumers}}" range-key="nickName" value="{{familyConsumerIndex}}" bindchange="changeFamilyConsumer">
+                  <view>{{familyConsumers[familyConsumerIndex].nickName}} ▾</view>
                 </picker>
               </view>
               <view class="family-note">付款人与消费归属可以不同；公共和多人消费按记录人展示。</view>

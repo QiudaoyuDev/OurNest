@@ -316,18 +316,28 @@ test("family context excludes visitors and personal expenses require a consumer"
     Array.from(page.data.familyMembers, (item) => item.openid),
     ["", "self", "other"]
   );
-  assert.equal(page.data.familyMembers[page.data.familyConsumerIndex].openid, "self");
-  page.changeFamilyConsumer(input("0"));
+  assert.deepEqual(
+    Array.from(page.data.familyConsumers, (item) => item.openid),
+    ["self", "other"]
+  );
+  assert.equal(page.data.familyConsumers[page.data.familyConsumerIndex].openid, "self");
+  page.setData({ familyConsumers: [] });
   await page.saveAndLeave();
   assert.equal(calls.creates.length, 0);
   assert.equal(calls.toasts.at(-1).message, "请选择消费归属成员");
+  page.setData({
+    familyConsumers: [
+      { openid: "self", nickName: "我" },
+      { openid: "other", nickName: "家人" },
+    ],
+  });
   page.changeFamilyPayer(input("2"));
   page.changeFamilyConsumer(input("1"));
   await page.saveAndContinue();
   assert.deepEqual(calls.creates[0].familyAttribution, {
     payerOpenid: "other",
     consumerKind: "personal",
-    consumerOpenid: "self",
+    consumerOpenid: "other",
   });
 });
 
