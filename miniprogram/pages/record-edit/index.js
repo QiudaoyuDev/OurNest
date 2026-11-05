@@ -31,10 +31,27 @@ function formatRecordTimestamp(value) {
   return `${date.getFullYear()}-${month}-${day} ${hours}:${minutes}`;
 }
 
-function quickAmountsFor(ledger) {
-  return ledger && ledger.quickAmountsEnabled && Array.isArray(ledger.quickAmounts)
-    ? ledger.quickAmounts
-    : [];
+const TRAIN_QUICK_AMOUNTS = [373.5, 356.5, 265, 432.5];
+const DEFAULT_QUICK_AMOUNTS = [9.9, 20, 100, 200, 500];
+
+function isTrainCategory(categoryName, parentCategory) {
+  const text = `${categoryName || ""} ${parentCategory || ""}`;
+  return /高铁|火车/.test(text);
+}
+
+function resolveQuickAmounts(ledger, categoryName, parentCategory) {
+  if (isTrainCategory(categoryName, parentCategory)) {
+    return TRAIN_QUICK_AMOUNTS;
+  }
+  if (
+    ledger &&
+    ledger.quickAmountsEnabled &&
+    Array.isArray(ledger.quickAmounts) &&
+    ledger.quickAmounts.length
+  ) {
+    return ledger.quickAmounts;
+  }
+  return DEFAULT_QUICK_AMOUNTS;
 }
 
 function quickNotesFor(type, category) {
@@ -128,6 +145,7 @@ Page({
       return;
     }
     const date = options.id ? this.data.date : today();
+    this._currentLedger = targetLedger;
     this.setData({
       type,
       familyEnabled: !options.id && targetLedger.type === "shared",
@@ -137,7 +155,7 @@ Page({
       ledgerName: targetLedger.name || "我家账本",
       ledgerId: options.ledgerId || currentLedger._id || "",
       accounts: getPaymentAccounts(targetLedger),
-      quickAmounts: quickAmountsFor(targetLedger),
+      quickAmounts: resolveQuickAmounts(targetLedger, "", ""),
       quickNotes: quickNotesFor(type, ""),
       date,
     });
@@ -232,6 +250,7 @@ Page({
       categoryIcon: "price-tag-3-line",
       parentCategory: "",
       parentIcon: "",
+      quickAmounts: resolveQuickAmounts(this._currentLedger, "", ""),
       quickNotes: quickNotesFor(this.data.type, ""),
       canSave: false,
     });
@@ -297,6 +316,7 @@ Page({
         new Set([...getPaymentAccounts(ledgerInfo), record.account].filter(Boolean))
       );
       const accountIndex = Math.max(0, recordAccounts.indexOf(record.account));
+      this._currentLedger = ledgerInfo;
       this.setData({
         recordId,
         isEditing: true,
@@ -318,7 +338,7 @@ Page({
         ledgerId: record.ledgerId || "",
         ledgerName: (ledgerInfo && ledgerInfo.name) || "我的账本",
         accountIndex,
-        quickAmounts: quickAmountsFor(ledgerInfo),
+        quickAmounts: resolveQuickAmounts(ledgerInfo, record.categoryName, record.parentCategory),
         quickNotes: quickNotesFor(recordType, record.categoryName),
         sourceText:
           record.source === "wechat"
@@ -417,17 +437,20 @@ Page({
 
   applyCategorySelection(selection = {}) {
     const type = selection.type === "income" ? "income" : "expense";
+    const categoryName = selection.categoryName || this.data.categoryName;
+    const parentCategory = selection.parentCategory || this.data.parentCategory;
     this.setData({
       type,
       typeLabel: type === "income" ? "收入" : "支出",
       typeIcon: type === "income" ? "funds-line" : "price-tag-3-line",
       categoryId: selection.categoryId || "",
-      categoryName: selection.categoryName || this.data.categoryName,
-      categoryLabel: selection.categoryLabel || selection.categoryName || this.data.categoryLabel,
+      categoryName,
+      categoryLabel: selection.categoryLabel || categoryName || this.data.categoryLabel,
       categoryIcon: selection.categoryIcon || this.data.categoryIcon,
-      parentCategory: selection.parentCategory || this.data.parentCategory,
+      parentCategory,
       parentIcon: selection.parentIcon || this.data.parentIcon,
-      quickNotes: quickNotesFor(type, selection.categoryName || this.data.categoryName),
+      quickAmounts: resolveQuickAmounts(this._currentLedger, categoryName, parentCategory),
+      quickNotes: quickNotesFor(type, categoryName),
       canSave:
         evaluateAmountExpression(this.data.amount).valid &&
         (this.data.isEditing || Boolean(selection.categoryId)),

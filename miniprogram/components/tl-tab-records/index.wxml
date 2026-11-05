@@ -12,7 +12,13 @@
             <tl-icon name="arrow-left-s-line" size="38" colorKey="primary">
             </tl-icon>
           </view>
-          <view class="month-text">{{monthLabel}}</view>
+          <picker mode="date" fields="month" value="{{pickerDate}}" bindchange="onMonthPickerChange">
+            <view class="month-picker-btn">
+              <text class="month-text">{{monthLabel}}</text>
+              <tl-icon name="arrow-down-s-fill" size="24" colorKey="primary">
+              </tl-icon>
+            </view>
+          </picker>
           <view class="month-nav" bindtap="nextMonth">
             <tl-icon name="arrow-right-s-line" size="38" colorKey="primary">
             </tl-icon>

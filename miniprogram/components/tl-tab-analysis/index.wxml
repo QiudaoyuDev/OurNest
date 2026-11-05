@@ -35,7 +35,6 @@
           </view>
         </view>
       </view>
-      <tl-button wx:if="{{!loading && !error && !noLedger}}" variant="secondary" block="{{true}}" bind:tap="openComparison">多期对比</tl-button>
       <tl-skeleton wx:if="{{loading}}" variant="analysis">
       </tl-skeleton>
       <tl-empty-state wx:elif="{{error}}" variant="error" title="分析数据加载失败" description="请检查网络后重新加载">
@@ -91,7 +90,7 @@
               <text wx:if="{{activeChart === 'monthTrend' && trendCaption}}" class="chart-caption">{{trendCaption}}</text>
             </view>
             <view class="analysis-chart-canvas">
-              <ec-canvas id="analysis-chart" canvas-id="analysis-chart" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError" force-use-old-canvas="true">
+              <ec-canvas id="analysis-chart" canvas-id="analysis-chart" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError">
               </ec-canvas>
             </view>
           </view>
@@ -157,7 +156,7 @@
               <text wx:if="{{activeChart === 'yearCashflow' && trendCaption}}" class="chart-caption">{{trendCaption}}</text>
             </view>
             <view class="analysis-chart-canvas">
-              <ec-canvas id="analysis-chart" canvas-id="analysis-chart" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError" force-use-old-canvas="true">
+              <ec-canvas id="analysis-chart" canvas-id="analysis-chart" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError">
               </ec-canvas>
             </view>
           </view>
@@ -279,7 +278,7 @@
           </view>
           <view wx:if="{{hasChartData}}" class="chart-card card fade-up">
             <view class="analysis-chart-canvas">
-              <ec-canvas id="analysis-chart" canvas-id="analysis-chart" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError" force-use-old-canvas="true">
+              <ec-canvas id="analysis-chart" canvas-id="analysis-chart" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError">
               </ec-canvas>
             </view>
           </view>
@@ -325,7 +324,7 @@
               <text class="card-title">{{chartTitle}}</text>
             </view>
             <view class="analysis-chart-canvas">
-              <ec-canvas id="analysis-chart" canvas-id="analysis-chart" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError" force-use-old-canvas="true">
+              <ec-canvas id="analysis-chart" canvas-id="analysis-chart" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError">
               </ec-canvas>
             </view>
           </view>
@@ -334,7 +333,7 @@
           </view>
           <view class="chart-card card fade-up">
             <view class="analysis-chart-canvas">
-              <ec-canvas id="all-category-chart" canvas-id="all-category-chart" data-chart-key="category" ec="{{ec}}" bind:init="onSecondaryChartInit" force-use-old-canvas="true">
+              <ec-canvas id="all-category-chart" canvas-id="all-category-chart" data-chart-key="category" ec="{{ec}}" bind:init="onSecondaryChartInit">
               </ec-canvas>
             </view>
           </view>

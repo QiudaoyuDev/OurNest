@@ -31,6 +31,7 @@ function getRange(year, month) {
     start: makeDateText(year, month, 1),
     end: makeDateText(next.year, next.month, 1),
     label: `${year}年${month}月`,
+    pickerDate: `${year}-${pad(month)}`,
   };
 }
 
@@ -105,6 +106,7 @@ Component({
     ledgerName: "我的账本",
     ledgerId: "",
     monthLabel: "",
+    pickerDate: "",
     activeType: "all",
     readonly: false,
     loading: true,
@@ -182,6 +184,7 @@ Component({
         readonly: Boolean(ledger.readonly),
         currentRange,
         monthLabel: currentRange.label,
+        pickerDate: currentRange.pickerDate,
       });
       await this.loadRecords(currentRange);
     },
@@ -320,17 +323,35 @@ Component({
         ledgerName: ledger.name || "我的账本",
         currentRange,
         monthLabel: currentRange.label,
+        pickerDate: currentRange.pickerDate,
         isLedgerSwitcherVisible: false,
         activeType: "all",
       });
       this.loadRecords(currentRange);
     },
 
+    onMonthPickerChange(event) {
+      const value = event.detail.value;
+      if (!value || !/^\d{4}-\d{2}$/.test(value)) return;
+      const [year, month] = value.split("-").map(Number);
+      const nextRange = getRange(year, month);
+      this.setData({
+        currentRange: nextRange,
+        monthLabel: nextRange.label,
+        pickerDate: nextRange.pickerDate,
+      });
+      this.loadRecords(nextRange);
+    },
+
     prevMonth() {
       const range = this.data.currentRange;
       const previous = addMonth(range.year, range.month, -1);
       const nextRange = getRange(previous.year, previous.month);
-      this.setData({ currentRange: nextRange, monthLabel: nextRange.label });
+      this.setData({
+        currentRange: nextRange,
+        monthLabel: nextRange.label,
+        pickerDate: nextRange.pickerDate,
+      });
       this.loadRecords(nextRange);
     },
 
@@ -338,7 +359,11 @@ Component({
       const range = this.data.currentRange;
       const next = addMonth(range.year, range.month, 1);
       const nextRange = getRange(next.year, next.month);
-      this.setData({ currentRange: nextRange, monthLabel: nextRange.label });
+      this.setData({
+        currentRange: nextRange,
+        monthLabel: nextRange.label,
+        pickerDate: nextRange.pickerDate,
+      });
       this.loadRecords(nextRange);
     },
 
@@ -355,7 +380,12 @@ Component({
       const date = this.data.latestRecordDate;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
       const range = getRange(Number(date.slice(0, 4)), Number(date.slice(5, 7)));
-      this.setData({ currentRange: range, monthLabel: range.label, activeType: "all" });
+      this.setData({
+        currentRange: range,
+        monthLabel: range.label,
+        pickerDate: range.pickerDate,
+        activeType: "all",
+      });
       this.loadRecords(range);
     },
     openRecord(event) {

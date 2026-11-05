@@ -35,6 +35,20 @@
   overflow: hidden;
 }
 
+.month-picker-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4rpx;
+  height: 70rpx;
+  padding: 0 10rpx;
+  box-sizing: border-box;
+}
+
+.month-picker-btn:active {
+  background: var(--tl-color-primary-soft);
+}
+
 .month-nav {
   width: 64rpx;
   height: 70rpx;
@@ -46,8 +60,12 @@
   font-weight: var(--tl-font-weight-bold);
 }
 
+.month-nav:active {
+  background: var(--tl-color-primary-soft);
+}
+
 .month-text {
-  min-width: 160rpx;
+  min-width: 140rpx;
   color: var(--tl-color-text);
   font-size: var(--tl-font-body);
   font-weight: var(--tl-font-weight-bold);

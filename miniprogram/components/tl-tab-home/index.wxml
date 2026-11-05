@@ -124,32 +124,6 @@
               </view>
             </view>
           </view>
-          <view class="mini-stats fade-up">
-            <view class="mini-stat">
-              <view class="mini-icon">
-                <tl-icon name="file-list-3-line" size="24" colorKey="primary">
-                </tl-icon>
-              </view>
-              <view class="mini-value">{{recordCount}}</view>
-              <view class="mini-label">本月记录</view>
-            </view>
-            <view class="mini-stat">
-              <view class="mini-icon">
-                <tl-icon name="restaurant-2-line" size="24" colorKey="primary">
-                </tl-icon>
-              </view>
-              <view class="mini-value">{{topExpenseCategory}}</view>
-              <view class="mini-label">支出最多</view>
-            </view>
-            <view class="mini-stat">
-              <view class="mini-icon">
-                <tl-icon name="funds-line" size="24" colorKey="primary">
-                </tl-icon>
-              </view>
-              <view class="mini-value">{{hasMonthExpense ? '¥' : ''}}{{largestExpenseCompact}}</view>
-              <view class="mini-label">支出最大</view>
-            </view>
-          </view>
           <view wx:if="{{showBudget}}" class="budget-card card fade-up">
             <block wx:if="{{budgetEnabled}}">
               <view class="budget-card-header">

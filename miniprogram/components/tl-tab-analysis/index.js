@@ -39,10 +39,11 @@ Component({
     ledgerOptions: [],
     mode: "month",
     modeOptions: [
-      { value: "month", label: "\u6708\u5ea6" },
-      { value: "year", label: "\u5e74\u5ea6" },
-      { value: "calendar", label: "\u65e5\u5386" },
+      { value: "month", label: "月度" },
+      { value: "year", label: "年度" },
+      { value: "calendar", label: "日历" },
       { value: "custom", label: "自定义" },
+      { value: "comparison", label: "多期对比" },
     ],
     modeIndex: 0,
     modeLabel: "\u6708\u5ea6",
@@ -186,6 +187,7 @@ Component({
 
     async loadAnalysis() {
       if (!this.data.ledgerId) return this.setData({ loading: false, noLedger: true });
+      this._chartRetryCount = 0;
       const requestId = ++this.analysisRequestId;
       const request = {
         ledgerId: this.data.ledgerId,
@@ -341,17 +343,29 @@ Component({
     },
 
     chooseMode(event) {
+      const mode = event.currentTarget.dataset.mode;
       this.closeModeSheet();
-      this.setAnalysisMode(event.currentTarget.dataset.mode);
+      if (mode === "comparison") {
+        return this.openComparison();
+      }
+      this.setAnalysisMode(mode);
     },
 
     switchMode(event) {
-      this.setAnalysisMode(event.currentTarget.dataset.mode);
+      const mode = event.currentTarget.dataset.mode;
+      if (mode === "comparison") {
+        return this.openComparison();
+      }
+      this.setAnalysisMode(mode);
     },
 
     selectMode(event) {
       const option = this.data.modeOptions[Number(event.detail.value)];
-      if (option) this.setAnalysisMode(option.value);
+      if (!option) return;
+      if (option.value === "comparison") {
+        return this.openComparison();
+      }
+      this.setAnalysisMode(option.value);
     },
 
     setAnalysisMode(mode) {
@@ -652,12 +666,20 @@ Component({
       this.secondaryCharts = {};
     },
     onChartInitError() {
-      if (!this.isAttached || this.data.loading || !this.data.hasChartData) return;
+      if (!this.isAttached || this.data.loading) return;
       console.warn("analysis chart initialization failed");
-      this.setData({ hasChartData: false }, () => {
-        if (!this.isAttached) return;
-        this.setData({ hasChartData: true });
-      });
+      this._chartRetryCount = (this._chartRetryCount || 0) + 1;
+      if (this._chartRetryCount <= 1) {
+        setTimeout(() => {
+          if (!this.isAttached || this.data.loading) return;
+          const component = this.selectComponent("#analysis-chart");
+          if (component && typeof component.init === "function") {
+            component.init();
+          }
+        }, 150);
+      } else {
+        this._chartRetryCount = 0;
+      }
     },
 
     disposeChart() {
