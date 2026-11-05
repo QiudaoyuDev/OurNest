@@ -89,7 +89,7 @@
   display: flex;
   flex-direction: column;
   gap: 6rpx;
-  color: #a89289;
+  color: var(--tl-color-text-tertiary);
   font-size: var(--tl-font-caption);
   font-weight: var(--tl-font-weight-semibold);
   line-height: 32rpx;

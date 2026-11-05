@@ -34,7 +34,7 @@
   line-height: 1.55;
 }
 .input-placeholder {
-  color: #b7a29a;
+  color: var(--tl-color-text-tertiary);
 }
 .counter {
   margin-top: 8rpx;
@@ -51,8 +51,8 @@
 .type-option {
   padding: 16rpx 24rpx;
   border-radius: var(--tl-radius-pill);
-  color: #806b63;
-  background: #fff2ed;
+  color: var(--tl-color-text-secondary);
+  background: var(--tl-color-surface-warm-light);
   font-size: var(--tl-font-body-sm);
   font-weight: var(--tl-font-weight-bold);
 }

@@ -803,6 +803,51 @@ test("category detail sends exact range and identity for every page", async () =
   assert.equal(page.data.readonly, true);
 });
 
+test("record-filtered automatically reloads when records change in the viewed ledger", async () => {
+  const calls = [];
+  const eventBus = require("../miniprogram/utils/event-bus");
+  const definition = load("miniprogram/pages/record-filtered/index.js", {
+    "../../services/record.service": {
+      listRecords: async (payload) => {
+        calls.push(payload);
+        return {
+          records: [{ _id: "1", amount: 15, date: "2026-03-01" }],
+          rangeSummary: { expense: 15 },
+          rangeRecordCount: 1,
+          hasMore: false,
+          nextCursor: null,
+          readonly: false,
+        };
+      },
+    },
+    "../../utils/event-bus": eventBus,
+  });
+  const page = instance(definition);
+  page.onLoad({
+    ledgerId: "shared",
+    start: "2026-03-01",
+    end: "2026-04-01",
+    type: "expense",
+    filter: encodeURIComponent(JSON.stringify({ kind: "id", id: "food" })),
+    name: "餐饮",
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(calls.length, 1);
+
+  eventBus.emit("records:changed", { ledgerId: "other" });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(calls.length, 1);
+
+  eventBus.emit("records:changed", { ledgerId: "shared" });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(calls.length, 2);
+
+  page.onUnload();
+  eventBus.emit("records:changed", { ledgerId: "shared" });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(calls.length, 2);
+});
+
 test("comparison ignores an older response after switching the time range", async () => {
   const pending = [deferred(), deferred()];
   let call = 0;

@@ -374,6 +374,8 @@ async function joinLedger(openid, data = {}) {
     .get();
   const ledger = found.data[0];
   if (!ledger) return fail("邀请码无效", "INVALID_INVITE_CODE");
+  if ((ledger.type || "personal") !== "shared")
+    return fail("个人账本不能添加成员", "PERSONAL_LEDGER_NOT_SHARED");
   if ((ledger.memberOpenids || []).includes(openid)) return ok({ ledgerId: ledger._id, ledger });
   await db
     .collection("ledgers")

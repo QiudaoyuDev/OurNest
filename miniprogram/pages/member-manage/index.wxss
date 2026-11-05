@@ -58,15 +58,15 @@
 }
 .member-role.owner {
   color: var(--tl-color-danger);
-  background: #ffe9e4;
+  background: var(--tl-color-tag-owner-bg);
 }
 .member-role.member {
-  color: #2f7163;
+  color: var(--tl-color-tag-shared);
   background: var(--tl-color-income-soft);
 }
 .member-role.visitor {
-  color: #7a6a90;
-  background: #f1edf7;
+  color: var(--tl-color-tag-visitor);
+  background: var(--tl-color-tag-visitor-bg);
 }
 .member-remove {
   display: inline-flex;

@@ -22,18 +22,18 @@
 }
 
 .type-tag {
-  color: #9a5a4d;
+  color: var(--tl-color-feedback-danger);
   background: var(--tl-color-primary-soft);
 }
 
 .status {
-  color: #b07a27;
-  background: #fff7df;
+  color: var(--tl-color-feedback-warning);
+  background: var(--tl-color-feedback-warning-bg);
 }
 
 .status-processing {
-  color: #3679bc;
-  background: #ebf5ff;
+  color: var(--tl-color-info);
+  background: var(--tl-color-info-soft);
 }
 
 .status-resolved {

@@ -2,6 +2,7 @@
 const {
   db,
   _,
+  $,
   ok,
   getLedgerForUser,
   getLedgerRole,
@@ -42,6 +43,78 @@ async function getMonthRecords(query) {
   });
 }
 
+async function aggregateDashboard(query) {
+  try {
+    const summaryResult = await db
+      .collection("records")
+      .aggregate()
+      .match(query)
+      .group({
+        _id: "$type",
+        total: $.sum($.floor($.add([$.multiply(["$amount", 100]), 0.5]))),
+        count: $.sum(1),
+        maxAmount: $.max("$amount"),
+      })
+      .end();
+
+    const summaryList = summaryResult.list || [];
+    let income = 0;
+    let expense = 0;
+    let incomeCount = 0;
+    let expenseCount = 0;
+    let largestExpense = 0;
+
+    summaryList.forEach((item) => {
+      if (item._id === "income") {
+        income = Number(item.total || 0) / 100;
+        incomeCount = Number(item.count || 0);
+      }
+      if (item._id === "expense") {
+        expense = Number(item.total || 0) / 100;
+        expenseCount = Number(item.count || 0);
+        largestExpense = Number(item.maxAmount || 0);
+      }
+    });
+
+    let topExpenseCategory = "其他";
+    if (expenseCount > 0) {
+      const topResult = await db
+        .collection("records")
+        .aggregate()
+        .match({ ...query, type: "expense" })
+        .group({
+          _id: $.ifNull(["$parentCategory", $.ifNull(["$categoryName", "其他"])]),
+          total: $.sum($.floor($.add([$.multiply(["$amount", 100]), 0.5]))),
+        })
+        .sort({ total: -1 })
+        .limit(1)
+        .end();
+
+      const topItem = (topResult.list || [])[0];
+      if (topItem && topItem._id) topExpenseCategory = String(topItem._id);
+    }
+
+    const recordCount = incomeCount + expenseCount;
+    return {
+      income,
+      expense,
+      balance: Number((income - expense).toFixed(2)),
+      recordCount,
+      topExpenseCategory,
+      largestExpense,
+      hasRecords: recordCount > 0,
+    };
+  } catch (error) {
+    console.warn("dashboard aggregation fallback to memory scan", error);
+    const monthRecords = await getMonthRecords(query);
+    const monthSummary = summarizeDashboardRecords(monthRecords);
+    return {
+      ...monthSummary,
+      hasRecords: monthRecords.length > 0,
+    };
+  }
+}
+
 async function getDashboard(openid, data = {}) {
   const ledger = await getLedgerForUser(openid, data.ledgerId);
   if (!ledger) return ok({ noLedger: true, monthRange: getCurrentMonthRange() });
@@ -50,8 +123,8 @@ async function getDashboard(openid, data = {}) {
 
   const monthRange = getCurrentMonthRange();
   const query = { ledgerId: ledger._id, date: _.gte(monthRange.start).and(_.lt(monthRange.end)) };
-  const [monthRecords, recentResult, totalRecordCountResult] = await Promise.all([
-    getMonthRecords(query),
+  const [dashboardSummary, recentResult, totalRecordCountResult] = await Promise.all([
+    aggregateDashboard(query),
     db
       .collection("records")
       .where({ ledgerId: ledger._id })
@@ -66,8 +139,7 @@ async function getDashboard(openid, data = {}) {
   const ownerMap = await resolveUsersAvatarUrls(
     await getUsersByOpenids(latestRecords.map((item) => item.ownerOpenid))
   );
-  const monthSummary = summarizeDashboardRecords(monthRecords);
-  const { income: monthIncome, expense: monthExpense } = monthSummary;
+  const { income: monthIncome, expense: monthExpense } = dashboardSummary;
   const budgetEnabled = Boolean(ledger.budgetEnabled);
   const budget = budgetEnabled ? Number(ledger.monthlyBudget || 0) : 0;
   const budgetRate = budgetEnabled && budget ? (monthExpense / budget) * 100 : 0;
@@ -81,18 +153,18 @@ async function getDashboard(openid, data = {}) {
     readonly: role === "readonly",
     monthIncome,
     monthExpense,
-    balance: monthSummary.balance,
+    balance: dashboardSummary.balance,
     budget,
     budgetEnabled,
     quickAmountsEnabled: Boolean(ledger.quickAmountsEnabled),
     quickAmounts: Array.isArray(ledger.quickAmounts) ? ledger.quickAmounts : [],
     budgetLeft: budgetEnabled ? Number((budget - monthExpense).toFixed(2)) : 0,
     budgetRate,
-    recordCount: monthSummary.recordCount,
+    recordCount: dashboardSummary.recordCount,
     totalRecordCount: totalRecordCountResult.total || 0,
-    topExpenseCategory: monthSummary.topExpenseCategory,
-    largestExpenseAmount: monthSummary.largestExpense,
-    familyMood: monthRecords.length ? "本月记录持续更新" : "本月还没有记录",
+    topExpenseCategory: dashboardSummary.topExpenseCategory,
+    largestExpenseAmount: dashboardSummary.largestExpense,
+    familyMood: dashboardSummary.hasRecords ? "本月记录持续更新" : "本月还没有记录",
     monthRange,
     recentRecords: latestRecords.map((item) => attachRecordOwner(item, ownerMap, openid)),
   });

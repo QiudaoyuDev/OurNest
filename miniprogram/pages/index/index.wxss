@@ -1,3 +1,7 @@
 .tab-shell-page {
   padding-bottom: 0;
 }
+
+.tab-pane-hidden {
+  display: none !important;
+}

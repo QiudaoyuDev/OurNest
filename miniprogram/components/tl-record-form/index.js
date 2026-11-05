@@ -96,6 +96,10 @@ Component({
       // Do not emit amountinput here: property updates may arrive asynchronously.
       this.triggerEvent("submit");
     },
+    submitContinue() {
+      if (!this.data.quickEntry || this.data.saving) return;
+      this.triggerEvent("submitcontinue");
+    },
     quickAmount(event) {
       this.triggerEvent("quickamount", { amount: event.currentTarget.dataset.amount });
     },

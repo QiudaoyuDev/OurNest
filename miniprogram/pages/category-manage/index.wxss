@@ -95,20 +95,20 @@
 .add-icon {
   color: var(--tl-color-primary);
   background: var(--tl-palette-warm-100);
-  border: 2rpx dashed #f6b7aa;
+  border: 2rpx dashed var(--tl-color-border-warm);
   font-size: var(--tl-font-data-lg);
   font-weight: var(--tl-font-weight-regular);
 }
 .income-add .add-icon {
   color: var(--tl-color-income);
-  border-color: #9bd9b8;
+  border-color: var(--tl-color-income);
 }
 .children-panel {
   margin: 0 0 42rpx;
   padding: 24rpx;
   border-radius: var(--tl-radius-md);
   background: var(--tl-color-surface);
-  border: 1rpx solid #f3e3dc;
+  border: var(--tl-border-width) solid var(--tl-color-divider-warm);
 }
 .children-title {
   margin-bottom: 22rpx;

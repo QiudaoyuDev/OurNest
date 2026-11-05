@@ -137,6 +137,7 @@
 }
 
 .tool-tile {
+  position: relative;
   min-width: 0;
   min-height: 128rpx;
   padding: 14rpx 4rpx 12rpx;
@@ -146,6 +147,19 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+}
+
+.tool-badge {
+  position: absolute;
+  top: 6rpx;
+  right: 6rpx;
+  font-size: var(--tl-font-caption-compact);
+  line-height: 1;
+  padding: 4rpx 8rpx;
+  border-radius: var(--tl-radius-pill);
+  background: var(--tl-color-surface-muted);
+  color: var(--tl-color-text-tertiary);
+  font-weight: var(--tl-font-weight-bold);
 }
 
 .tool-tile:active,
@@ -201,11 +215,27 @@
   padding: 0 18rpx;
 }
 
+.function-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
 .function-title {
   color: var(--tl-color-text);
   font-size: var(--tl-font-body);
   font-weight: var(--tl-font-weight-bold);
   line-height: 1.25;
+}
+
+.status-badge {
+  font-size: var(--tl-font-caption-compact);
+  line-height: 1;
+  padding: 4rpx 10rpx;
+  border-radius: var(--tl-radius-pill);
+  background: var(--tl-color-surface-muted);
+  color: var(--tl-color-text-tertiary);
+  font-weight: var(--tl-font-weight-bold);
 }
 
 .function-tip {

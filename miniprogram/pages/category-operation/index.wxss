@@ -57,7 +57,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 3rpx dashed #f6b7aa;
+  border: 3rpx dashed var(--tl-color-border-warm);
   border-radius: 50%;
   background: var(--tl-color-primary-soft);
   color: var(--tl-color-primary);

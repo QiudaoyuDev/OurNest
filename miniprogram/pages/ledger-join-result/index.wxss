@@ -40,11 +40,11 @@
 .result-icon.login,
 .result-icon.checking,
 .result-icon.joining {
-  background: #d99058;
+  background: var(--tl-color-join-warning);
 }
 
 .result-icon.error {
-  background: #b9554e;
+  background: var(--tl-color-join-danger);
 }
 
 .result-symbol {
@@ -83,7 +83,7 @@
 .result-ledger {
   max-width: 100%;
   margin-top: 14rpx;
-  color: #c85d4a;
+  color: var(--tl-color-join-accent);
   font-size: var(--tl-font-body);
   font-weight: var(--tl-font-weight-bold);
   line-height: 1.4;
@@ -95,7 +95,7 @@
 .result-desc {
   max-width: 560rpx;
   margin-top: 20rpx;
-  color: #7c6b64;
+  color: var(--tl-color-join-muted);
   font-size: var(--tl-font-body);
   font-weight: var(--tl-font-weight-bold);
   line-height: 1.6;

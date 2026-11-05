@@ -8,6 +8,7 @@ page {
   --tl-palette-brown-400: #9a8278;
   --tl-palette-brown-600: #6f625d;
   --tl-palette-brown-900: #312522;
+  --tl-palette-our-nest-400: #ff8268;
   --tl-palette-our-nest-500: #f0442f;
   --tl-palette-our-nest-600: #d9483b;
   --tl-palette-green-500: #25a66a;
@@ -27,12 +28,17 @@ page {
   --tl-color-danger-soft: #fff1ef;
   --tl-color-warning: #b56a13;
   --tl-color-warning-soft: #fff3e0;
+  --tl-color-info: #3679bc;
+  --tl-color-info-soft: #ebf5ff;
   --tl-color-text: #312522;
   --tl-color-text-secondary: #6f625d;
   --tl-color-text-tertiary: #9a8278;
   --tl-color-text-inverse: #ffffff;
   --tl-color-warning-alt: #d58a18;
   --tl-color-warning-accent: #e86f30;
+  --tl-color-feedback-danger: #9a5a4d;
+  --tl-color-feedback-warning: #b07a27;
+  --tl-color-feedback-warning-bg: #fff7df;
   --tl-color-surface-warm: #fff4ef;
   --tl-color-surface-warm-light: #fff2ee;
   --tl-color-border-warm: #ffe1d9;

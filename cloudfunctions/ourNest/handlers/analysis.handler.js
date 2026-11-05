@@ -157,21 +157,27 @@ function getPreviousAnalysisRange(mode, range, current) {
 async function getAnalysisRecords(query, maxRecords = Infinity) {
   const rows = [];
   let offset = 0;
+  let cursor = null;
   while (true) {
-    const page =
-      (
-        await db
-          .collection("records")
-          .where(query)
-          .orderBy("date", "asc")
-          .orderBy("_id", "asc")
-          .skip(offset)
-          .limit(100)
-          .get()
-      ).data || [];
+    const pageQuery = cursor
+      ? _.and([
+          query,
+          _.or([{ date: _.gt(cursor.date) }, { date: cursor.date, _id: _.gt(cursor._id) }]),
+        ])
+      : query;
+    let queryBuilder = db
+      .collection("records")
+      .where(pageQuery)
+      .orderBy("date", "asc")
+      .orderBy("_id", "asc");
+    if (typeof queryBuilder.skip === "function") {
+      queryBuilder = queryBuilder.skip(cursor ? 0 : offset);
+    }
+    const page = (await queryBuilder.limit(100).get()).data || [];
     rows.push(...page);
     if (rows.length > maxRecords) throw new Error("ANALYSIS_RECORD_LIMIT_EXCEEDED");
     if (page.length < 100) return rows;
+    cursor = page[page.length - 1];
     offset += page.length;
   }
 }

@@ -14,6 +14,7 @@ Page({
     navbarTitle: TAB_TITLES.index,
     recordsMonth: "",
     recordDisabledReason: "noLedger",
+    visitedTabs: { index: true },
   },
 
   onLoad(options = {}) {
@@ -25,6 +26,7 @@ Page({
       activeTab,
       navbarTitle: TAB_TITLES[activeTab],
       recordsMonth: /^\d{4}-\d{2}$/.test(options.month || "") ? options.month : "",
+      visitedTabs: { [activeTab]: true },
     });
     this.unsubscribeLedgerSync = ledgerStore.subscribeSync((result) => {
       this.syncRecordAccess();
@@ -71,10 +73,12 @@ Page({
   switchTab(event) {
     const tab = event.detail.tab || event.detail.key;
     if (!TAB_TITLES.hasOwnProperty(tab) || tab === this.data.activeTab) return;
+    const visitedTabs = { ...this.data.visitedTabs, [tab]: true };
     this.setData({
       activeTab: tab,
       navbarTitle: TAB_TITLES[tab],
       recordsMonth: "",
+      visitedTabs,
     });
   },
 });

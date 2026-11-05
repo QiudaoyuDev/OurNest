@@ -81,6 +81,7 @@
               </tl-icon>
             </view>
             <view class="tool-title">导出账单</view>
+            <text class="tool-badge">规划中</text>
           </view>
         </view>
       </view>
@@ -123,7 +124,10 @@
               </tl-icon>
             </view>
             <view class="function-main">
-              <view class="function-title">更新日志</view>
+              <view class="function-title-row">
+                <view class="function-title">更新日志</view>
+                <text class="status-badge">规划中</text>
+              </view>
               <view class="function-tip">查看咱家小账最近变化</view>
             </view>
             <view class="function-arrow">
@@ -133,7 +137,7 @@
           </view>
         </view>
       </view>
-      <tl-button class="logout-button" variant="primary" block="{{true}}" bind:tap="logout">退出账号</tl-button>
+      <tl-button class="logout-button" variant="danger" block="{{true}}" bind:tap="logout">退出账号</tl-button>
     </view>
   </scroll-view>
 </view>

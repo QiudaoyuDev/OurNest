@@ -282,7 +282,9 @@ Page({
       const record = data.record;
       const ledgerInfo = data.ledger || app.globalData.currentLedger || {};
       if (!record) throw new Error("记录加载失败");
-      const readonly = Boolean(data.readonly || data.role === "readonly");
+      const readonly = Boolean(
+        data.readonly || data.role === "readonly" || (data.canEdit !== undefined && !data.canEdit)
+      );
       this.setData({ readonly });
       if (readonly) {
         await wx.redirectTo({

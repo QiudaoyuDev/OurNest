@@ -43,8 +43,11 @@
       <view class="keypad-key" data-digit="0" bindtap="pressNumber">0</view>
       <view class="keypad-key keypad-key--backspace" bindtap="backspace">⌫</view>
     </view>
-    <view class="tl-record-form__submit-bar">
-      <button wx:if="{{quickEntry}}" class="keypad-submit-btn" disabled="{{saving}}" loading="{{saving}}" bindtap="submit">{{saving ? '保存中...' : '完成'}}</button>
+    <view class="tl-record-form__submit-bar {{quickEntry ? 'tl-record-form__submit-bar--split' : ''}}">
+      <block wx:if="{{quickEntry}}">
+        <button class="keypad-submit-btn keypad-submit-btn--continue" disabled="{{saving}}" bindtap="submitContinue">再记一笔</button>
+        <button class="keypad-submit-btn" disabled="{{saving}}" loading="{{saving}}" bindtap="submit">{{saving ? '保存中...' : '完成'}}</button>
+      </block>
       <view wx:else class="keypad-submit-btn keypad-submit-btn--equal" bindtap="calculate">=</view>
     </view>
   </view>

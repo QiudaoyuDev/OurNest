@@ -1,5 +1,6 @@
 const recordService = require("../../services/record.service");
 const { formatDisplayMoney } = require("../../utils/money");
+const { on, off } = require("../../utils/event-bus");
 
 function decode(value) {
   try {
@@ -54,6 +55,12 @@ Page({
         title: decode(options.name || "分类明细"),
         rangeLabel: `${options.start} 起至 ${options.end} 前`,
       });
+      this.onRecordsChanged = (event = {}) => {
+        if (!event.ledgerId || event.ledgerId === (this.query && this.query.ledgerId)) {
+          this.loadRecords(false);
+        }
+      };
+      on("records:changed", this.onRecordsChanged);
       this.loadRecords();
     } catch (_error) {
       this.setData({ loading: false, error: true });
@@ -61,6 +68,10 @@ Page({
   },
   onUnload() {
     this.requestId += 1;
+    if (this.onRecordsChanged) {
+      off("records:changed", this.onRecordsChanged);
+      this.onRecordsChanged = null;
+    }
   },
   async loadRecords(append = false) {
     if (

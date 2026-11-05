@@ -5,8 +5,8 @@
   --tl-category-primary: var(--tl-color-primary);
   --tl-category-primary-soft: var(--tl-color-primary-soft);
   --tl-category-surface: var(--tl-color-surface);
-  --tl-category-text: #312522;
-  --tl-category-text-tertiary: #9a8278;
+  --tl-category-text: var(--tl-color-text);
+  --tl-category-text-tertiary: var(--tl-color-text-tertiary);
   --tl-category-font: 28rpx;
   --tl-category-caption: 22rpx;
   --tl-category-font-weight: 700;

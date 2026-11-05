@@ -294,7 +294,7 @@
   padding: 0 12rpx;
   box-sizing: border-box;
   border-radius: var(--tl-radius-pill);
-  background: #ded4cf;
+  background: var(--tl-color-tab-divider);
   color: var(--tl-color-text-inverse);
   display: flex;
   align-items: center;

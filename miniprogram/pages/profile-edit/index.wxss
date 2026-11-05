@@ -55,7 +55,7 @@
   height: 78rpx;
   display: flex;
   align-items: center;
-  color: #5d4942;
+  color: var(--tl-color-text);
   font-size: var(--tl-font-body);
   font-weight: var(--tl-font-weight-bold);
 }

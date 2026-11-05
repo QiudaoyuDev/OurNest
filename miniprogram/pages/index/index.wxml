@@ -2,13 +2,31 @@
   <tl-navbar title="{{navbarTitle}}">
   </tl-navbar>
   <tl-container safe-area="{{false}}">
-    <tl-tab-home id="tab-home" wx:if="{{activeTab === 'index'}}" bind:switchtab="switchTab">
+    <tl-tab-home
+      wx:if="{{visitedTabs.index}}"
+      id="tab-home"
+      class="{{activeTab === 'index' ? '' : 'tab-pane-hidden'}}"
+      bind:switchtab="switchTab"
+    >
     </tl-tab-home>
-    <tl-tab-records id="tab-records" wx:elif="{{activeTab === 'records'}}" initial-month="{{recordsMonth}}">
+    <tl-tab-records
+      wx:if="{{visitedTabs.records}}"
+      id="tab-records"
+      class="{{activeTab === 'records' ? '' : 'tab-pane-hidden'}}"
+      initial-month="{{recordsMonth}}"
+    >
     </tl-tab-records>
-    <tl-tab-analysis id="tab-analysis" wx:elif="{{activeTab === 'analysis'}}">
+    <tl-tab-analysis
+      wx:if="{{visitedTabs.analysis}}"
+      id="tab-analysis"
+      class="{{activeTab === 'analysis' ? '' : 'tab-pane-hidden'}}"
+    >
     </tl-tab-analysis>
-    <tl-tab-profile id="tab-profile" wx:else>
+    <tl-tab-profile
+      wx:if="{{visitedTabs.profile}}"
+      id="tab-profile"
+      class="{{activeTab === 'profile' ? '' : 'tab-pane-hidden'}}"
+    >
     </tl-tab-profile>
   </tl-container>
   <tl-tabbar active="{{activeTab}}" record-disabled-reason="{{recordDisabledReason}}" bind:change="switchTab">

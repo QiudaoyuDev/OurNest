@@ -156,6 +156,33 @@ test("a writable record can still open in edit even when the current ledger is r
   assert.equal(page.data.amount, "12");
 });
 
+test("a member cannot open another member's record in edit and is redirected to detail", async () => {
+  const destinations = [];
+  const page = load(
+    "miniprogram/pages/record-edit/index.js",
+    {
+      globalData: { currentLedger: { _id: "shared", role: "member" }, openid: "memberA" },
+    },
+    {
+      redirectTo: ({ url }) => destinations.push(url),
+    },
+    {
+      "../../services/record.service": {
+        getRecord: async () => ({
+          canEdit: false,
+          readonly: true,
+          role: "member",
+          record: { _id: "otherRecord", ledgerId: "shared", ownerOpenid: "memberB", amount: 88 },
+          ledger: { _id: "shared", type: "shared" },
+        }),
+      },
+    }
+  );
+  await page.loadRecord("otherRecord");
+  assert.equal(destinations[0], "/pages/record-detail/index?id=otherRecord");
+  assert.equal(page.data.readonly, true);
+});
+
 test("direct creation in a readonly viewed ledger is blocked despite an owned current ledger", () => {
   let navigations = 0;
   const toasts = [];
@@ -319,8 +346,11 @@ test("quick entry submits from the keypad while editing keeps its save action", 
   const template = fs.readFileSync("miniprogram/pages/record-edit/index.wxml", "utf8");
   assert.match(template, /quick-entry="{{!isEditing}}"/);
   assert.match(template, /saving="{{saving}}" bind:submit="saveAndLeave"/);
+  assert.match(template, /bind:submitcontinue="saveAndContinue"/);
   assert.match(template, /wx:if="{{isEditing}}"[\s\S]*保存记录/);
   assert.doesNotMatch(template, />保存并离开</);
+  const formTemplate = fs.readFileSync("miniprogram/components/tl-record-form/index.wxml", "utf8");
+  assert.match(formTemplate, /bindtap="submitContinue">再记一笔</);
 });
 
 test("cloud handlers reject visitor create/update/delete before any database write", async () => {

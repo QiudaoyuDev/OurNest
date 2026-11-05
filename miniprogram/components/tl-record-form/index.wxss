@@ -9,8 +9,8 @@
   display: flex;
   align-items: center;
   padding-bottom: 20rpx;
-  border-bottom: 1rpx solid #f2e9e3;
-  color: #e94b35;
+  border-bottom: var(--tl-border-width) solid var(--tl-color-divider-warm);
+  color: var(--tl-color-primary);
 }
 .tl-record-form__amount text {
   font-size: var(--tl-font-size-2xl);
@@ -57,7 +57,7 @@
   align-items: center;
   gap: 24rpx;
   min-height: 96rpx;
-  border-top: 1rpx solid #f2e9e3;
+  border-top: var(--tl-border-width) solid var(--tl-color-divider-warm);
   color: var(--tl-color-text-tertiary);
   font-size: var(--tl-font-body-sm);
 }
@@ -107,7 +107,7 @@
   gap: 12rpx;
   min-width: 0;
   padding: 8rpx;
-  border: 1rpx solid #f4ddd5;
+  border: var(--tl-border-width) solid var(--tl-color-border-warm);
   border-radius: var(--tl-radius-control);
   background: var(--tl-palette-warm-100);
 }
@@ -155,7 +155,7 @@
 }
 
 .tl-record-form__amount-value.is-placeholder {
-  color: #d4c2b9;
+  color: var(--tl-color-tab-inactive);
 }
 
 .tl-record-form__keypad-mask {
@@ -296,6 +296,25 @@
 .tl-record-form__submit-bar {
   margin-top: 12rpx;
   height: 80rpx;
+}
+
+.tl-record-form__submit-bar--split {
+  display: flex;
+  gap: 12rpx;
+}
+
+.tl-record-form__submit-bar--split .keypad-submit-btn {
+  flex: 1;
+}
+
+.keypad-submit-btn--continue {
+  border: var(--tl-border-width) solid var(--tl-color-primary);
+  background: var(--tl-color-primary-soft);
+  color: var(--tl-color-primary);
+}
+
+.keypad-submit-btn--continue:active {
+  background: var(--tl-palette-warm-300);
 }
 
 .keypad-submit-btn {

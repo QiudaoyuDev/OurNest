@@ -54,7 +54,11 @@
   height: 108rpx;
   margin-top: -36rpx;
   border-radius: var(--tl-radius-pill);
-  background: linear-gradient(135deg, #ff8268 0%, var(--tl-color-primary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--tl-palette-our-nest-400) 0%,
+    var(--tl-color-primary) 100%
+  );
   border: 8rpx solid var(--tl-color-surface);
   display: flex;
   align-items: center;

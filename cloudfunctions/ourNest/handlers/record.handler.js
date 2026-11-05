@@ -346,6 +346,7 @@ async function getRecord(openid, data = {}) {
             ? "多人（按记录人展示）"
             : "其他",
   };
+  const canEdit = (role === "owner" || record.ownerOpenid === openid) && role !== "readonly";
   return ok({
     record: { ...attachRecordOwner(record, ownerMap, openid), familyAttribution, familyDisplay },
     ledger: {
@@ -357,7 +358,8 @@ async function getRecord(openid, data = {}) {
     },
     role,
     roleText: getRoleText(role),
-    readonly: role === "readonly",
+    readonly: role === "readonly" || !canEdit,
+    canEdit,
   });
 }
 

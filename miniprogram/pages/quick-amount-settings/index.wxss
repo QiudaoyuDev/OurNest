@@ -48,7 +48,7 @@
 }
 .amount-pill text {
   margin-left: 16rpx;
-  color: #b78b80;
+  color: var(--tl-color-text-tertiary);
 }
 .amount-add {
   display: flex;
@@ -56,7 +56,7 @@
   gap: 14rpx;
   height: var(--tl-control-height-md);
   padding: 0 14rpx 0 24rpx;
-  border: 1rpx solid #f1ddd5;
+  border: var(--tl-border-width) solid var(--tl-color-border-warm);
   border-radius: var(--tl-radius-control);
   color: var(--tl-color-primary);
   background: var(--tl-color-page);
@@ -83,6 +83,6 @@
 }
 .default-link {
   margin-top: 22rpx;
-  color: #e66a53;
+  color: var(--tl-color-primary);
   font-size: var(--tl-font-body-sm);
 }
