@@ -553,18 +553,23 @@ function ratioPreviewHarness(overrides = {}) {
 }
 
 test("ratio selection queries three records but displays full server totals and identical readonly detail filters", async () => {
-  for (const activeChart of ["monthRatio", "yearRatio"]) {
+  for (const [activeChart, start, end] of [
+    ["monthRatio", "2024-02-01", "2024-03-01"],
+    ["yearRatio", "2025-01-01", "2026-01-01"],
+    ["yearRatio", "2026-01-01", "2026-08-13"],
+  ]) {
     const { page, pending, choose, result, destinations, actions } = ratioPreviewHarness({
       activeChart,
       mode: activeChart === "yearRatio" ? "year" : "month",
+      range: { start, end },
     });
     const work = choose(page.data.categories[1].key);
     assert.equal(page.data.ratioPreviewStatus, "loading");
     assert.equal(page.data.ratioPreviewRecords.length, 0);
     assert.deepEqual(JSON.parse(JSON.stringify(pending[0].query)), {
       ledgerId: "ledger",
-      start: "2026-01-01",
-      end: "2026-02-01",
+      start,
+      end,
       type: "expense",
       categoryFilter: { kind: "id", id: "b" },
       summaryFiltered: true,
@@ -578,7 +583,7 @@ test("ratio selection queries three records but displays full server totals and 
     assert.equal(page.data.ratioPreviewStatus, "ready");
     assert.equal(page.data.ratioPreviewAmountText, "200");
     assert.equal(page.data.ratioPreviewCount, 22);
-    assert.equal(page.data.ratioPreviewRangeLabel, "2026-01-01 起至 2026-02-01 前");
+    assert.equal(page.data.ratioPreviewRangeLabel, `${start} 起至 ${end} 前`);
     assert.equal(page.data.ratioPreviewRecords[0].amountText, "1");
     assert.ok(actions.some((action) => action.type === "select" && action.dataIndex === 1));
     page.openRatioRecords();
