@@ -18,10 +18,9 @@
           </image>
         </view>
         <view wx:if="{{isNoLedger}}" class="state-card card fade-up">
-          <tl-empty-state text="还没有账本">
+          <tl-empty-state variant="no-ledger" title="还没有账本" description="创建第一个账本，开始记录生活中的每一笔收支">
+            <tl-button block="{{true}}" bind:tap="goCreateLedger">创建账本</tl-button>
           </tl-empty-state>
-          <view class="state-copy">创建自己的第一个账本，开始记录每一笔收入和支出。</view>
-          <tl-button bind:tap="goCreateLedger">创建账本</tl-button>
         </view>
         <block wx:elif="{{isEmpty}}">
           <view class="state-card card fade-up">

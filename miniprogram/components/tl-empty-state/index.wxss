@@ -42,3 +42,19 @@
 .tl-empty-state__actions {
   margin-top: var(--tl-space-md);
 }
+
+.tl-empty-state--no-ledger .tl-empty-state__icon {
+  width: 108rpx;
+  height: 108rpx;
+}
+
+.tl-empty-state--no-ledger .tl-empty-state__description {
+  max-width: 400rpx;
+  margin-top: var(--tl-space-sm);
+}
+
+.tl-empty-state--no-ledger .tl-empty-state__actions {
+  width: 360rpx;
+  max-width: 100%;
+  margin-top: var(--tl-space-xl);
+}
