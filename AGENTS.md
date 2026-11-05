@@ -9,6 +9,7 @@
 
 ## 代码与接口约定
 
+- 产品品牌统一使用 `OurNest`，代码、缓存与日志前缀使用 `ourNest`，资源文件名使用 `our-nest`；业务集合保留中性领域命名。
 - 目录、页面路由和自定义组件目录使用 `kebab-case`；变量、函数、数据字段使用 `camelCase`；常量使用 `UPPER_SNAKE_CASE`。
 - 自定义业务组件使用 `tl-` 前缀。调整历史页面路径时，必须同步更新 `miniprogram/app.json` 与所有调用方，不保留失效旧路径。
 - 云函数路由、前端调用参数或数据库字段发生变化时，必须同步更新全部调用方、数据文档、权限边界和相关测试；不保留旧接口。
@@ -38,7 +39,7 @@
 - 除 `tl-tabbar` 外不使用阴影；渐变仅限规范允许的页面背景、Tabbar 中央操作和骨架动画，并保证端点自然衔接。
 - 页面不得私有实现通用骨架、空状态、按钮、固定底部操作、Bottom Sheet 或 Dialog；同一时刻只能有一个组件负责底部安全区。
 - 页面数据状态使用互斥的 Loading → Error / Empty / Ready 状态链，Loading 时不得提前渲染 Ready 内容。
-- 图标继续使用本地 `ri-icon` 的 Remix Icon 线性风格；品牌 Logo 使用 `miniprogram/images/brand/tomato-ledger-logo-256-transparent.png`。
+- 图标继续使用本地 `ri-icon` 的 Remix Icon 线性风格；品牌 Logo 使用 `miniprogram/images/brand/our-nest-logo-256-transparent.png`。
 - 未经明确要求，不要随意修改全局颜色、背景、圆角、卡片语言、图标风格或 navbar 风格。
 - 只读访客不能执行写入、导入、导出等操作；共享账本成员只能编辑/删除自己的记录，创建者可管理全部记录。
 

@@ -69,8 +69,8 @@ node scripts/audit-ui.mjs --json
 
 ### 1. 按钮
 
-- 已有全局 `.tomato-button` 和 `.ghost-button`，但页面仍出现 `.primary-action`、`.save-button`、`.primary-button`、`.submit-button`、`.create-button`、`.import-button`、`.login-button` 等多套实现。
-- WXML 中可识别出 53 个带按钮或操作语义的类名；其中 `.primary-action` 出现 9 次，`.tomato-button` 出现 8 次，说明全局样式并未成为唯一入口。
+- 审计时已有全局主按钮和 `.ghost-button`，但页面仍出现 `.primary-action`、`.save-button`、`.primary-button`、`.submit-button`、`.create-button`、`.import-button`、`.login-button` 等多套实现。
+- 审计时 WXML 中可识别出 53 个带按钮或操作语义的类名；其中 `.primary-action` 出现 9 次，全局主按钮类出现 8 次，说明当时全局样式并未成为唯一入口。
 - 保存加载动画 `saveButtonSpin` 在 3 个页面重复定义，其他提交、登录、加入和重试按钮又分别维护自己的 Spinner。
 
 收敛候选：先定义主操作、次操作、文字操作、危险操作、图标操作五种语义，以及默认、按下、禁用、加载四种状态；是否抽组件在语义确定后决定。
@@ -130,7 +130,7 @@ node scripts/audit-ui.mjs --json
 `app.wxss` 已声明 21 个颜色、间距、圆角、字号、阴影和层级 Token，但落地范围很小：
 
 - `tl-member-list` 已系统使用 Token。
-- 全局 `.card`、`.tomato-button`、`.ghost-button` 自身仍直接写具体值。
+- 审计时全局 `.card`、主按钮和 `.ghost-button` 样式自身仍直接写具体值。
 - 大部分页面和组件继续硬编码颜色、间距、圆角、字号与阴影。
 - `#fff` 与 `#ffffff`、`#25a66a` 与 `#2f9d68`，以及多组暖白色和灰棕色表达接近语义，存在合并空间。
 
