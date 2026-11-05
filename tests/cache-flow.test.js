@@ -188,7 +188,13 @@ test("saving waits for cloud; a failed save preserves input and supports retry",
       }
     )
   );
-  Object.assign(page.data, { ledgerId: "a", amount: "39", note: "午饭" });
+  Object.assign(page.data, {
+    ledgerId: "a",
+    amount: "39",
+    note: "午饭",
+    categoryId: "lunch",
+    categoryLoading: false,
+  });
   const failed = page.saveRecord();
   assert.equal(navigations, 0);
   assert.equal(toasts.length, 0);

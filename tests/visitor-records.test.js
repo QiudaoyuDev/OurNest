@@ -83,7 +83,7 @@ test("the retained plus button explains readonly access and recovers after switc
   assert.match(toasts[0].message, /只读账本.*访客仅可查看/);
   app.globalData.currentLedger = { _id: "owned", readonly: false };
   tabbar.handleRecord();
-  assert.equal(destinations[0], "/pages/record-category/index");
+  assert.equal(destinations[0], "/pages/record-edit/index");
 });
 
 test("directly opening edit uses server permission and redirects visitors before showing the form", async () => {
@@ -201,6 +201,8 @@ test("continuous recording clears only record-specific fields after cloud confir
   Object.assign(page.data, {
     ledgerId: "owned",
     type: "expense",
+    categoryId: "lunch",
+    categoryLoading: false,
     categoryName: "午餐",
     categoryLabel: "餐饮",
     categoryIcon: "restaurant-line",
@@ -253,7 +255,13 @@ test("continuous recording submits once and waits for cloud confirmation before 
       },
     }
   );
-  Object.assign(page.data, { ledgerId: "owned", amount: "36", accounts: ["现金"] });
+  Object.assign(page.data, {
+    ledgerId: "owned",
+    amount: "36",
+    accounts: ["现金"],
+    categoryId: "lunch",
+    categoryLoading: false,
+  });
 
   const first = page.saveAndContinue();
   const duplicate = page.saveAndContinue();
@@ -292,6 +300,8 @@ test("failed continuous recording retains all user input and unlocks submission"
     note: "工作日午餐",
     tagInput: "外卖",
     tags: ["午餐"],
+    categoryId: "lunch",
+    categoryLoading: false,
     accounts: ["现金"],
   });
 
@@ -1828,3 +1838,117 @@ test("interrupted import can recover deleted categories without changing process
   assert.equal(state.records[0].categoryId, "child");
   assert.equal(state.records[10].categoryId, "");
 });
+
+const entryCategories = [
+  { _id: "food", type: "expense", level: "parent", name: "餐饮", icon: "restaurant-line" },
+  {
+    _id: "lunch",
+    type: "expense",
+    level: "child",
+    parentId: "food",
+    name: "午餐",
+    icon: "restaurant-line",
+  },
+  { _id: "work", type: "income", level: "parent", name: "工作" },
+  { _id: "salary", type: "income", level: "child", parentId: "work", name: "工资" },
+];
+
+function newEntryPage(listCategories = async () => entryCategories) {
+  const calls = { writes: [], toasts: [], urls: [], unsubscribed: 0 };
+  const page = load(
+    "miniprogram/pages/record-edit/index.js",
+    { globalData: { currentLedger: { _id: "owned", name: "个人账本", type: "personal" } } },
+    { navigateTo: ({ url }) => calls.urls.push(url) },
+    {
+      "../../services/category.service": { listCategories },
+      "../../services/category.store": {
+        subscribeSync: (callback) => {
+          calls.sync = callback;
+          return () => calls.unsubscribed++;
+        },
+      },
+      "../../services/record.service": {
+        createRecord: async (payload) => calls.writes.push(payload),
+      },
+      "../../services/feedback-ui": { showToast: (value) => calls.toasts.push(value) },
+    }
+  );
+  page.onLoad({ category: "伪造默认分类", categoryId: "lunch" });
+  return { page, calls };
+}
+
+test("new entry requires an explicit inline category and type changes clear only category", async () => {
+  const { page, calls } = newEntryPage();
+  await page.onShow();
+  assert.equal(page.data.categoryId, "");
+  assert.equal(page.data.categoryName, "");
+  page.setAmountExpression("36");
+  page.setData({ note: "保留备注", tags: ["标签"], date: "2026-03-13", accountIndex: 1 });
+  assert.equal(page.data.canSave, false);
+  await page.saveAndContinue();
+  assert.equal(calls.writes.length, 0);
+  assert.equal(calls.toasts[0].message, "请选择分类");
+  page.chooseCategory({ detail: { categoryId: "lunch" } });
+  assert.equal(calls.urls.length, 0);
+  assert.equal(page.data.categoryName, "午餐");
+  assert.equal(page.data.canSave, true);
+  page.switchType({ currentTarget: { dataset: { type: "income" } } });
+  assert.equal(page.data.categoryId, "");
+  assert.equal(page.data.canSave, false);
+  assert.equal(page.data.amount, "36");
+  assert.equal(page.data.note, "保留备注");
+  assert.equal(page.data.date, "2026-03-13");
+  assert.equal(page.data.accountIndex, 1);
+  page.chooseCategory({ detail: { categoryId: "lunch" } });
+  assert.equal(page.data.categoryId, "");
+  page.chooseCategory({ detail: { categoryId: "salary" } });
+  await page.saveAndContinue();
+  assert.equal(calls.writes[0].categoryId, "salary");
+  assert.equal(calls.writes[0].type, "income");
+  page.openCategoryManager();
+  assert.match(calls.urls[0], /category-manage.*ledgerId=owned&type=income/);
+  page.onHide();
+  assert.equal(calls.unsubscribed, 1);
+  await page.onShow();
+  calls.sync({ ledgerId: "other", items: [] });
+  assert.equal(page.data.categoryId, "salary");
+  calls.sync({ ledgerId: "owned", items: entryCategories.filter((item) => item._id !== "salary") });
+  assert.equal(page.data.categoryId, "");
+  page.onUnload();
+  assert.equal(calls.unsubscribed, 2);
+});
+
+test("inline categories distinguish loading, failure, retry and empty without enabling save", async () => {
+  let reject = true;
+  const { page, calls } = newEntryPage(async () => {
+    if (reject) throw new Error("offline");
+    return [];
+  });
+  assert.equal(page.data.categoryLoading, true);
+  await page.onShow();
+  assert.equal(page.data.categoryError, true);
+  page.setAmountExpression("20");
+  await page.saveAndContinue();
+  assert.equal(calls.writes.length, 0);
+  reject = false;
+  await page.loadCategories();
+  assert.equal(page.data.categoryError, false);
+  assert.equal(page.data.categoryLoading, false);
+  assert.equal(page.data.groups.length, 0);
+  assert.equal(page.data.canSave, false);
+});
+
+for (const component of ["tl-tab-home", "tl-tab-records"]) {
+  test(`${component} new entry keeps the viewed ledger and does not route through category`, () => {
+    const urls = [];
+    const view = load(
+      `miniprogram/components/${component}/index.js`,
+      { globalData: { currentLedger: { _id: "other" } } },
+      { navigateTo: ({ url }) => urls.push(url) }
+    );
+    view.data.ledgerId = "viewed";
+    view.data.readonly = false;
+    view.goRecordEdit();
+    assert.equal(urls[0], "/pages/record-edit/index?ledgerId=viewed");
+  });
+}

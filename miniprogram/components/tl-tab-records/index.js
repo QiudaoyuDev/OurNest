@@ -348,7 +348,7 @@ Component({
         return;
       }
       wx.navigateTo({
-        url: `/pages/record-category/index?ledgerId=${encodeURIComponent(this.data.ledgerId)}`,
+        url: `/pages/record-edit/index?ledgerId=${encodeURIComponent(this.data.ledgerId)}`,
       });
     },
     goLatestRecordMonth() {

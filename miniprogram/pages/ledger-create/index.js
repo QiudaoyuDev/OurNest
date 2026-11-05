@@ -111,7 +111,7 @@ Page({
   },
   goRecord() {
     wx.redirectTo({
-      url: `/pages/record-category/index?ledgerId=${encodeURIComponent(this.data.createdLedgerId)}`,
+      url: `/pages/record-edit/index?ledgerId=${encodeURIComponent(this.data.createdLedgerId)}`,
     });
   },
   onShareAppMessage() {

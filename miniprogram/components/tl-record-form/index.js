@@ -8,6 +8,8 @@ const {
 Component({
   properties: {
     amount: { type: String, value: "" },
+    quickEntry: { type: Boolean, value: false },
+    saving: { type: Boolean, value: false },
     type: { type: String, value: "expense" },
     amountResult: { type: String, value: "" },
     showAmountResult: { type: Boolean, value: false },
@@ -25,11 +27,12 @@ Component({
   },
   methods: {
     openKeypad() {
-      if (this.data.showKeypad) return;
+      if (this.data.quickEntry || this.data.showKeypad) return;
       this.setData({ showKeypad: true });
       this.triggerEvent("keypadchange", { open: true });
     },
     closeKeypad() {
+      if (this.data.quickEntry) return;
       this.settleAmount(false);
       this.setData({ showKeypad: false });
       this.triggerEvent("keypadchange", { open: false });
@@ -86,6 +89,12 @@ Component({
     },
     calculate() {
       this.settleAmount(true);
+    },
+    submit() {
+      if (!this.data.quickEntry || this.data.saving) return;
+      // The page validates and evaluates the current expression before saving.
+      // Do not emit amountinput here: property updates may arrive asynchronously.
+      this.triggerEvent("submit");
     },
     quickAmount(event) {
       this.triggerEvent("quickamount", { amount: event.currentTarget.dataset.amount });
