@@ -1,9 +1,9 @@
-<view class="tl-record-form">
-  <view class="tl-record-form__amount" bindtap="openKeypad">
+<view class="tl-record-form {{quickEntry ? 'tl-record-form--quick' : ''}}">
+  <view wx:if="{{!quickEntry}}" class="tl-record-form__amount" bindtap="openKeypad">
     <text>¥</text>
     <text class="tl-record-form__amount-value {{amount ? '' : 'is-placeholder'}}">{{amount || '0.00'}}</text>
   </view>
-  <scroll-view wx:if="{{quickAmounts.length}}" class="tl-record-form__quick" scroll-x="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}">
+  <scroll-view wx:if="{{!quickEntry && quickAmounts.length}}" class="tl-record-form__quick" scroll-x="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}">
     <view class="tl-record-form__quick-list">
       <view wx:for="{{quickAmounts}}" wx:key="*this" data-amount="{{item}}" bindtap="quickAmount">¥{{item}}</view>
     </view>
@@ -11,69 +11,77 @@
   <view wx:if="{{showKeypad && !quickEntry}}" class="tl-record-form__keypad-mask" bindtap="closeKeypad">
   </view>
   <view wx:if="{{quickEntry || showKeypad}}" class="tl-record-form__keypad {{quickEntry ? 'tl-record-form__keypad--quick' : ''}}">
-    <view class="tl-record-form__keypad-header">
-      <scroll-view wx:if="{{quickEntry}}" class="tl-record-form__expression" scroll-x="{{true}}" show-scrollbar="{{false}}">
-        <text>¥ {{amount || '0.00'}}</text>
-      </scroll-view>
-      <block wx:else>
-        <text>咱家记一笔</text>
-        <view class="tl-record-form__keypad-close">
-          <tl-button block="{{true}}" size="small" bind:tap="closeKeypad">确认</tl-button>
-        </view>
-      </block>
+    <view wx:if="{{!quickEntry}}" class="tl-record-form__keypad-header">
+      <text>咱家记一笔</text>
+      <view class="tl-record-form__keypad-close">
+        <tl-button block="{{true}}" size="small" bind:tap="closeKeypad">确认</tl-button>
+      </view>
     </view>
-    <view class="tl-record-form__keypad-grid">
+    <view class="tl-record-form__toolbar">
+      <view class="tl-record-form__toolbar-operators">
+        <view class="toolbar-btn" data-operator="+" bindtap="pressOperator">+</view>
+        <view class="toolbar-btn" data-operator="-" bindtap="pressOperator">−</view>
+        <view class="toolbar-btn toolbar-btn--clear" bindtap="clearAmount">清空</view>
+      </view>
+      <scroll-view wx:if="{{quickAmounts.length}}" class="tl-record-form__toolbar-quick" scroll-x="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}">
+        <view class="toolbar-quick-list">
+          <view wx:for="{{quickAmounts}}" wx:key="*this" class="toolbar-quick-item" data-amount="{{item}}" bindtap="quickAmount">¥{{item}}</view>
+        </view>
+      </scroll-view>
+    </view>
+    <view class="tl-record-form__keypad-grid tl-record-form__keypad-grid--3col">
       <view class="keypad-key" data-digit="1" bindtap="pressNumber">1</view>
       <view class="keypad-key" data-digit="2" bindtap="pressNumber">2</view>
       <view class="keypad-key" data-digit="3" bindtap="pressNumber">3</view>
-      <view class="keypad-key keypad-key--operator" data-operator="+" bindtap="pressOperator">+</view>
       <view class="keypad-key" data-digit="4" bindtap="pressNumber">4</view>
       <view class="keypad-key" data-digit="5" bindtap="pressNumber">5</view>
       <view class="keypad-key" data-digit="6" bindtap="pressNumber">6</view>
-      <view class="keypad-key keypad-key--operator" data-operator="-" bindtap="pressOperator">−</view>
       <view class="keypad-key" data-digit="7" bindtap="pressNumber">7</view>
       <view class="keypad-key" data-digit="8" bindtap="pressNumber">8</view>
       <view class="keypad-key" data-digit="9" bindtap="pressNumber">9</view>
-      <button wx:if="{{quickEntry}}" class="keypad-key keypad-key--submit" disabled="{{saving}}" loading="{{saving}}" bindtap="submit">{{saving ? '保存中' : '完成'}}</button>
-      <view wx:else class="keypad-key keypad-key--clear" bindtap="clearAmount">清空</view>
       <view class="keypad-key" bindtap="pressDecimal">.</view>
       <view class="keypad-key" data-digit="0" bindtap="pressNumber">0</view>
-      <view class="keypad-key keypad-key--clear" bindtap="backspace">⌫</view>
-      <view wx:if="{{!quickEntry}}" class="keypad-key keypad-key--equal" bindtap="calculate">=</view>
+      <view class="keypad-key keypad-key--backspace" bindtap="backspace">⌫</view>
+    </view>
+    <view class="tl-record-form__submit-bar">
+      <button wx:if="{{quickEntry}}" class="keypad-submit-btn" disabled="{{saving}}" loading="{{saving}}" bindtap="submit">{{saving ? '保存中...' : '完成'}}</button>
+      <view wx:else class="keypad-submit-btn keypad-submit-btn--equal" bindtap="calculate">=</view>
     </view>
   </view>
-  <view class="tl-record-form__field">
-    <text>账本</text>
-    <text class="tl-record-form__value">{{ledgerName}}</text>
-  </view>
-  <view class="tl-record-form__field">
-    <text>账户</text>
-    <picker mode="selector" range="{{accounts}}" value="{{accountIndex}}" bindchange="accountChange">
-      <view class="tl-record-form__value">{{accounts[accountIndex]}}</view>
-    </picker>
-  </view>
-  <view class="tl-record-form__field">
-    <text>日期</text>
-    <picker mode="date" value="{{date}}" bindchange="dateChange">
-      <view class="tl-record-form__value">{{date}}</view>
-    </picker>
-  </view>
-  <view class="tl-record-form__field tl-record-form__field--note">
-    <text>备注</text>
-    <textarea class="tl-record-form__note" value="{{note}}" auto-height="{{false}}" bindinput="noteInput" placeholder="100字以内" />
-  </view>
-  <view class="tl-record-form__tags">
-    <text>标签</text>
-    <view class="tl-record-form__tag-content">
-      <view class="tl-record-form__tag-composer">
-        <input value="{{tagInput}}" bindinput="tagInput" bindconfirm="addTag" placeholder="输入标签" />
-        <view class="tl-record-form__add" bindtap="addTag">添加</view>
-      </view>
-      <view class="tl-record-form__tag-list">
-        <view wx:for="{{tags}}" wx:key="*this" data-index="{{index}}" bindtap="removeTag">#{{item}}</view>
+  <block wx:if="{{!quickEntry}}">
+    <view class="tl-record-form__field">
+      <text>账本</text>
+      <text class="tl-record-form__value">{{ledgerName}}</text>
+    </view>
+    <view class="tl-record-form__field">
+      <text>账户</text>
+      <picker mode="selector" range="{{accounts}}" value="{{accountIndex}}" bindchange="accountChange">
+        <view class="tl-record-form__value">{{accounts[accountIndex]}}</view>
+      </picker>
+    </view>
+    <view class="tl-record-form__field">
+      <text>日期</text>
+      <picker mode="date" value="{{date}}" bindchange="dateChange">
+        <view class="tl-record-form__value">{{date}}</view>
+      </picker>
+    </view>
+    <view class="tl-record-form__field tl-record-form__field--note">
+      <text>备注</text>
+      <textarea class="tl-record-form__note" value="{{note}}" auto-height="{{false}}" bindinput="noteInput" placeholder="100字以内" />
+    </view>
+    <view class="tl-record-form__tags">
+      <text>标签</text>
+      <view class="tl-record-form__tag-content">
+        <view class="tl-record-form__tag-composer">
+          <input value="{{tagInput}}" bindinput="tagInput" bindconfirm="addTag" placeholder="输入标签" />
+          <view class="tl-record-form__add" bindtap="addTag">添加</view>
+        </view>
+        <view class="tl-record-form__tag-list">
+          <view wx:for="{{tags}}" wx:key="*this" data-index="{{index}}" bindtap="removeTag">#{{item}}</view>
+        </view>
       </view>
     </view>
-  </view>
+  </block>
   <view wx:if="{{quickEntry}}" class="tl-record-form__keypad-space" aria-hidden="{{true}}">
   </view>
 </view>

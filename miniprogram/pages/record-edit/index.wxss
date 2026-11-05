@@ -133,8 +133,11 @@
   font-size: var(--tl-font-caption);
 }
 
-.category-section {
-  margin-bottom: var(--tl-space-lg);
+/* 快速记账核心看板 */
+.entry-dashboard {
+  padding: var(--tl-space-md);
+  margin-bottom: var(--tl-space-sm);
+  background: var(--tl-color-surface);
 }
 
 .type-switch {
@@ -143,11 +146,129 @@
   gap: var(--tl-space-sm);
 }
 
+.dashboard-amount-wrap {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  padding: var(--tl-space-sm) 0;
+  gap: var(--tl-space-xs);
+}
+
+.dashboard-currency {
+  font-size: var(--tl-font-size-2xl);
+  font-weight: var(--tl-font-weight-bold);
+  color: var(--tl-color-primary);
+}
+
+.dashboard-amount-value {
+  font-size: var(--tl-font-data-xl);
+  font-weight: var(--tl-font-weight-bold);
+  color: var(--tl-color-text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.dashboard-amount-value.is-placeholder {
+  color: var(--tl-color-text-tertiary);
+}
+
+.dashboard-amount-result {
+  margin-left: var(--tl-space-xs);
+  font-size: var(--tl-font-body-sm);
+  font-weight: var(--tl-font-weight-bold);
+  color: var(--tl-color-text-tertiary);
+}
+
+/* 分类引导胶囊 */
+.category-pill-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--tl-space-sm);
+}
+
+.category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+  padding: 10rpx 24rpx;
+  border-radius: var(--tl-radius-pill);
+  font-size: var(--tl-font-body-sm);
+  font-weight: var(--tl-font-weight-bold);
+  transition: all var(--tl-duration-fast) var(--tl-easing-standard);
+}
+
+.category-pill--empty {
+  background: var(--tl-color-warning-soft);
+  border: 2rpx dashed var(--tl-color-warning);
+  color: var(--tl-color-warning);
+}
+
+.category-pill--selected {
+  background: var(--tl-color-primary-soft);
+  border: var(--tl-border-width) solid var(--tl-color-border-warm);
+  color: var(--tl-color-primary);
+}
+
+/* 属性药丸行 */
+.dashboard-props {
+  display: flex;
+  align-items: center;
+  gap: var(--tl-space-xs);
+  padding-top: var(--tl-space-xs);
+  border-top: var(--tl-border-width) solid var(--tl-color-border-divider);
+}
+
+.prop-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  height: 56rpx;
+  padding: 0 16rpx;
+  border-radius: var(--tl-radius-pill);
+  background: var(--tl-palette-warm-100);
+  color: var(--tl-color-text-secondary);
+  font-size: var(--tl-font-caption);
+  font-weight: var(--tl-font-weight-medium);
+}
+
+.prop-chip--note {
+  flex: 1;
+  min-width: 0;
+}
+
+.prop-note-input {
+  flex: 1;
+  min-width: 0;
+  height: 56rpx;
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-caption);
+}
+
+.prop-note-placeholder {
+  color: var(--tl-color-text-tertiary);
+}
+
+/* 分类受控高度卡片 */
+.category-section {
+  padding: var(--tl-space-sm) var(--tl-space-md);
+  margin-bottom: var(--tl-space-sm);
+  background: var(--tl-color-surface);
+}
+
 .category-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: var(--tl-space-sm);
+  margin-bottom: var(--tl-space-xs);
+}
+
+.category-heading-title {
   color: var(--tl-color-text-secondary);
   font-size: var(--tl-font-body-sm);
+  font-weight: var(--tl-font-weight-bold);
+}
+
+.category-tree-scroll {
+  height: 280rpx;
+  max-height: 280rpx;
 }
