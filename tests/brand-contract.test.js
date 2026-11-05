@@ -17,13 +17,29 @@ test("OurNest default avatar resolves to a bundled logo", () => {
 
 test("OurNest user reads normalize bundled avatars without changing stored profiles", async () => {
   const stored = [
-    { openid: "member-1", avatarUrl: "/images/brand/unavailable-logo.png" },
+    {
+      _id: "user-1",
+      openid: "member-1",
+      userNo: 1234,
+      nickName: "微信用户",
+      currentLedgerId: "ledger-1",
+      avatarUrl: "/images/brand/unavailable-logo.png",
+    },
     { openid: "member-2", avatarUrl: "cloud://test/custom-avatar.png" },
   ];
-  const query = { limit: () => query, get: async () => ({ data: stored }) };
+  const updates = [];
+  const query = {
+    limit: () => query,
+    get: async () => ({ data: stored }),
+    count: async () => ({ total: 0 }),
+  };
   const db = {
-    command: { aggregate: {}, in: (values) => values },
-    collection: () => ({ where: () => query }),
+    command: { aggregate: {}, in: (values) => values, or: (values) => values },
+    serverDate: () => new Date(),
+    collection: () => ({
+      where: () => query,
+      doc: () => ({ update: async ({ data }) => updates.push(data) }),
+    }),
   };
   const cloud = { init() {}, database: () => db };
   const context = { module: { exports: {} }, require: () => cloud };
@@ -34,6 +50,25 @@ test("OurNest user reads normalize bundled avatars without changing stored profi
   const members = await helpers.getUsersByOpenids(["member-1", "member-2"]);
   assert.equal(members["member-1"].avatarUrl, LOGO_URL);
   assert.equal(members["member-2"].avatarUrl, stored[1].avatarUrl);
+  assert.equal(stored[0].avatarUrl, "/images/brand/unavailable-logo.png");
+
+  const authContext = {
+    module: { exports: {} },
+    require: (name) =>
+      name === "../shared/helpers"
+        ? { ...helpers, db, _: db.command, getLedgerById: async () => ({ _id: "ledger-1" }) }
+        : { assertOpenid() {} },
+  };
+  vm.runInNewContext(
+    fs.readFileSync("cloudfunctions/ourNest/handlers/auth.handler.js", "utf8"),
+    authContext
+  );
+  const result = await authContext.module.exports.login("member-1");
+  assert.equal(result.data.user.avatarUrl, LOGO_URL);
+  assert.equal(result.data.user.nickName, "小家成员#1234");
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].nickName, "小家成员#1234");
+  assert.equal(Object.hasOwn(updates[0], "avatarUrl"), false);
   assert.equal(stored[0].avatarUrl, "/images/brand/unavailable-logo.png");
 });
 

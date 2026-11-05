@@ -32,33 +32,34 @@ async function generateUniqueUserNo() {
 // --- 用户 Profile ---
 
 async function normalizeUserProfile(user) {
-  let changed = false;
+  const updates = {};
   const nextUser = { ...user };
 
   if (!nextUser.userNo) {
     nextUser.userNo = await generateUniqueUserNo();
-    changed = true;
+    updates.userNo = nextUser.userNo;
   }
 
   if (isPlaceholderName(nextUser.nickName)) {
-    nextUser.nickName = makeUserName(nextUser.userNo);
-    changed = true;
+    const nickName = makeUserName(nextUser.userNo);
+    if (nickName !== nextUser.nickName) {
+      nextUser.nickName = nickName;
+      updates.nickName = nickName;
+    }
   }
 
   if (!nextUser.avatarUrl) {
     nextUser.avatarUrl = defaultAvatarUrl;
-    changed = true;
+    updates.avatarUrl = defaultAvatarUrl;
   }
 
-  if (changed && nextUser._id) {
+  if (Object.keys(updates).length && nextUser._id) {
     await db
       .collection("users")
       .doc(nextUser._id)
       .update({
         data: {
-          userNo: nextUser.userNo,
-          nickName: nextUser.nickName,
-          avatarUrl: nextUser.avatarUrl,
+          ...updates,
           updatedAt: now(),
         },
       });
