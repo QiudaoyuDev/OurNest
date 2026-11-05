@@ -128,7 +128,7 @@
                 <view class="function-title">更新日志</view>
                 <text class="status-badge">规划中</text>
               </view>
-              <view class="function-tip">查看咱家小账最近变化</view>
+              <view class="function-tip">查看最近更新</view>
             </view>
             <view class="function-arrow">
               <tl-icon name="arrow-right-s-line" size="32" colorKey="primary">

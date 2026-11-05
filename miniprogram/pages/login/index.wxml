@@ -4,7 +4,7 @@
       <image class="login-logo soft-pop" src="/images/brand/our-nest-logo-256-transparent.png" mode="aspectFit">
       </image>
       <view class="login-title fade-up">咱家小账</view>
-      <view class="login-subtitle fade-up">温暖、干净、好用的家庭与个人记账小程序</view>
+      <view class="login-subtitle fade-up">记好每一笔，生活更有数。</view>
       <tl-button class="login-button" block="{{true}}" loading="{{loggingIn}}" loading-text="登录中..." bind:tap="login">微信快捷登录</tl-button>
     </view>
   </scroll-view>

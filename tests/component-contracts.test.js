@@ -63,6 +63,75 @@ test("every component tag resolves through its global or local registration", ()
   }
 });
 
+test("category tree renders one controlled selection by ID and preserves selection events", () => {
+  const { instance, events } = component("tl-category-tree");
+  assert.equal(instance.data.selectedCategoryId, "");
+  const template = fs.readFileSync("miniprogram/components/tl-category-tree/index.wxml", "utf8");
+  const childClass = template.match(/class="(tl-category-tree__child(?:\s[^"]*)?)"/)[1];
+  const selectedClass = (child, selectedCategoryId) =>
+    childClass.replace(/\{\{(.*?)\}\}/g, (_match, expression) =>
+      vm.runInNewContext(expression, { child, selectedCategoryId })
+    );
+  const children = [
+    { _id: "lunch", name: "午餐" },
+    { id: "dinner", name: "午餐" },
+  ];
+  for (const id of ["", "lunch", "dinner", "deleted"]) {
+    const selected = children.filter((child) => selectedClass(child, id).includes("is-selected"));
+    assert.equal(selected.length, id === "lunch" || id === "dinner" ? 1 : 0);
+    if (selected.length) assert.equal(selected[0]._id || selected[0].id, id);
+  }
+  assert.match(
+    template,
+    /wx:if="\{\{selectedCategoryId && \(child\._id \|\| child\.id\) === selectedCategoryId\}\}"/
+  );
+  assert.match(template, /name="check-line"/);
+  const style = fs.readFileSync("miniprogram/components/tl-category-tree/index.wxss", "utf8");
+  assert.match(style, /\.tl-category-tree__child\.is-selected\s*\{[^}]*border-color:/);
+  assert.match(style, /\.tl-category-tree__child\.is-selected\s*\{[^}]*background:/);
+  instance.select({ currentTarget: { dataset: { categoryId: "dinner" } } });
+  assert.equal(events[0].name, "select");
+  assert.equal(events[0].detail.categoryId, "dinner");
+  assert.equal(instance.data.selectedCategoryId, "");
+});
+
+test("record entry passes selected identity and keeps the category heading uncompressed", () => {
+  const template = fs.readFileSync("miniprogram/pages/record-edit/index.wxml", "utf8");
+  assert.match(template, /<tl-category-tree[^>]*selected-category-id="\{\{categoryId\}\}"/);
+  assert.match(template, /<tl-button[^>]*class="category-manage-button"[^>]*openCategoryManager/);
+  const style = fs.readFileSync("miniprogram/pages/record-edit/index.wxss", "utf8");
+  const heading = style.match(/\.category-heading-title\s*\{([^}]*)\}/)[1];
+  assert.match(heading, /flex:\s*0 0 auto;/);
+  assert.match(heading, /white-space:\s*nowrap;/);
+  const button = style.match(/\.category-manage-button\s*\{([^}]*)\}/)[1];
+  assert.match(button, /flex:\s*0 0 auto;/);
+  assert.match(button, /width:\s*auto;/);
+});
+
+test("analysis ratio UI shares a preview template and uses public loading, error and sheet components", () => {
+  const template = fs.readFileSync("miniprogram/components/tl-tab-analysis/index.wxml", "utf8");
+  assert.equal((template.match(/<template name="ratio-section">/g) || []).length, 1);
+  assert.equal((template.match(/<template\b[^>]*is="ratio-section"/g) || []).length, 2);
+  assert.match(template, /ratioPreviewStatus === 'loading'/);
+  assert.match(template, /ratioPreviewStatus === 'error'/);
+  assert.match(template, /ratioPreviewStatus === 'empty'/);
+  assert.match(template, /ratioPreviewStatus === 'ready'/);
+  assert.match(template, /<tl-skeleton[^>]*ratioPreviewStatus/);
+  assert.match(template, /<tl-empty-state[^>]*variant="error"/);
+  assert.match(
+    template,
+    /<tl-bottom-sheet[^>]*visible="\{\{ratioRemainderVisible\}\}"[^>]*closeRatioRemainder/
+  );
+  assert.match(template, /data-key="\{\{item.key\}\}" bindtap="chooseRatioRemainder"/);
+  assert.match(template, /data-key="\{\{item.key\}\}" bindtap="selectRatioCategory"/);
+  assert.match(template, /bind:tap="openRatioRecords"/);
+  assert.match(template, /bind:tap="retryRatioPreview"/);
+  assert.match(template, /bind:tap="refreshRatioAnalysis"/);
+  assert.match(template, /ratioPreviewCount/);
+  assert.match(template, /ratioPreviewAmountText/);
+  assert.match(template, /ratioSelection.parentCategory/);
+});
+
 test("ledger switcher normalizes both ledger shapes and only emits selection events", () => {
   const { definition, instance, events } = component("tl-ledger-switcher");
   definition.observers["ledgers, selectedId"].call(

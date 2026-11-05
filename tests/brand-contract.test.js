@@ -119,6 +119,20 @@ test("OurNest profiles preserve the system nickname ownership rule", () => {
   );
 });
 
+test("OurNest entry copy welcomes individual and shared-ledger use without family-only wording", () => {
+  const navbar = fs.readFileSync("miniprogram/components/tl-navbar/index.wxml", "utf8");
+  const keypad = fs.readFileSync("miniprogram/components/tl-record-form/index.wxml", "utf8");
+  const login = fs.readFileSync("miniprogram/pages/login/index.wxml", "utf8");
+  const profile = fs.readFileSync("miniprogram/components/tl-tab-profile/index.wxml", "utf8");
+  assert.match(navbar, /class="brand-name">OurNest<\/text>/);
+  assert.match(keypad, /<text>记一笔<\/text>/);
+  assert.match(login, /记好每一笔，生活更有数。/);
+  assert.match(profile, /class="function-tip">查看最近更新<\/view>/);
+  assert.doesNotMatch(navbar + keypad, /咱家记一笔/);
+  assert.doesNotMatch(login, /家庭与个人记账小程序/);
+  assert.doesNotMatch(profile, /查看咱家小账最近变化/);
+});
+
 test("OurNest import template uses the application storage namespace", () => {
   const source = fs.readFileSync("cloudfunctions/ourNest/handlers/record.handler.js", "utf8");
   assert.ok(source.includes('cloudPath: "templates/our-nest-import-template.xlsx"'));

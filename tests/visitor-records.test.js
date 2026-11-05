@@ -257,7 +257,8 @@ test("continuous recording clears only record-specific fields after cloud confir
   assert.equal(page.data.date, "2026-03-13");
   assert.equal(page.data.accountIndex, 1);
   assert.equal(page.data.saving, false);
-  assert.equal(toasts[0].message, "已记账，可继续记录");
+  assert.equal(page.data.categoryId, "lunch");
+  assert.equal(toasts.length, 0);
 });
 
 test("continuous recording submits once and waits for cloud confirmation before resetting", async () => {
@@ -301,7 +302,8 @@ test("continuous recording submits once and waits for cloud confirmation before 
   await Promise.all([first, duplicate]);
   assert.equal(page.data.amount, "");
   assert.equal(page.data.saving, false);
-  assert.equal(toasts[0].message, "已记账，可继续记录");
+  assert.equal(page.data.categoryId, "lunch");
+  assert.equal(toasts.length, 0);
 });
 
 test("failed continuous recording retains all user input and unlocks submission", async () => {
@@ -1435,6 +1437,17 @@ test("family and category drill-down use matching totals and cursor pages", asyn
       ownerOpenid: "a",
       categoryId: "food",
     },
+    {
+      _id: "0",
+      date: "2026-02-01",
+      createdAt: 0.5,
+      ledgerId: "ledger",
+      type: "expense",
+      amount: 0.25,
+      ownerOpenid: "b",
+      categoryId: "food",
+      familyAttribution: { payerOpenid: "b", consumerKind: "personal", consumerOpenid: "b" },
+    },
   ];
   const command = {
     gte: (value) => ({ and: (end) => ({ op: "range", value, end }) }),
@@ -1536,6 +1549,45 @@ test("family and category drill-down use matching totals and cursor pages", asyn
   assert.equal(second.hasMore, false);
   assert.equal(second.rangeSummary.expense, 30);
   assert.equal(second.readonly, true);
+
+  records.push(
+    { ...records[0], _id: "another-ledger", ledgerId: "another", amount: 999 },
+    { ...records[0], _id: "income", type: "income", amount: 999 },
+    { ...records[0], _id: "before-start", date: "2026-01-31", amount: 999 },
+    { ...records[0], _id: "at-end", date: "2026-03-01", amount: 999 }
+  );
+  const previewQuery = {
+    ledgerId: "ledger",
+    start: "2026-02-01",
+    end: "2026-03-01",
+    type: "expense",
+    categoryFilter: { kind: "id", id: "food" },
+    summaryFiltered: true,
+    pageSize: 3,
+    cursor: null,
+  };
+  const preview = await handler.listRecords("visitor", previewQuery);
+  assert.equal(preview.records.length, 3);
+  assert.equal(preview.hasMore, true);
+  assert.equal(preview.rangeRecordCount, 4);
+  assert.equal(preview.rangeSummary.expense, 35.25);
+  assert.equal(
+    preview.records.reduce((sum, row) => sum + row.amount, 0),
+    35
+  );
+  const full = await handler.listRecords("visitor", { ...previewQuery, pageSize: 30 });
+  assert.equal(full.records.length, 4);
+  assert.equal(full.hasMore, false);
+  assert.equal(full.rangeRecordCount, preview.rangeRecordCount);
+  assert.equal(full.rangeSummary.expense, preview.rangeSummary.expense);
+  assert.equal(preview.readonly, true);
+  const empty = await handler.listRecords("visitor", {
+    ...previewQuery,
+    categoryFilter: { kind: "id", id: "missing" },
+  });
+  assert.equal(empty.records.length, 0);
+  assert.equal(empty.rangeRecordCount, 0);
+  assert.equal(empty.rangeSummary.expense, 0);
 });
 
 test("shared records validate family members and keep creator authority on server", async () => {

@@ -2,6 +2,7 @@ Component({
   properties: {
     groups: { type: Array, value: [] },
     expandedGroupId: { type: String, value: "" },
+    selectedCategoryId: { type: String, value: "" },
   },
   methods: {
     toggle(event) {

@@ -75,7 +75,7 @@
           <view wx:if="{{!isEditing}}" class="category-section card fade-up">
             <view class="category-heading">
               <text class="category-heading-title">选择分类</text>
-              <tl-button variant="text" size="small" bind:tap="openCategoryManager">管理分类</tl-button>
+              <tl-button class="category-manage-button" variant="text" size="small" bind:tap="openCategoryManager">管理分类</tl-button>
             </view>
             <scroll-view class="category-tree-scroll" scroll-y="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}">
               <tl-skeleton wx:if="{{categoryLoading}}" variant="list">
@@ -85,7 +85,7 @@
               </tl-empty-state>
               <tl-empty-state wx:elif="{{!groups.length}}" title="暂无分类" description="可通过管理分类添加分类">
               </tl-empty-state>
-              <tl-category-tree wx:else groups="{{groups}}" expanded-group-id="{{expandedGroupId}}" bind:toggle="toggleGroup" bind:select="chooseCategory">
+              <tl-category-tree wx:else groups="{{groups}}" expanded-group-id="{{expandedGroupId}}" selected-category-id="{{categoryId}}" bind:toggle="toggleGroup" bind:select="chooseCategory">
               </tl-category-tree>
             </scroll-view>
           </view>

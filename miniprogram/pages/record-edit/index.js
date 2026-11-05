@@ -677,7 +677,6 @@ Page({
     try {
       if (this.data.isEditing) {
         await recordService.updateRecord(payload);
-        feedback.showToast({ type: "success", message: "已保存" });
         wx.navigateBack();
         return;
       }
@@ -685,10 +684,8 @@ Page({
       await recordService.createRecord(payload);
       if (continueRecording) {
         this.resetForNextRecord();
-        feedback.showToast({ type: "success", message: "已记账，可继续记录" });
         return;
       }
-      feedback.showToast({ type: "success", message: "已记账" });
       wx.navigateBack();
     } catch (error) {
       this.setData({ saving: false });

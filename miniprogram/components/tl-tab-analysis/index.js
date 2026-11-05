@@ -1,5 +1,7 @@
 import * as echarts from "../ec-canvas/echarts";
 const app = getApp();
+const recordService = require("../../services/record.service");
+const { initialRatioPreview, createRatioMethods } = require("./ratio-preview");
 const ledgerService = require("../../services/ledger.service");
 const ledgerStore = require("../../services/ledger.store");
 const feedback = require("../../services/feedback-ui");
@@ -33,6 +35,7 @@ const {
 
 Component({
   data: {
+    ...initialRatioPreview(),
     ledgerId: "",
     ledgerName: "分析账本",
     ledgerType: "personal",
@@ -114,6 +117,7 @@ Component({
       onEvent("records:changed", this._onRecordsChanged);
     },
     detached() {
+      this.clearRatioPreview();
       if (this._onRecordsChanged) offEvent("records:changed", this._onRecordsChanged);
       this.isAttached = false;
       this.analysisRequestId += 1;
@@ -123,6 +127,7 @@ Component({
   },
 
   methods: {
+    ...createRatioMethods(recordService, (options) => wx.navigateTo(options)),
     refreshAnalysis(syncResult = {}) {
       const changedLedgerIds = syncResult.changedLedgerIds || [];
       const removedLedgerIds = syncResult.removedLedgerIds || [];
@@ -131,6 +136,7 @@ Component({
           .getCachedLedgers()
           .find((ledger) => !removedLedgerIds.includes(ledger._id || ledger.id));
         if (!fallback) {
+          this.clearRatioPreview();
           this.analysisRequestId += 1;
           this.disposeChart();
           this.setData({
@@ -186,6 +192,7 @@ Component({
     },
 
     async loadAnalysis() {
+      this.clearRatioPreview();
       if (!this.data.ledgerId) return this.setData({ loading: false, noLedger: true });
       this._chartRetryCount = 0;
       const requestId = ++this.analysisRequestId;
@@ -468,6 +475,7 @@ Component({
     switchChart(event) {
       const activeChart = event.currentTarget.dataset.chart;
       if (!CHART_META[activeChart] || activeChart === this.data.activeChart) return;
+      this.clearRatioPreview();
       const meta = CHART_META[activeChart];
       const nextData = { ...this.data, activeChart };
       const detailRows = getDetailRows(nextData, activeChart);
@@ -499,6 +507,13 @@ Component({
 
     openCategoryRecords(event) {
       const source = event.currentTarget.dataset.source;
+      if (
+        ["monthRatio", "yearRatio"].includes(this.data.activeChart) &&
+        !["year", "custom"].includes(source)
+      ) {
+        const row = (this.data.activeRanking || [])[Number(event.currentTarget.dataset.index)];
+        return this.loadRatioPreview(row && row.key);
+      }
       const rows =
         source === "year"
           ? this.data.yearRankingRows
@@ -577,14 +592,26 @@ Component({
       const rows = chart === "yearBalance" ? this.data.recentYearTrend : this.data.trend;
       if (
         !["yearCashflow", "yearBalance", "monthTrend", "trend"].includes(chart) ||
-        !Array.isArray(rows)
+        !Array.isArray(rows) ||
+        !params
       )
         return;
-      const row = rows[Number(params.dataIndex)];
+      let row;
+      if (params.componentType === "markPoint") {
+        // A markPoint dataIndex is the marker ordinal, not a trend row index.
+        const bucketKey = params.data && params.data.bucketKey;
+        if (typeof bucketKey !== "string" || !bucketKey) return;
+        row = rows.find((item) => item.key === bucketKey);
+      } else if (params.componentType === "series") {
+        const index = params.dataIndex;
+        if (!Number.isInteger(index) || index < 0 || index >= rows.length) return;
+        row = rows[index];
+      } else return;
       const key = row && String(row.key || "");
       if (!key || !/^(?:\d{4}|\d{4}-\d{2}|\d{4}-\d{2}-\d{2})$/.test(key)) return;
       const start = key.length === 4 ? `${key}-01-01` : key.length === 7 ? `${key}-01` : key;
       const date = new Date(`${start}T00:00:00Z`);
+      if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== start) return;
       if (key.length === 4) date.setUTCFullYear(date.getUTCFullYear() + 1);
       else if (key.length === 7) date.setUTCMonth(date.getUTCMonth() + 1);
       else date.setUTCDate(date.getUTCDate() + 1);
@@ -636,7 +663,11 @@ Component({
       });
       canvas.setChart(chart);
       chart.setOption(getChartOption(this.data), true);
-      chart.on("click", (params) => this.openTrendRecords(params));
+      chart.on("click", (params) => {
+        if (["monthRatio", "yearRatio"].includes(this.data.activeChart)) {
+          this.openRatioChartSelection(params);
+        } else this.openTrendRecords(params);
+      });
       this.chart = chart;
       const component = this.selectComponent("#analysis-chart");
       if (component && typeof component.setChart === "function") component.setChart(chart);
