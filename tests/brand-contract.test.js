@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
+const { PNG } = require("pngjs");
 const { DEFAULT_AVATAR_URL } = require("../miniprogram/utils/avatar");
 const { assertProfileInput } = require("../cloudfunctions/ourNest/validators/schemas");
 
@@ -13,6 +14,36 @@ test("OurNest default avatar resolves to a bundled logo", () => {
   assert.ok(fs.existsSync(path.join("miniprogram", LOGO_URL)));
   const helpers = fs.readFileSync("cloudfunctions/ourNest/shared/helpers.js", "utf8");
   assert.ok(helpers.includes(`const defaultAvatarUrl = "${LOGO_URL}";`));
+});
+
+test("OurNest bundled logo matches the approved two-layer nest artwork", () => {
+  const bundled = fs.readFileSync(path.join("miniprogram", LOGO_URL));
+  assert.deepEqual(bundled, fs.readFileSync("outputs/brand/our-nest-logo-256-transparent.png"));
+  const image = PNG.sync.read(bundled);
+  assert.equal(image.width, 256);
+  assert.equal(image.height, 256);
+  const pixel = (x, y) =>
+    Array.from(image.data.subarray((y * image.width + x) * 4, (y * image.width + x) * 4 + 4));
+  assert.equal(pixel(0, 0)[3], 0);
+  assert.equal(pixel(128, 95)[3], 0);
+  assert.deepEqual(pixel(108, 87), [240, 68, 47, 255]);
+  assert.deepEqual(pixel(128, 161), [240, 68, 47, 255]);
+  assert.equal(pixel(128, 176)[3], 0);
+  assert.deepEqual(pixel(128, 191), [240, 68, 47, 255]);
+  for (let offset = 0; offset < image.data.length; offset += 4) {
+    if (image.data[offset + 3] === 0) continue;
+    assert.deepEqual(Array.from(image.data.subarray(offset, offset + 3)), [240, 68, 47]);
+  }
+});
+
+test("OurNest platform icon remains an opaque square with the same nest artwork", () => {
+  const image = PNG.sync.read(fs.readFileSync("outputs/brand/our-nest-app-icon-1024.png"));
+  assert.equal(image.width, 1024);
+  assert.equal(image.height, 1024);
+  assert.deepEqual(Array.from(image.data.subarray(0, 4)), [240, 68, 47, 255]);
+  for (let offset = 3; offset < image.data.length; offset += 4) {
+    assert.equal(image.data[offset], 255);
+  }
 });
 
 test("OurNest user reads normalize bundled avatars without changing stored profiles", async () => {
