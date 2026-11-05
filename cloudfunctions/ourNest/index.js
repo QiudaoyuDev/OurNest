@@ -77,7 +77,7 @@ const routes = {
 };
 
 function logRequest(fields) {
-  console.info(JSON.stringify({ type: "tomatoLedger", ...fields }));
+  console.info(JSON.stringify({ type: "ourNest", ...fields }));
 }
 
 const sensitiveFieldPattern = /password|token|secret|credential|authorization|cookie|session|code/i;
@@ -102,10 +102,10 @@ function sanitizePayload(value, depth = 0) {
 async function writeErrorLog(fields) {
   try {
     await db.collection("errorLogs").add({
-      data: { type: "tomatoLedgerError", occurredAt: new Date(), status: "failure", ...fields },
+      data: { type: "ourNestError", occurredAt: new Date(), status: "failure", ...fields },
     });
   } catch (error) {
-    console.warn("Failed to write tomatoLedger error log", error);
+    console.warn("Failed to write ourNest error log", error);
   }
 }
 
@@ -131,7 +131,7 @@ exports.main = async (event = {}) => {
     try {
       ({ OPENID: openid } = cloud.getWXContext());
     } catch (error) {
-      console.warn("Failed to get OpenID for tomatoLedger error log", error);
+      console.warn("Failed to get OpenID for ourNest error log", error);
     }
     await writeErrorLog({
       requestId,
@@ -186,7 +186,7 @@ exports.main = async (event = {}) => {
     const normalized = toFailure(error);
     console.error(
       JSON.stringify({
-        type: "tomatoLedger",
+        type: "ourNest",
         requestId,
         route,
         ledgerId,
@@ -200,7 +200,7 @@ exports.main = async (event = {}) => {
       try {
         ({ OPENID: openid } = cloud.getWXContext());
       } catch (contextError) {
-        console.warn("Failed to get OpenID for tomatoLedger error log", contextError);
+        console.warn("Failed to get OpenID for ourNest error log", contextError);
       }
     }
     await writeErrorLog({
