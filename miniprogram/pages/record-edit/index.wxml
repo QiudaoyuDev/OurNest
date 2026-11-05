@@ -4,7 +4,7 @@
   <tl-container safe-area="{{false}}">
     <scroll-view class="page-scroll" scroll-y="{{true}}" enhanced="{{true}}" enable-flex="{{true}}" show-scrollbar="{{false}}">
       <view class="page-content">
-        <tl-skeleton wx:if="{{recordLoading || familyLoading}}" variant="detail">
+        <tl-skeleton wx:if="{{recordLoading}}" variant="detail">
         </tl-skeleton>
         <tl-empty-state wx:elif="{{recordLoadError}}" variant="error" title="记录加载失败" description="请检查网络后重试">
           <tl-button variant="secondary" size="small" bind:tap="reloadRecord">重新加载</tl-button>
@@ -91,7 +91,10 @@
           </view>
           <view wx:if="{{familyError || (familyEnabled && type === 'expense')}}" class="family-card card">
             <view class="family-title">家庭归属</view>
-            <block wx:if="{{familyError}}">
+            <block wx:if="{{familyLoading}}">
+              <view class="family-note">正在同步家庭成员…</view>
+            </block>
+            <block wx:elif="{{familyError}}">
               <view class="family-note">成员信息加载失败，无法保存家庭归属。</view>
               <tl-button variant="secondary" size="small" bind:tap="retryFamilyContext">重新加载</tl-button>
             </block>

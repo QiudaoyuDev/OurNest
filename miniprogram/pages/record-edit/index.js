@@ -12,6 +12,8 @@ const {
   getAmountValidationMessage,
 } = require("../../utils/amount-expression");
 
+const ledgerMembersMemoryCache = {};
+
 function today() {
   const now = new Date();
   const month = `${now.getMonth() + 1}`.padStart(2, "0");
@@ -144,12 +146,20 @@ Page({
       else wx.reLaunch({ url: "/pages/index/index" });
       return;
     }
+    const isShared = targetLedger.type === "shared";
+    const needFamily = !options.id && isShared && Boolean(ledgerId);
+    const hasFamilyCache = needFamily && Boolean(ledgerMembersMemoryCache[ledgerId]);
+    const cachedCategories =
+      !options.id && ledgerId && typeof categoryStore.getCategoriesSync === "function"
+        ? categoryStore.getCategoriesSync(ledgerId)
+        : [];
+    const hasCachedCategories = Array.isArray(cachedCategories) && cachedCategories.length > 0;
     const date = options.id ? this.data.date : today();
     this._currentLedger = targetLedger;
     this.setData({
       type,
-      familyEnabled: !options.id && targetLedger.type === "shared",
-      familyLoading: !options.id && (targetLedger.type === "shared" || !targetLedger._id),
+      familyEnabled: needFamily,
+      familyLoading: needFamily && !hasFamilyCache,
       typeLabel: type === "income" ? "收入" : "支出",
       typeIcon: type === "income" ? "funds-line" : "price-tag-3-line",
       ledgerName: targetLedger.name || "我家账本",
@@ -159,10 +169,13 @@ Page({
       quickNotes: quickNotesFor(type, ""),
       date,
     });
+    if (hasCachedCategories) {
+      this.renderCategories(cachedCategories);
+    }
     if (options.id) {
       this.setData({ recordId: decodeURIComponent(options.id), isEditing: true });
       this.loadRecord(this.data.recordId);
-    } else if (targetLedger.type === "shared" || !targetLedger._id) {
+    } else if (needFamily) {
       this.loadFamilyContext(ledgerId);
     }
   },
@@ -232,7 +245,10 @@ Page({
   async loadCategories() {
     const request = (this._categoryRequest || 0) + 1;
     this._categoryRequest = request;
-    this.setData({ categoryLoading: true, categoryError: false });
+    const hasExisting = Array.isArray(this._categories) && this._categories.length > 0;
+    if (!hasExisting) {
+      this.setData({ categoryLoading: true, categoryError: false });
+    }
     try {
       const items = await categoryService.listCategories(this.data.ledgerId);
       if (request === this._categoryRequest) this.renderCategories(items);
@@ -372,57 +388,69 @@ Page({
   reloadRecord() {
     return this.loadRecord(this.data.recordId);
   },
+  applyFamilyResult(result, existing, display = {}) {
+    if (!result.ledger || result.ledger.type !== "shared") {
+      this.setData({ familyEnabled: false, familyLoading: false });
+      return;
+    }
+    this.setData({ familyEnabled: true });
+    const members = [
+      { openid: "", nickName: "其他" },
+      ...(result.members || []).filter((item) => ["owner", "member"].includes(item.role)),
+    ];
+    const attribution = existing || {
+      payerOpenid: app.globalData.openid || "",
+      consumerKind: "personal",
+      consumerOpenid: app.globalData.openid || "",
+    };
+    [
+      [attribution.payerOpenid, display.payerName],
+      [attribution.consumerOpenid, display.consumerName],
+    ].forEach(([id, name]) => {
+      if (id && !members.some((item) => item.openid === id))
+        members.push({ openid: id, nickName: name || "历史成员" });
+    });
+    const payerIndex = Math.max(
+      0,
+      members.findIndex((item) => item.openid === (attribution.payerOpenid || ""))
+    );
+    const consumerIndex = Math.max(
+      0,
+      members.findIndex((item) => item.openid === (attribution.consumerOpenid || ""))
+    );
+    const kindIndex = Math.max(
+      0,
+      this.data.familyKinds.findIndex((item) => item.value === attribution.consumerKind)
+    );
+    this.setData({
+      familyMembers: members,
+      familyPayerIndex: payerIndex,
+      familyConsumerIndex: consumerIndex,
+      familyKindIndex: kindIndex,
+      familyLoading: false,
+    });
+  },
   async loadFamilyContext(ledgerId, existing, display = {}) {
     this.familyExisting = existing || null;
     this.familyDisplay = display || {};
-    this.setData({ familyLoading: true, familyError: false });
+    const cached = ledgerId && ledgerMembersMemoryCache[ledgerId];
+    if (cached) {
+      this.applyFamilyResult(cached, existing, display);
+    } else {
+      this.setData({ familyLoading: true, familyError: false });
+    }
     try {
       const result = await ledgerService.getLedgerMembers(ledgerId);
-      if (!result.ledger || result.ledger.type !== "shared") {
-        this.setData({ familyEnabled: false, familyLoading: false });
-        return;
-      }
-      this.setData({ familyEnabled: true });
-      const members = [
-        { openid: "", nickName: "其他" },
-        ...(result.members || []).filter((item) => ["owner", "member"].includes(item.role)),
-      ];
-      const attribution = existing || {
-        payerOpenid: app.globalData.openid || "",
-        consumerKind: "personal",
-        consumerOpenid: app.globalData.openid || "",
-      };
-      [
-        [attribution.payerOpenid, display.payerName],
-        [attribution.consumerOpenid, display.consumerName],
-      ].forEach(([id, name]) => {
-        if (id && !members.some((item) => item.openid === id))
-          members.push({ openid: id, nickName: name || "历史成员" });
-      });
-      const payerIndex = Math.max(
-        0,
-        members.findIndex((item) => item.openid === (attribution.payerOpenid || ""))
-      );
-      const consumerIndex = Math.max(
-        0,
-        members.findIndex((item) => item.openid === (attribution.consumerOpenid || ""))
-      );
-      const kindIndex = Math.max(
-        0,
-        this.data.familyKinds.findIndex((item) => item.value === attribution.consumerKind)
-      );
-      this.setData({
-        familyMembers: members,
-        familyPayerIndex: payerIndex,
-        familyConsumerIndex: consumerIndex,
-        familyKindIndex: kindIndex,
-        familyLoading: false,
-      });
+      if (ledgerId) ledgerMembersMemoryCache[ledgerId] = result;
+      this.applyFamilyResult(result, existing, display);
     } catch (_error) {
-      this.setData({ familyLoading: false, familyError: true });
+      if (!cached) {
+        this.setData({ familyLoading: false, familyError: true });
+      }
     }
   },
   retryFamilyContext() {
+    if (this.data.ledgerId) delete ledgerMembersMemoryCache[this.data.ledgerId];
     return this.loadFamilyContext(this.data.ledgerId, this.familyExisting, this.familyDisplay);
   },
   changeFamilyPayer(event) {
