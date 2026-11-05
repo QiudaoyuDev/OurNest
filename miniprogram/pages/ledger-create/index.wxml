@@ -4,13 +4,13 @@
   <tl-container>
     <scroll-view class="page-scroll" scroll-y="{{true}}" enhanced="{{true}}" enable-flex="{{true}}" show-scrollbar="{{false}}">
       <view class="page-content ledger-create-content">
-        <view class="scene {{stage === 'details' ? 'scene-detail' : ''}}">
-          <view class="logo-glow">
+        <view wx:if="{{stage === 'type'}}" class="scene">
+          <view class="logo-mark">
+            <image class="brand-logo" src="/images/brand/our-nest-logo-256-transparent.png" mode="aspectFit">
+            </image>
           </view>
-          <image class="brand-logo" src="/images/brand/our-nest-logo-256-transparent.png" mode="aspectFit">
-          </image>
           <view class="scene-title">新建一个账本</view>
-          <view class="scene-subtitle">先选一种记录方式，再给它取个好记的名字</view>
+          <view class="scene-subtitle">选择适合你的记录方式</view>
         </view>
         <view wx:if="{{stage === 'type'}}" class="type-stage fade-up">
           <view class="type-grid">
@@ -29,7 +29,7 @@
         <view wx:else class="detail-stage fade-up">
           <view class="step-line">
             <view class="selected-pill">{{selectedType === 'shared' ? '共享账本' : '个人账本'}}</view>
-            <tl-button class="back-type" variant="secondary" size="small" bind:tap="backToType">重选</tl-button>
+            <tl-button class="back-type" variant="secondary" size="small" bind:tap="backToType">更换类型</tl-button>
           </view>
           <view class="form-panel">
             <view class="field-block">

@@ -439,6 +439,36 @@ test("logout rejects pending ledger reads without restoring their cache", async 
   assert.equal(storage.ourNestLedgerCache, undefined);
 });
 
+test("cancelling the import file picker restores the page without uploading or an error", async () => {
+  const toasts = [];
+  let tickets = 0;
+  const page = instance(
+    load(
+      "miniprogram/pages/record-import/index.js",
+      {
+        "../../services/record.service": {
+          createImportUpload: async () => {
+            tickets += 1;
+          },
+        },
+        "../../services/payment-account.service": { getPaymentAccounts: () => [] },
+        "../../services/feedback-ui": { showToast: (toast) => toasts.push(toast) },
+      },
+      { globalData: { openid: "user" } },
+      {
+        chooseMessageFile: async () => {
+          throw { errMsg: "chooseMessageFile:fail cancel" };
+        },
+      }
+    )
+  );
+  page.data.ledgerId = "ledger";
+  await page.chooseAndImport();
+  assert.equal(page.data.uploading, false);
+  assert.equal(tickets, 0);
+  assert.equal(toasts.length, 0);
+});
+
 test("import page previews before writing and submits only selected rows", async () => {
   let imports = 0;
   let sent;

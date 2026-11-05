@@ -87,11 +87,17 @@ Page({
     let uploaded;
     let previewBatchId = "";
     try {
-      const selected = await wx.chooseMessageFile({
-        count: 1,
-        type: "file",
-        extension: ["xls", "xlsx", "csv"],
-      });
+      let selected;
+      try {
+        selected = await wx.chooseMessageFile({
+          count: 1,
+          type: "file",
+          extension: ["xls", "xlsx", "csv"],
+        });
+      } catch (error) {
+        if (String(error.errMsg || error.message || "").includes("cancel")) return;
+        throw error;
+      }
       const file = selected.tempFiles && selected.tempFiles[0];
       if (!file || !file.path) return;
       if (file.size && file.size > 5 * 1024 * 1024) {

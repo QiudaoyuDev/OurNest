@@ -167,6 +167,71 @@ test("flat category choices include all children and disambiguate duplicate name
   assert.equal(page.data.parentCategory, "旅行");
 });
 
+test("entry category heading omits a repeated parent name", async () => {
+  const list = [
+    { _id: "food", type: "expense", level: "parent", name: "餐饮" },
+    { _id: "food-default", type: "expense", level: "child", parentId: "food", name: "餐饮" },
+    { _id: "breakfast", type: "expense", level: "child", parentId: "food", name: "早餐" },
+  ];
+  const { page } = pageFixture({ listCategories: async () => list });
+  await page.onShow();
+  page.chooseCategory({ detail: { categoryId: "food-default" } });
+  assert.equal(page.data.categoryHeading, "餐饮");
+  page.chooseCategory({ detail: { categoryId: "breakfast" } });
+  assert.equal(page.data.categoryHeading, "早餐");
+});
+
+test("system income categories show distinct icons without overriding custom icons", async () => {
+  const list = [
+    { _id: "other", type: "income", level: "parent", name: "其他", icon: "more-2-line" },
+    {
+      _id: "red",
+      type: "income",
+      level: "child",
+      parentId: "other",
+      name: "红包",
+      icon: "more-2-line",
+      source: "system",
+    },
+    {
+      _id: "refund",
+      type: "income",
+      level: "child",
+      parentId: "other",
+      name: "退款",
+      icon: "more-2-line",
+      source: "system",
+    },
+    {
+      _id: "gift",
+      type: "income",
+      level: "child",
+      parentId: "other",
+      name: "礼金",
+      icon: "more-2-line",
+      source: "system",
+    },
+    {
+      _id: "custom",
+      type: "income",
+      level: "child",
+      parentId: "other",
+      name: "红包",
+      icon: "star-line",
+      source: "user",
+    },
+  ];
+  const { page } = pageFixture({ listCategories: async () => list });
+  page.switchType(dataset({ type: "income" }));
+  await page.onShow();
+  assert.deepEqual(plain(page.data.flatCategories.map((item) => item.icon)), [
+    "red-packet-line",
+    "refund-line",
+    "gift-line",
+    "star-line",
+  ]);
+});
+
 test("train uses dedicated quick amounts while taxi uses ledger configuration", async () => {
   const traffic = [
     { _id: "traffic", type: "expense", level: "parent", name: "交通" },

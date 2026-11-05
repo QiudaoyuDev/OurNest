@@ -35,6 +35,19 @@ function formatRecordTimestamp(value) {
 
 const TRAIN_QUICK_AMOUNTS = [373.5, 356.5, 265, 432.5];
 const DEFAULT_QUICK_AMOUNTS = [9.9, 20, 100, 200, 500];
+const OTHER_INCOME_ICONS = { 红包: "red-packet-line", 退款: "refund-line", 礼金: "gift-line" };
+
+function categoryDisplayIcon(child, parent) {
+  if (
+    child.type === "income" &&
+    child.source === "system" &&
+    parent.name === "其他" &&
+    child.icon === "more-2-line" &&
+    OTHER_INCOME_ICONS[child.name]
+  )
+    return OTHER_INCOME_ICONS[child.name];
+  return child.icon || parent.icon || "price-tag-3-line";
+}
 
 function isTrainCategory(categoryName, parentCategory) {
   const text = `${categoryName || ""} ${parentCategory || ""}`;
@@ -82,6 +95,7 @@ Page({
     categoryId: "",
     categoryName: "",
     categoryLabel: "请选择分类",
+    categoryHeading: "",
     categoryIcon: "price-tag-3-line",
     parentCategory: "",
     parentIcon: "book-2-line",
@@ -230,7 +244,7 @@ Page({
         categoryId: getId(selected),
         categoryName: selected.name,
         categoryLabel: selected.name,
-        categoryIcon: selected.icon,
+        categoryIcon: categoryDisplayIcon(selected, parent),
         parentCategory: parent.name,
         parentIcon: parent.icon,
       });
@@ -239,7 +253,7 @@ Page({
       group.children.map((child) => ({
         id: getId(child),
         name: child.name,
-        icon: child.icon || group.icon || "price-tag-3-line",
+        icon: categoryDisplayIcon(child, group),
         parentName: group.name,
       }))
     );
@@ -283,6 +297,7 @@ Page({
       categoryId: "",
       categoryName: "",
       categoryLabel: "请选择分类",
+      categoryHeading: "",
       categoryIcon: "price-tag-3-line",
       parentCategory: "",
       parentIcon: "",
@@ -514,13 +529,15 @@ Page({
     const type = selection.type === "income" ? "income" : "expense";
     const categoryName = selection.categoryName || this.data.categoryName;
     const parentCategory = selection.parentCategory || this.data.parentCategory;
+    const categoryLabel = selection.categoryLabel || categoryName || this.data.categoryLabel;
     this.setData({
       type,
       typeLabel: type === "income" ? "收入" : "支出",
       typeIcon: type === "income" ? "funds-line" : "price-tag-3-line",
       categoryId: selection.categoryId || "",
       categoryName,
-      categoryLabel: selection.categoryLabel || categoryName || this.data.categoryLabel,
+      categoryLabel,
+      categoryHeading: categoryLabel,
       categoryIcon: selection.categoryIcon || this.data.categoryIcon,
       parentCategory,
       parentIcon: selection.parentIcon || this.data.parentIcon,

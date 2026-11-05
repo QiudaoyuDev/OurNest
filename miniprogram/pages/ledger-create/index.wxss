@@ -8,52 +8,36 @@
 }
 
 .scene {
-  position: relative;
-  min-height: 420rpx;
-  padding-top: 38rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: 54rpx 16rpx 42rpx;
+  text-align: center;
+}
+
+.logo-mark {
+  display: flex;
+  width: 160rpx;
+  height: 160rpx;
+  align-items: center;
   justify-content: center;
-  overflow: hidden;
-  transition:
-    min-height 320ms ease,
-    transform 320ms ease;
-}
-
-.scene-detail {
-  min-height: 286rpx;
-  transform: translateY(-8rpx);
-}
-
-.logo-glow {
-  position: absolute;
-  width: 280rpx;
-  height: 280rpx;
   border-radius: 50%;
   background: rgba(240, 68, 47, 0.08);
-  animation: logoPulse 3.2s ease-in-out infinite;
 }
 
 .brand-logo {
-  position: relative;
-  z-index: 1;
-  width: 146rpx;
-  height: 146rpx;
+  width: 104rpx;
+  height: 104rpx;
 }
 
 .scene-title {
-  position: relative;
-  z-index: 1;
-  margin-top: 28rpx;
+  margin-top: 24rpx;
   color: var(--tl-color-text);
   font-size: var(--tl-font-data);
   font-weight: var(--tl-font-weight-bold);
 }
 
 .scene-subtitle {
-  position: relative;
-  z-index: 1;
   margin-top: 12rpx;
   color: var(--tl-color-text-tertiary);
   font-size: var(--tl-font-body-sm);
@@ -110,35 +94,22 @@
 }
 
 .step-line {
-  position: relative;
-  height: 62rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding-top: 24rpx;
   margin-bottom: 20rpx;
 }
 
 .back-type {
-  position: absolute;
-  right: 0;
-  top: 5rpx;
-  width: 88rpx;
-  min-width: 88rpx;
-  height: 52rpx;
-  padding: 0;
-  border-radius: var(--tl-radius-pill);
-  font-size: var(--tl-font-caption);
-  line-height: 1;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 190rpx;
+  flex: 0 0 190rpx;
 }
 
 .selected-pill {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  width: 330rpx;
-  height: 62rpx;
-  padding: 0 34rpx;
+  min-width: 0;
+  padding: 18rpx 24rpx;
   border-radius: var(--tl-radius-pill);
   background: var(--tl-color-primary-soft);
   color: var(--tl-color-primary);
@@ -146,10 +117,6 @@
   font-weight: var(--tl-font-weight-bold);
   line-height: 1;
   text-align: center;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .form-panel {
@@ -262,13 +229,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-@keyframes logoPulse {
-  50% {
-    transform: scale(1.06);
-    opacity: 0.82;
-  }
 }
 
 .budget-switch-row {

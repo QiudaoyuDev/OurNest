@@ -3,6 +3,18 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
 
+test("default other categories do not create separate other income or expense entries", () => {
+  const module = { exports: {} };
+  vm.runInNewContext(fs.readFileSync("cloudfunctions/ourNest/handlers/category-tree.js", "utf8"), {
+    module,
+    require: () => ({ db: {}, now: () => 0, OTHER_CATEGORY_SORT: 999 }),
+  });
+  for (const defaults of [module.exports.categoryTreeDefaults, module.exports.newLedgerDefaults]) {
+    assert.equal(defaults.expense.find(([name]) => name === "其他")[2].includes("其他支出"), false);
+    assert.equal(defaults.income.find(([name]) => name === "其他")[2].includes("其他收入"), false);
+  }
+});
+
 function createPage(saveCategory) {
   let definition;
   const toasts = [];
