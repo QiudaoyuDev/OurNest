@@ -187,12 +187,8 @@
 }
 
 .tl-record-form__keypad-close {
-  padding: var(--tl-space-xs) var(--tl-space-sm);
-  border-radius: var(--tl-radius-pill);
-  background: var(--tl-color-primary-soft);
-  color: var(--tl-color-primary);
-  font-size: var(--tl-font-body-sm);
-  font-weight: var(--tl-font-weight-bold);
+  width: 180rpx;
+  flex: 0 0 auto;
 }
 
 .tl-record-form__keypad-grid {
@@ -226,7 +222,60 @@
   font-size: var(--tl-font-body);
 }
 
-.keypad-key--equal {
+.keypad-key--equal,
+.keypad-key--submit {
   background: var(--tl-color-primary);
   color: var(--tl-color-text-inverse);
+}
+
+.tl-record-form__keypad--quick {
+  box-sizing: border-box;
+  height: calc(504rpx + env(safe-area-inset-bottom));
+}
+
+.tl-record-form__keypad--quick .tl-record-form__keypad-header {
+  height: 72rpx;
+}
+
+.tl-record-form__expression {
+  width: 100%;
+  min-width: 0;
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-data-xl);
+  line-height: 72rpx;
+  white-space: nowrap;
+}
+
+.tl-record-form__keypad--quick .tl-record-form__keypad-grid {
+  grid-auto-rows: 86rpx;
+}
+
+.tl-record-form__keypad--quick .keypad-key {
+  min-width: 0;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.keypad-key--submit {
+  grid-column: 4;
+  grid-row: 3 / span 2;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  line-height: normal;
+}
+
+.keypad-key--submit::after {
+  border: 0;
+}
+
+.keypad-key--submit[disabled] {
+  background: var(--tl-color-primary);
+  color: var(--tl-color-text-inverse);
+  opacity: 0.48;
+  transform: none;
+}
+
+.tl-record-form__keypad-space {
+  height: calc(504rpx + env(safe-area-inset-bottom));
 }

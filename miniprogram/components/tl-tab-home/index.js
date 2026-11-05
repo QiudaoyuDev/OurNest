@@ -404,8 +404,10 @@ Component({
         this.goCreateLedger();
         return;
       }
-      startNavigation("首页", "分类页");
-      wx.navigateTo({ url: "/pages/record-category/index" });
+      startNavigation("首页", "编辑页");
+      wx.navigateTo({
+        url: `/pages/record-edit/index?ledgerId=${encodeURIComponent(this.data.ledgerId)}`,
+      });
     },
 
     goRecords() {

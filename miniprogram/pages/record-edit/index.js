@@ -1,6 +1,9 @@
 const feedback = require("../../services/feedback-ui");
 const app = getApp();
 const recordService = require("../../services/record.service");
+const categoryService = require("../../services/category.service");
+const categoryStore = require("../../services/category.store");
+const { getId } = require("../../utils/mapper");
 const ledgerService = require("../../services/ledger.service");
 const { getPaymentAccounts } = require("../../services/payment-account.service");
 const { markNavigation } = require("../../utils/navigation-timing");
@@ -58,11 +61,15 @@ Page({
     typeLabel: "支出",
     typeIcon: "price-tag-3-line",
     categoryId: "",
-    categoryName: "其他支出",
-    categoryLabel: "其他",
+    categoryName: "",
+    categoryLabel: "请选择分类",
     categoryIcon: "price-tag-3-line",
-    parentCategory: "生活",
+    parentCategory: "",
     parentIcon: "book-2-line",
+    groups: [],
+    expandedGroupId: "",
+    categoryLoading: true,
+    categoryError: false,
     amount: "",
     amountResult: "",
     showAmountResult: false,
@@ -80,7 +87,7 @@ Page({
     accountIndex: 0,
     accounts: getPaymentAccounts(),
     quickAmounts: [],
-    quickNotes: quickNotesFor("expense", "其他支出"),
+    quickNotes: quickNotesFor("expense", ""),
     sourceText: "",
     sourceTransactionId: "",
     importBatchId: "",
@@ -105,25 +112,7 @@ Page({
   onLoad(options = {}) {
     markNavigation("编辑页", "onLoad");
     const type = options.type === "income" ? "income" : "expense";
-    const fallbackCategory = type === "income" ? "其他收入" : "其他支出";
-    const fallbackLabel = type === "income" ? "其他" : "其他";
-    const categoryName = options.category ? decodeURIComponent(options.category) : fallbackCategory;
-    const categoryLabel = options.categoryLabel
-      ? decodeURIComponent(options.categoryLabel)
-      : fallbackLabel;
-    const categoryIcon = options.categoryIcon
-      ? decodeURIComponent(options.categoryIcon)
-      : "price-tag-3-line";
-    const parentCategory = options.parentCategory
-      ? decodeURIComponent(options.parentCategory)
-      : type === "income"
-        ? "其他收入"
-        : "生活";
-    const parentIcon = options.parentIcon
-      ? decodeURIComponent(options.parentIcon)
-      : type === "income"
-        ? "price-tag-3-line"
-        : "book-2-line";
+    // 新增不从缺省名称或路由元数据推断分类，必须由用户明确选择。
     const currentLedger = app.globalData.currentLedger || {};
     const ledgerId = options.ledgerId || currentLedger._id || "";
     const targetLedger =
@@ -145,17 +134,11 @@ Page({
       familyLoading: !options.id && (targetLedger.type === "shared" || !targetLedger._id),
       typeLabel: type === "income" ? "收入" : "支出",
       typeIcon: type === "income" ? "funds-line" : "price-tag-3-line",
-      categoryId: options.categoryId ? decodeURIComponent(options.categoryId) : "",
-      categoryName,
-      categoryLabel,
-      categoryIcon,
-      parentCategory,
-      parentIcon,
       ledgerName: targetLedger.name || "我家账本",
       ledgerId: options.ledgerId || currentLedger._id || "",
       accounts: getPaymentAccounts(targetLedger),
       quickAmounts: quickAmountsFor(targetLedger),
-      quickNotes: quickNotesFor(type, categoryName),
+      quickNotes: quickNotesFor(type, ""),
       date,
     });
     if (options.id) {
@@ -164,6 +147,128 @@ Page({
     } else if (targetLedger.type === "shared" || !targetLedger._id) {
       this.loadFamilyContext(ledgerId);
     }
+  },
+
+  onShow() {
+    if (this.data.isEditing || this.data.readonly) return;
+    this.stopCategorySync();
+    this._categoryUnsubscribe = categoryStore.subscribeSync((result) => {
+      if (result.ledgerId !== this.data.ledgerId) return;
+      if (result.invalidated) this.loadCategories();
+      else this.renderCategories(result.items);
+    });
+    return this.loadCategories();
+  },
+
+  onHide() {
+    this.stopCategorySync();
+  },
+
+  onUnload() {
+    this.stopCategorySync();
+  },
+
+  stopCategorySync() {
+    this._categoryRequest = (this._categoryRequest || 0) + 1;
+    if (this._categoryUnsubscribe) this._categoryUnsubscribe();
+    this._categoryUnsubscribe = null;
+  },
+
+  renderCategories(items = []) {
+    this._categories = items;
+    const parents = items.filter((item) => item.type === this.data.type && item.level === "parent");
+    const groups = parents.map((parent) => ({
+      ...parent,
+      id: getId(parent),
+      children: items.filter(
+        (item) =>
+          item.type === this.data.type && item.level === "child" && item.parentId === getId(parent)
+      ),
+    }));
+    const selected = groups
+      .flatMap((group) => group.children)
+      .find((item) => getId(item) === this.data.categoryId);
+    if (this.data.categoryId && !selected) this.clearCategorySelection();
+    if (selected) {
+      const parent = parents.find((item) => getId(item) === selected.parentId);
+      this.applyCategorySelection({
+        type: this.data.type,
+        categoryId: getId(selected),
+        categoryName: selected.name,
+        categoryLabel: selected.name,
+        categoryIcon: selected.icon,
+        parentCategory: parent.name,
+        parentIcon: parent.icon,
+      });
+    }
+    this.setData({
+      groups,
+      expandedGroupId: groups.some((group) => group.id === this.data.expandedGroupId)
+        ? this.data.expandedGroupId
+        : (groups[0] || {}).id || "",
+      categoryLoading: false,
+      categoryError: false,
+    });
+  },
+
+  async loadCategories() {
+    const request = (this._categoryRequest || 0) + 1;
+    this._categoryRequest = request;
+    this.setData({ categoryLoading: true, categoryError: false });
+    try {
+      const items = await categoryService.listCategories(this.data.ledgerId);
+      if (request === this._categoryRequest) this.renderCategories(items);
+    } catch (_error) {
+      if (request === this._categoryRequest)
+        this.setData({ categoryLoading: false, categoryError: true });
+    }
+  },
+
+  clearCategorySelection() {
+    this.setData({
+      categoryId: "",
+      categoryName: "",
+      categoryLabel: "请选择分类",
+      categoryIcon: "price-tag-3-line",
+      parentCategory: "",
+      parentIcon: "",
+      quickNotes: quickNotesFor(this.data.type, ""),
+      canSave: false,
+    });
+  },
+
+  switchType(event) {
+    const type = event.currentTarget.dataset.type;
+    if (this.data.isEditing || this.data.readonly || this.data.saving || type === this.data.type)
+      return;
+    this.setData({ type, typeLabel: type === "income" ? "收入" : "支出" });
+    this.clearCategorySelection();
+    const { categoryLoading, categoryError } = this.data;
+    this.renderCategories(this._categories || []);
+    this.setData({ categoryLoading, categoryError });
+  },
+
+  toggleGroup(event) {
+    const id = event.detail.id;
+    this.setData({ expandedGroupId: this.data.expandedGroupId === id ? "" : id });
+  },
+
+  chooseCategory(event) {
+    if (this.data.readonly || this.data.saving) return;
+    const { categoryId } = event.detail;
+    const child = (this._categories || []).find(
+      (item) => getId(item) === categoryId && item.type === this.data.type && item.level === "child"
+    );
+    if (!child) return;
+    this.setData({ categoryId });
+    this.renderCategories(this._categories);
+  },
+
+  openCategoryManager() {
+    if (this.data.readonly || this.data.saving) return;
+    wx.navigateTo({
+      url: `/pages/category-manage/index?ledgerId=${encodeURIComponent(this.data.ledgerId)}&type=${this.data.type}&ledgerName=${encodeURIComponent(this.data.ledgerName)}`,
+    });
   },
 
   onReady() {
@@ -321,6 +426,9 @@ Page({
       parentCategory: selection.parentCategory || this.data.parentCategory,
       parentIcon: selection.parentIcon || this.data.parentIcon,
       quickNotes: quickNotesFor(type, selection.categoryName || this.data.categoryName),
+      canSave:
+        evaluateAmountExpression(this.data.amount).valid &&
+        (this.data.isEditing || Boolean(selection.categoryId)),
     });
   },
 
@@ -339,12 +447,12 @@ Page({
       amount,
       amountResult: result.text,
       showAmountResult: /[+-]/.test(amount) && result.valid,
-      canSave: result.valid,
+      canSave: result.valid && (this.data.isEditing || Boolean(this.data.categoryId)),
     });
   },
 
   reselectCategory() {
-    if (this.data.readonly) return;
+    if (this.data.readonly || !this.data.isEditing) return;
     const params = [`type=${this.data.type}`, "mode=reselect"];
     if (this.data.ledgerId) params.push(`ledgerId=${encodeURIComponent(this.data.ledgerId)}`);
     wx.navigateTo({ url: `/pages/record-category/index?${params.join("&")}` });
@@ -451,6 +559,11 @@ Page({
       this.data.familyError
     )
       return;
+    if (!this.data.isEditing && !this.data.categoryId) {
+      feedback.showToast({ type: "warning", message: "请选择分类" });
+      return;
+    }
+    if (!this.data.isEditing && (this.data.categoryLoading || this.data.categoryError)) return;
     const finalTags = Array.from(
       new Set([...this.data.tags, ...normalizeTags(this.data.tagInput)])
     ).slice(0, 8);

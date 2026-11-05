@@ -132,3 +132,22 @@
   color: var(--tl-color-text-tertiary);
   font-size: var(--tl-font-caption);
 }
+
+.category-section {
+  margin-bottom: var(--tl-space-lg);
+}
+
+.type-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--tl-space-sm);
+}
+
+.category-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--tl-space-sm);
+  color: var(--tl-color-text-secondary);
+  font-size: var(--tl-font-body-sm);
+}

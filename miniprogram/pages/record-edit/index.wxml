@@ -1,5 +1,5 @@
 <view class="page plain-page edit-page">
-  <tl-navbar title="{{typeLabel}}明细" showBack="{{true}}">
+  <tl-navbar title="{{isEditing ? typeLabel + '明细' : '记一笔'}}" showBack="{{true}}">
   </tl-navbar>
   <tl-container safe-area="{{false}}">
     <scroll-view class="page-scroll" scroll-y="{{true}}" enhanced="{{true}}" enable-flex="{{true}}" show-scrollbar="{{false}}">
@@ -10,7 +10,7 @@
           <tl-button variant="secondary" size="small" bind:tap="reloadRecord">重新加载</tl-button>
         </tl-empty-state>
         <block wx:elif="{{!readonly}}">
-          <view class="selected-card card fade-up" bindtap="reselectCategory">
+          <view wx:if="{{isEditing}}" class="selected-card card fade-up" bindtap="reselectCategory">
             <view class="selected-left">
               <view class="type-badge {{type}}">
                 <tl-icon name="{{typeIcon}}" size="24" colorKey="{{type === 'income' ? 'income' : 'primary'}}">
@@ -27,6 +27,25 @@
               </view>
             </view>
             <view class="change-link">重选</view>
+          </view>
+          <view wx:if="{{!isEditing}}" class="category-section">
+            <view class="type-switch">
+              <tl-button variant="{{type === 'expense' ? 'primary' : 'secondary'}}" block="{{true}}" data-type="expense" bind:tap="switchType">支出</tl-button>
+              <tl-button variant="{{type === 'income' ? 'primary' : 'secondary'}}" block="{{true}}" data-type="income" bind:tap="switchType">收入</tl-button>
+            </view>
+            <view class="category-heading">
+              <text>{{categoryId ? '已选：' + categoryLabel : '请选择分类'}}</text>
+              <tl-button variant="text" size="small" bind:tap="openCategoryManager">管理分类</tl-button>
+            </view>
+            <tl-skeleton wx:if="{{categoryLoading}}" variant="list">
+            </tl-skeleton>
+            <tl-empty-state wx:elif="{{categoryError}}" variant="error" title="分类加载失败" description="请检查网络后重试">
+              <tl-button variant="secondary" size="small" bind:tap="loadCategories">重新加载</tl-button>
+            </tl-empty-state>
+            <tl-empty-state wx:elif="{{!groups.length}}" title="暂无分类" description="可通过管理分类添加分类">
+            </tl-empty-state>
+            <tl-category-tree wx:else groups="{{groups}}" expanded-group-id="{{expandedGroupId}}" bind:toggle="toggleGroup" bind:select="chooseCategory">
+            </tl-category-tree>
           </view>
           <view wx:if="{{familyError || (familyEnabled && type === 'expense')}}" class="family-card card">
             <view class="family-title">家庭归属</view>
@@ -56,7 +75,7 @@
               <view class="family-note">付款人与消费归属可以不同；公共和多人消费按记录人展示。</view>
             </block>
           </view>
-          <tl-record-form type="{{type}}" amount="{{amount}}" amount-result="{{amountResult}}" show-amount-result="{{showAmountResult}}" quick-amounts="{{quickAmounts}}" ledger-name="{{ledgerName}}" accounts="{{accounts}}" account-index="{{accountIndex}}" date="{{date}}" note="{{note}}" tag-input="{{tagInput}}" tags="{{tags}}" bind:amountinput="onAmountInput" bind:quickamount="setQuickAmount" bind:accountchange="onAccountChange" bind:datechange="onDateChange" bind:noteinput="onNoteInput" bind:taginput="onTagInput" bind:addtag="addTag" bind:removetag="removeTag" bind:keypadchange="onKeypadChange">
+          <tl-record-form quick-entry="{{!isEditing}}" saving="{{saving}}" bind:submit="saveAndLeave" type="{{type}}" amount="{{amount}}" amount-result="{{amountResult}}" show-amount-result="{{showAmountResult}}" quick-amounts="{{quickAmounts}}" ledger-name="{{ledgerName}}" accounts="{{accounts}}" account-index="{{accountIndex}}" date="{{date}}" note="{{note}}" tag-input="{{tagInput}}" tags="{{tags}}" bind:amountinput="onAmountInput" bind:quickamount="setQuickAmount" bind:accountchange="onAccountChange" bind:datechange="onDateChange" bind:noteinput="onNoteInput" bind:taginput="onTagInput" bind:addtag="addTag" bind:removetag="removeTag" bind:keypadchange="onKeypadChange">
           </tl-record-form>
           <view wx:if="{{isEditing}}" class="record-timestamps">
             <text wx:if="{{sourceText}}">来源：{{sourceText}}</text>
@@ -69,15 +88,11 @@
       </view>
     </scroll-view>
   </tl-container>
-  <tl-page-actions wx:if="{{!readonly && !keypadOpen && !recordLoading && !recordLoadError && !familyLoading && !familyError}}">
+  <tl-page-actions wx:if="{{isEditing && !readonly && !keypadOpen && !recordLoading && !recordLoadError && !familyLoading && !familyError}}">
     <view class="record-actions {{isEditing ? 'has-delete' : ''}}">
       <tl-button wx:if="{{isEditing}}" variant="danger" block="{{true}}" loading="{{deleting}}" loading-text="删除中..." disabled="{{saving}}" bind:tap="deleteRecord">删除记录</tl-button>
       <block wx:if="{{isEditing}}">
         <tl-button block="{{true}}" loading="{{saving}}" loading-text="保存中..." disabled="{{deleting || !canSave}}" bind:tap="saveAndLeave">保存记录</tl-button>
-      </block>
-      <block wx:else>
-        <tl-button variant="secondary" block="{{true}}" loading="{{saving}}" loading-text="保存中..." disabled="{{deleting || !canSave}}" bind:tap="saveAndLeave">保存并离开</tl-button>
-        <tl-button block="{{true}}" loading="{{saving}}" loading-text="保存中..." disabled="{{deleting || !canSave}}" bind:tap="saveAndContinue">保存后再记一笔</tl-button>
       </block>
     </view>
   </tl-page-actions>
