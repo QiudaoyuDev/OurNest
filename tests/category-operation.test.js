@@ -115,6 +115,84 @@ test("existing ledgers receive missing transport defaults once without replacing
   );
 });
 
+test("new ledger template extends legacy defaults without changing legacy repair rules", () => {
+  const module = { exports: {} };
+  vm.runInNewContext(fs.readFileSync("cloudfunctions/ourNest/handlers/category-tree.js", "utf8"), {
+    module,
+    exports: module.exports,
+    require: () => ({ db: {}, now: () => "now", OTHER_CATEGORY_SORT: 999 }),
+  });
+  const legacy = module.exports.categoryTreeDefaults;
+  const fresh = module.exports.newLedgerDefaults;
+  const names = fresh.expense.map(([name]) => name);
+  for (const name of [
+    "餐饮",
+    "购物",
+    "日用",
+    "交通",
+    "蔬菜",
+    "水果",
+    "零食",
+    "运动",
+    "娱乐",
+    "通讯",
+    "服饰",
+    "美容",
+    "住房",
+    "居家",
+    "孩子",
+    "长辈",
+  ])
+    assert.ok(names.includes(name));
+  for (const [name, , children] of legacy.expense) {
+    const current = fresh.expense.find(([item]) => item === name);
+    assert.ok(current);
+    assert.deepEqual(Array.from(current[2]), Array.from(children));
+  }
+  assert.equal(fresh.income, legacy.income);
+});
+
+test("new template does not alter lazy repair for an existing parent", async () => {
+  const parent = {
+    _id: "daily",
+    ledgerId: "old",
+    type: "expense",
+    level: "parent",
+    name: "日用",
+    icon: "shopping-basket-2-line",
+  };
+  const child = {
+    _id: "daily-default",
+    ledgerId: "old",
+    level: "child",
+    parentId: "daily",
+    isDefaultChild: true,
+    source: "system",
+  };
+  const writes = [];
+  const db = {
+    collection: () => ({
+      where: (query) => ({
+        limit: () => ({
+          get: async () => ({ data: query.level === "parent" ? [parent] : [child] }),
+        }),
+      }),
+      add: async (payload) => {
+        writes.push(payload);
+        return { _id: "added" };
+      },
+    }),
+  };
+  const module = { exports: {} };
+  vm.runInNewContext(fs.readFileSync("cloudfunctions/ourNest/handlers/category-tree.js", "utf8"), {
+    module,
+    exports: module.exports,
+    require: () => ({ db, now: () => "now", OTHER_CATEGORY_SORT: 999 }),
+  });
+  assert.equal(await module.exports.ensureLedgerCategoryTree("old", "owner"), false);
+  assert.equal(writes.length, 0);
+});
+
 test("category list bumps the ledger revision after repairing a default tree", async () => {
   let revisions = 0;
   const ledger = { _id: "ledger", ownerOpenid: "owner" };

@@ -21,11 +21,4 @@
       </view>
     </scroll-view>
   </tl-container>
-  <tl-page-actions>
-    <tl-button block="{{true}}" bind:tap="openCategoryManager">
-      <tl-icon name="add-line" size="32" colorKey="white">
-      </tl-icon>
-      <text>添加分类</text>
-    </tl-button>
-  </tl-page-actions>
 </view>

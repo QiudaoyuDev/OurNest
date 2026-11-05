@@ -10,43 +10,45 @@
   </scroll-view>
   <view wx:if="{{showKeypad && !quickEntry}}" class="tl-record-form__keypad-mask" bindtap="closeKeypad">
   </view>
-  <view wx:if="{{quickEntry || showKeypad}}" class="tl-record-form__keypad {{quickEntry ? 'tl-record-form__keypad--quick' : ''}}">
+  <view wx:if="{{(quickEntry && entryVisible) || showKeypad}}" class="tl-record-form__keypad {{quickEntry ? 'tl-record-form__keypad--quick' : ''}}">
+    <slot wx:if="{{quickEntry}}" />
     <view wx:if="{{!quickEntry}}" class="tl-record-form__keypad-header">
       <text>记一笔</text>
+      <view bindtap="clearAmount">清空</view>
       <view class="tl-record-form__keypad-close">
         <tl-button block="{{true}}" size="small" bind:tap="closeKeypad">确认</tl-button>
       </view>
     </view>
-    <view wx:if="{{quickAmounts.length}}" class="tl-record-form__quick-bar">
-      <view class="tl-record-form__quick-grid {{quickAmounts.length === 4 ? 'is-4col' : 'is-5col'}}">
-        <view wx:for="{{quickAmounts}}" wx:key="*this" class="quick-chip" data-amount="{{item}}" bindtap="quickAmount">¥{{item}}</view>
+    <view hidden="{{quickEntry && noteFocused}}">
+      <view wx:if="{{quickAmounts.length}}" class="tl-record-form__quick-bar">
+        <view class="tl-record-form__quick-grid {{quickAmounts.length === 4 ? 'is-4col' : 'is-5col'}}">
+          <view wx:for="{{quickAmounts}}" wx:key="*this" class="quick-chip" data-amount="{{item}}" bindtap="quickAmount">¥{{item}}</view>
+        </view>
       </view>
-    </view>
-    <view class="tl-record-form__calc-bar">
-      <view class="calc-btn" data-operator="+" bindtap="pressOperator">+</view>
-      <view class="calc-btn" data-operator="-" bindtap="pressOperator">−</view>
-      <view class="calc-btn calc-btn--clear" bindtap="clearAmount">清空</view>
-    </view>
-    <view class="tl-record-form__keypad-grid tl-record-form__keypad-grid--3col">
-      <view class="keypad-key" data-digit="1" bindtap="pressNumber">1</view>
-      <view class="keypad-key" data-digit="2" bindtap="pressNumber">2</view>
-      <view class="keypad-key" data-digit="3" bindtap="pressNumber">3</view>
-      <view class="keypad-key" data-digit="4" bindtap="pressNumber">4</view>
-      <view class="keypad-key" data-digit="5" bindtap="pressNumber">5</view>
-      <view class="keypad-key" data-digit="6" bindtap="pressNumber">6</view>
-      <view class="keypad-key" data-digit="7" bindtap="pressNumber">7</view>
-      <view class="keypad-key" data-digit="8" bindtap="pressNumber">8</view>
-      <view class="keypad-key" data-digit="9" bindtap="pressNumber">9</view>
-      <view class="keypad-key" bindtap="pressDecimal">.</view>
-      <view class="keypad-key" data-digit="0" bindtap="pressNumber">0</view>
-      <view class="keypad-key keypad-key--backspace" bindtap="backspace">⌫</view>
-    </view>
-    <view class="tl-record-form__submit-bar {{quickEntry ? 'tl-record-form__submit-bar--split' : ''}}">
-      <block wx:if="{{quickEntry}}">
-        <button class="keypad-submit-btn keypad-submit-btn--continue" disabled="{{saving}}" bindtap="submitContinue">再记一笔</button>
-        <button class="keypad-submit-btn" disabled="{{saving}}" loading="{{saving}}" bindtap="submit">{{saving ? '保存中...' : '完成'}}</button>
-      </block>
-      <view wx:else class="keypad-submit-btn keypad-submit-btn--equal" bindtap="calculate">=</view>
+      <view class="tl-record-form__keypad-grid tl-record-form__keypad-grid--four">
+        <view class="keypad-key" data-digit="7" bindtap="pressNumber">7</view>
+        <view class="keypad-key" data-digit="8" bindtap="pressNumber">8</view>
+        <view class="keypad-key" data-digit="9" bindtap="pressNumber">9</view>
+        <view class="keypad-key keypad-key--operator" data-operator="+" bindtap="pressOperator">+</view>
+        <view class="keypad-key" data-digit="4" bindtap="pressNumber">4</view>
+        <view class="keypad-key" data-digit="5" bindtap="pressNumber">5</view>
+        <view class="keypad-key" data-digit="6" bindtap="pressNumber">6</view>
+        <view class="keypad-key keypad-key--operator" data-operator="-" bindtap="pressOperator">−</view>
+        <view class="keypad-key" data-digit="1" bindtap="pressNumber">1</view>
+        <view class="keypad-key" data-digit="2" bindtap="pressNumber">2</view>
+        <view class="keypad-key" data-digit="3" bindtap="pressNumber">3</view>
+        <view class="keypad-key keypad-key--operator keypad-key--tall" bindtap="calculate">=</view>
+        <view class="keypad-key" bindtap="pressDecimal">.</view>
+        <view class="keypad-key" data-digit="0" bindtap="pressNumber">0</view>
+        <view class="keypad-key keypad-key--backspace" bindtap="backspace">⌫</view>
+      </view>
+      <view class="tl-record-form__submit-bar {{quickEntry ? 'tl-record-form__submit-bar--split' : ''}}">
+        <block wx:if="{{quickEntry}}">
+          <button class="keypad-submit-btn keypad-submit-btn--continue {{saving ? 'is-saving' : ''}}" disabled="{{saving}}" bindtap="submitContinue">再记一笔</button>
+          <button class="keypad-submit-btn {{saving ? 'is-saving' : ''}}" disabled="{{saving}}" loading="{{saving}}" bindtap="submit">{{saving ? '保存中...' : '完成'}}</button>
+        </block>
+        <view wx:else class="keypad-submit-btn keypad-submit-btn--equal" bindtap="calculate">=</view>
+      </view>
     </view>
   </view>
   <block wx:if="{{!quickEntry}}">
@@ -83,6 +85,6 @@
       </view>
     </view>
   </block>
-  <view wx:if="{{quickEntry}}" class="tl-record-form__keypad-space" aria-hidden="{{true}}">
+  <view wx:if="{{quickEntry && entryVisible}}" class="tl-record-form__keypad-space" aria-hidden="{{true}}">
   </view>
 </view>

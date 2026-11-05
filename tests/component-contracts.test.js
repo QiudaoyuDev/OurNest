@@ -95,17 +95,14 @@ test("category tree renders one controlled selection by ID and preserves selecti
   assert.equal(instance.data.selectedCategoryId, "");
 });
 
-test("record entry passes selected identity and keeps the category heading uncompressed", () => {
+test("record entry opens its keypad only after selecting a category", () => {
   const template = fs.readFileSync("miniprogram/pages/record-edit/index.wxml", "utf8");
-  assert.match(template, /<tl-category-tree[^>]*selected-category-id="\{\{categoryId\}\}"/);
-  assert.match(template, /<tl-button[^>]*class="category-manage-button"[^>]*openCategoryManager/);
-  const style = fs.readFileSync("miniprogram/pages/record-edit/index.wxss", "utf8");
-  const heading = style.match(/\.category-heading-title\s*\{([^}]*)\}/)[1];
-  assert.match(heading, /flex:\s*0 0 auto;/);
-  assert.match(heading, /white-space:\s*nowrap;/);
-  const button = style.match(/\.category-manage-button\s*\{([^}]*)\}/)[1];
-  assert.match(button, /flex:\s*0 0 auto;/);
-  assert.match(button, /width:\s*auto;/);
+  const form = fs.readFileSync("miniprogram/components/tl-record-form/index.wxml", "utf8");
+  assert.match(template, /wx:for="\{\{flatCategories\}\}"/);
+  assert.match(template, /entry-visible="\{\{!!categoryId\}\}"/);
+  assert.doesNotMatch(template, /openCategoryManager/);
+  assert.match(form, /quickEntry && entryVisible/);
+  assert.match(template, /class="entry-family"/);
 });
 
 test("analysis ratio UI shares a preview template and uses public loading, error and sheet components", () => {

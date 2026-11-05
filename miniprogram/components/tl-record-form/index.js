@@ -6,9 +6,12 @@ const {
 } = require("../../utils/amount-expression");
 
 Component({
+  options: { styleIsolation: "apply-shared" },
   properties: {
     amount: { type: String, value: "" },
     quickEntry: { type: Boolean, value: false },
+    entryVisible: { type: Boolean, value: false },
+    noteFocused: { type: Boolean, value: false },
     saving: { type: Boolean, value: false },
     type: { type: String, value: "expense" },
     amountResult: { type: String, value: "" },

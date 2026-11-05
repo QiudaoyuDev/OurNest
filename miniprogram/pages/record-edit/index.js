@@ -86,6 +86,7 @@ Page({
     parentCategory: "",
     parentIcon: "book-2-line",
     groups: [],
+    flatCategories: [],
     expandedGroupId: "",
     categoryLoading: true,
     categoryError: false,
@@ -96,6 +97,7 @@ Page({
     saving: false,
     deleting: false,
     keypadOpen: false,
+    noteFocused: false,
     note: "",
     tagInput: "",
     tags: [],
@@ -233,8 +235,25 @@ Page({
         parentIcon: parent.icon,
       });
     }
+    const children = groups.flatMap((group) =>
+      group.children.map((child) => ({
+        id: getId(child),
+        name: child.name,
+        icon: child.icon || group.icon || "price-tag-3-line",
+        parentName: group.name,
+      }))
+    );
+    const counts = children.reduce((result, child) => {
+      result[child.name] = (result[child.name] || 0) + 1;
+      return result;
+    }, Object.create(null));
+    const flatCategories = children.map((child) => ({
+      ...child,
+      parentHint: counts[child.name] > 1 ? child.parentName : "",
+    }));
     this.setData({
       groups,
+      flatCategories,
       expandedGroupId: groups.some((group) => group.id === this.data.expandedGroupId)
         ? this.data.expandedGroupId
         : (groups[0] || {}).id || "",
@@ -291,7 +310,7 @@ Page({
 
   chooseCategory(event) {
     if (this.data.readonly || this.data.saving) return;
-    const { categoryId } = event.detail;
+    const categoryId = event.detail.categoryId || event.currentTarget.dataset.categoryId;
     const child = (this._categories || []).find(
       (item) => getId(item) === categoryId && item.type === this.data.type && item.level === "child"
     );
@@ -300,11 +319,31 @@ Page({
     this.renderCategories(this._categories);
   },
 
-  openCategoryManager() {
-    if (this.data.readonly || this.data.saving) return;
-    wx.navigateTo({
-      url: `/pages/category-manage/index?ledgerId=${encodeURIComponent(this.data.ledgerId)}&type=${this.data.type}&ledgerName=${encodeURIComponent(this.data.ledgerName)}`,
+  handleEntryBack() {
+    if (this.data.saving) return;
+    const leave = () => {
+      if (getCurrentPages().length > 1) wx.navigateBack();
+      else wx.redirectTo({ url: "/pages/index/index" });
+    };
+    if (!this.data.amount && !this.data.note && !this.data.tagInput && !this.data.tags.length) {
+      leave();
+      return;
+    }
+    wx.showModal({
+      title: "放弃本次记账？",
+      content: "当前输入尚未保存，返回后将丢失。",
+      confirmText: "放弃",
+      success: (result) => {
+        if (result.confirm) leave();
+      },
     });
+  },
+
+  onNoteFocus() {
+    this.setData({ noteFocused: true });
+  },
+  onNoteBlur() {
+    this.setData({ noteFocused: false });
   },
 
   onReady() {
@@ -491,6 +530,10 @@ Page({
         evaluateAmountExpression(this.data.amount).valid &&
         (this.data.isEditing || Boolean(selection.categoryId)),
     });
+  },
+
+  clearEntryAmount() {
+    this.setAmountExpression("");
   },
 
   setQuickAmount(event) {

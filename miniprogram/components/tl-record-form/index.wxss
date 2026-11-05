@@ -318,13 +318,13 @@
   flex: 1;
 }
 
-.keypad-submit-btn--continue {
+.keypad-submit-btn.keypad-submit-btn--continue {
   border: var(--tl-border-width) solid var(--tl-color-primary);
   background: var(--tl-color-primary-soft);
   color: var(--tl-color-primary);
 }
 
-.keypad-submit-btn--continue:active {
+.keypad-submit-btn.keypad-submit-btn--continue:active {
   background: var(--tl-palette-warm-300);
 }
 
@@ -348,7 +348,7 @@
   border: 0;
 }
 
-.keypad-submit-btn[disabled] {
+.keypad-submit-btn.is-saving {
   background: var(--tl-color-primary);
   color: var(--tl-color-text-inverse);
   opacity: 0.48;
@@ -376,9 +376,37 @@
 
 .tl-record-form__keypad--quick {
   box-sizing: border-box;
-  height: calc(544rpx + env(safe-area-inset-bottom));
+  max-height: 78vh;
+  overflow-y: auto;
+  animation: record-panel-up var(--tl-duration-normal) ease-out both;
 }
 
 .tl-record-form__keypad-space {
-  height: calc(544rpx + env(safe-area-inset-bottom));
+  height: calc(720rpx + env(safe-area-inset-bottom));
+}
+
+@keyframes record-panel-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.tl-record-form__keypad-grid--four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8rpx;
+}
+.tl-record-form__keypad-grid--four .keypad-key {
+  height: 68rpx;
+}
+.keypad-key--operator {
+  color: var(--tl-color-primary);
+  background: var(--tl-palette-warm-100);
+}
+
+.tl-record-form__keypad-grid--four .keypad-key--tall {
+  grid-row: span 2;
+  height: auto;
 }

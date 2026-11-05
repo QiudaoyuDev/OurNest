@@ -8,6 +8,10 @@ Component({
       type: Boolean,
       value: false,
     },
+    interceptBack: {
+      type: Boolean,
+      value: false,
+    },
     hideBrand: {
       type: Boolean,
       value: false,
@@ -36,6 +40,10 @@ Component({
 
   methods: {
     handleBack() {
+      if (this.data.interceptBack) {
+        this.triggerEvent("back");
+        return;
+      }
       const pages = getCurrentPages();
       if (pages.length > 1) {
         wx.navigateBack();

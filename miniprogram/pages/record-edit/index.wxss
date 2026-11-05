@@ -146,108 +146,6 @@
   gap: var(--tl-space-sm);
 }
 
-.dashboard-amount-wrap {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  padding: var(--tl-space-sm) 0;
-  gap: var(--tl-space-xs);
-}
-
-.dashboard-currency {
-  font-size: var(--tl-font-size-2xl);
-  font-weight: var(--tl-font-weight-bold);
-  color: var(--tl-color-primary);
-}
-
-.dashboard-amount-value {
-  font-size: var(--tl-font-data-xl);
-  font-weight: var(--tl-font-weight-bold);
-  color: var(--tl-color-text);
-  font-variant-numeric: tabular-nums;
-  line-height: 1.1;
-}
-
-.dashboard-amount-value.is-placeholder {
-  color: var(--tl-color-text-tertiary);
-}
-
-.dashboard-amount-result {
-  margin-left: var(--tl-space-xs);
-  font-size: var(--tl-font-body-sm);
-  font-weight: var(--tl-font-weight-bold);
-  color: var(--tl-color-text-tertiary);
-}
-
-/* 分类引导胶囊 */
-.category-pill-row {
-  display: flex;
-  justify-content: center;
-  margin-bottom: var(--tl-space-sm);
-}
-
-.category-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 10rpx;
-  padding: 10rpx 24rpx;
-  border-radius: var(--tl-radius-pill);
-  font-size: var(--tl-font-body-sm);
-  font-weight: var(--tl-font-weight-bold);
-  transition: all var(--tl-duration-fast) var(--tl-easing-standard);
-}
-
-.category-pill--empty {
-  background: var(--tl-color-warning-soft);
-  border: 2rpx dashed var(--tl-color-warning);
-  color: var(--tl-color-warning);
-}
-
-.category-pill--selected {
-  background: var(--tl-color-primary-soft);
-  border: var(--tl-border-width) solid var(--tl-color-border-warm);
-  color: var(--tl-color-primary);
-}
-
-/* 属性药丸行 */
-.dashboard-props {
-  display: flex;
-  align-items: center;
-  gap: var(--tl-space-xs);
-  padding-top: var(--tl-space-xs);
-  border-top: var(--tl-border-width) solid var(--tl-color-border-divider);
-}
-
-.prop-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8rpx;
-  height: 56rpx;
-  padding: 0 16rpx;
-  border-radius: var(--tl-radius-pill);
-  background: var(--tl-palette-warm-100);
-  color: var(--tl-color-text-secondary);
-  font-size: var(--tl-font-caption);
-  font-weight: var(--tl-font-weight-medium);
-}
-
-.prop-chip--note {
-  flex: 1;
-  min-width: 0;
-}
-
-.prop-note-input {
-  flex: 1;
-  min-width: 0;
-  height: 56rpx;
-  color: var(--tl-color-text);
-  font-size: var(--tl-font-caption);
-}
-
-.prop-note-placeholder {
-  color: var(--tl-color-text-tertiary);
-}
-
 /* 分类受控高度卡片 */
 .category-section {
   padding: var(--tl-space-sm) var(--tl-space-md);
@@ -270,13 +168,135 @@
   font-weight: var(--tl-font-weight-bold);
 }
 
-.category-manage-button {
-  flex: 0 0 auto;
-  width: auto;
+.category-tree-scroll {
+  height: 55vh;
+}
+
+.category-tree-scroll--selected {
+  height: 20vh;
+}
+
+.entry-panel-info {
+  margin-bottom: 12rpx;
+}
+
+.entry-panel-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--tl-space-sm);
+  min-width: 0;
+}
+
+.entry-panel-category {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--tl-color-primary);
+  font-size: var(--tl-font-body-sm);
+  font-weight: var(--tl-font-weight-bold);
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.category-tree-scroll {
-  height: 280rpx;
-  max-height: 280rpx;
+.entry-panel-amount {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-heading);
+  font-weight: var(--tl-font-weight-bold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entry-panel-result {
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-caption);
+}
+
+.entry-panel-note {
+  height: 56rpx;
+  padding: 0 16rpx;
+  margin: 10rpx 0;
+  border-radius: var(--tl-radius-control);
+  background: var(--tl-palette-warm-100);
+  font-size: var(--tl-font-body-sm);
+}
+
+.entry-panel-props {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tl-space-xs);
+}
+
+.entry-panel-chip {
+  padding: 8rpx 14rpx;
+  border-radius: var(--tl-radius-pill);
+  background: var(--tl-palette-warm-100);
+  color: var(--tl-color-text-secondary);
+  font-size: var(--tl-font-caption);
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--tl-space-xs);
+}
+.category-grid-item {
+  display: flex;
+  min-width: 0;
+  min-height: 116rpx;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4rpx;
+  border: var(--tl-border-width) solid transparent;
+  border-radius: var(--tl-radius-control);
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-caption);
+}
+.category-grid-item.is-selected {
+  border-color: var(--tl-color-primary);
+  background: var(--tl-color-primary-soft);
+  color: var(--tl-color-primary);
+}
+.category-grid-icon {
+  display: flex;
+  width: 64rpx;
+  height: 64rpx;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--tl-radius-pill);
+  background: var(--tl-palette-warm-100);
+}
+.category-grid-name,
+.category-grid-parent {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.category-grid-parent {
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-caption);
+}
+.entry-family {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tl-space-xs);
+  margin-top: var(--tl-space-xs);
+}
+.entry-family-row {
+  display: flex;
+  gap: var(--tl-space-xs);
+  padding: 8rpx 14rpx;
+  border-radius: var(--tl-radius-control);
+  background: var(--tl-palette-warm-100);
+  color: var(--tl-color-text-secondary);
+  font-size: var(--tl-font-caption);
+}
+
+.entry-clear {
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-caption);
+  text-align: right;
 }

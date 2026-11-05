@@ -1,6 +1,5 @@
 {
   "usingComponents": {
-    "tl-category-tree": "/components/tl-category-tree/index",
     "tl-record-form": "/components/tl-record-form/index"
   },
   "navigationBarTitleText": "记一笔"

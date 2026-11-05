@@ -33,6 +33,31 @@ const categoryTreeDefaults = {
   ],
 };
 
+// 新账本模板独立于旧账本的懒修复模板；保留旧模板已有子项，避免首次读取时补入额外分类。
+const newLedgerDefaults = {
+  income: categoryTreeDefaults.income,
+  expense: [
+    categoryTreeDefaults.expense[0],
+    categoryTreeDefaults.expense[1],
+    ["日用", "shopping-basket-2-line", []],
+    categoryTreeDefaults.expense[2],
+    ["蔬菜", "leaf-line", []],
+    ["水果", "apple-line", []],
+    ["零食", "cake-2-line", []],
+    ["运动", "basketball-line", []],
+    ["娱乐", "gamepad-line", []],
+    ["通讯", "phone-line", []],
+    ["服饰", "t-shirt-line", []],
+    ["美容", "brush-line", []],
+    ["住房", "home-4-line", []],
+    categoryTreeDefaults.expense[3],
+    ["孩子", "user-smile-line", []],
+    ["长辈", "parent-line", []],
+    categoryTreeDefaults.expense[4],
+    categoryTreeDefaults.expense[5],
+  ],
+};
+
 async function addDefaultChild(ledgerId, parent, openid) {
   const existing = await db
     .collection("categories")
@@ -114,7 +139,7 @@ async function ensureSystemChildren(ledgerId, parent, childNames, openid) {
   return true;
 }
 
-async function ensureLedgerCategoryTree(ledgerId, openid) {
+async function ensureLedgerCategoryTree(ledgerId, openid, initialDefaults = categoryTreeDefaults) {
   const parentResult = await db
     .collection("categories")
     .where({ ledgerId, level: "parent" })
@@ -151,8 +176,8 @@ async function ensureLedgerCategoryTree(ledgerId, openid) {
     return changes.some(Boolean);
   }
   for (const type of ["expense", "income"])
-    for (let index = 0; index < categoryTreeDefaults[type].length; index += 1) {
-      const [name, icon, children] = categoryTreeDefaults[type][index];
+    for (let index = 0; index < initialDefaults[type].length; index += 1) {
+      const [name, icon, children] = initialDefaults[type][index];
       const parentRes = await db.collection("categories").add({
         data: {
           ledgerId,
@@ -196,11 +221,12 @@ async function ensureLedgerCategoryTree(ledgerId, openid) {
 }
 
 async function createDefaultCategories(ledgerId, openid) {
-  return ensureLedgerCategoryTree(ledgerId, openid);
+  return ensureLedgerCategoryTree(ledgerId, openid, newLedgerDefaults);
 }
 
 module.exports = {
   categoryTreeDefaults,
+  newLedgerDefaults,
   addDefaultChild,
   ensureSystemChildren,
   ensureLedgerCategoryTree,

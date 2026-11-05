@@ -42,7 +42,7 @@ function pageFixture({
   updateRecord,
   listCategories = async () => categories,
 } = {}) {
-  const calls = { creates: [], updates: [], toasts: [], navigation: [] };
+  const calls = { creates: [], updates: [], toasts: [], navigation: [], modals: [] };
   const currentLedger = { _id: "ledger", name: "日常账本", type: "personal", ...ledger };
   const definition = loadDefinition(
     "miniprogram/pages/record-edit/index.js",
@@ -80,12 +80,15 @@ function pageFixture({
     {
       getApp: () => ({ globalData: { currentLedger, openid: "self" } }),
       getCurrentPages: () => [{}, {}],
-      wx: Object.fromEntries(
-        ["navigateBack", "navigateTo", "reLaunch"].map((name) => [
-          name,
-          (options) => calls.navigation.push({ name, options }),
-        ])
-      ),
+      wx: {
+        ...Object.fromEntries(
+          ["navigateBack", "navigateTo", "reLaunch"].map((name) => [
+            name,
+            (options) => calls.navigation.push({ name, options }),
+          ])
+        ),
+        showModal: (options) => calls.modals.push(options),
+      },
     }
   );
   const page = {
@@ -98,6 +101,20 @@ function pageFixture({
   page.onLoad();
   return { page, calls };
 }
+
+test("entry back confirms unsaved input and preserves it on cancel", () => {
+  const { page, calls } = pageFixture();
+  page.handleEntryBack();
+  assert.equal(calls.navigation.length, 1);
+  page.onAmountInput(input("42"));
+  page.handleEntryBack();
+  assert.equal(calls.modals.length, 1);
+  calls.modals[0].success({ confirm: false });
+  assert.equal(page.data.amount, "42");
+  assert.equal(calls.navigation.length, 1);
+  calls.modals[0].success({ confirm: true });
+  assert.equal(calls.navigation.length, 2);
+});
 
 async function readyPage(options) {
   const fixture = pageFixture(options);
@@ -132,6 +149,40 @@ function componentFixture(properties = {}) {
   };
   return { component, events };
 }
+
+test("flat category choices include all children and disambiguate duplicate names", async () => {
+  const duplicates = [
+    ...categories,
+    { _id: "food2", type: "expense", level: "parent", name: "旅行" },
+    { _id: "lunch2", type: "expense", level: "child", parentId: "food2", name: "午餐" },
+  ];
+  const { page } = pageFixture({ listCategories: async () => duplicates });
+  await page.onShow();
+  assert.deepEqual(plain(page.data.flatCategories.map((item) => [item.id, item.parentHint])), [
+    ["lunch", "餐饮"],
+    ["lunch2", "旅行"],
+  ]);
+  page.chooseCategory({ detail: {}, currentTarget: { dataset: { categoryId: "lunch2" } } });
+  assert.equal(page.data.categoryId, "lunch2");
+  assert.equal(page.data.parentCategory, "旅行");
+});
+
+test("train uses dedicated quick amounts while taxi uses ledger configuration", async () => {
+  const traffic = [
+    { _id: "traffic", type: "expense", level: "parent", name: "交通" },
+    { _id: "train", type: "expense", level: "child", parentId: "traffic", name: "火车高铁" },
+    { _id: "taxi", type: "expense", level: "child", parentId: "traffic", name: "打车" },
+  ];
+  const { page } = pageFixture({
+    ledger: { quickAmountsEnabled: true, quickAmounts: [18, 32] },
+    listCategories: async () => traffic,
+  });
+  await page.onShow();
+  page.chooseCategory({ detail: { categoryId: "train" } });
+  assert.deepEqual(plain(page.data.quickAmounts), [373.5, 356.5, 265, 432.5]);
+  page.chooseCategory({ detail: { categoryId: "taxi" } });
+  assert.deepEqual(plain(page.data.quickAmounts), [18, 32]);
+});
 
 test("stale category failures cannot overwrite a newer successful load", async () => {
   let rejectOld;

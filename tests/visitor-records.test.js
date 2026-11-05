@@ -1988,8 +1988,7 @@ test("new entry requires an explicit inline category and type changes clear only
   await page.saveAndContinue();
   assert.equal(calls.writes[0].categoryId, "salary");
   assert.equal(calls.writes[0].type, "income");
-  page.openCategoryManager();
-  assert.match(calls.urls[0], /category-manage.*ledgerId=owned&type=income/);
+  assert.equal(page.data.categoryId, "salary");
   page.onHide();
   assert.equal(calls.unsubscribed, 1);
   await page.onShow();
