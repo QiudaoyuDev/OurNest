@@ -63,6 +63,51 @@ test("every component tag resolves through its global or local registration", ()
   }
 });
 
+test("category tree renders one controlled selection by ID and preserves selection events", () => {
+  const { instance, events } = component("tl-category-tree");
+  assert.equal(instance.data.selectedCategoryId, "");
+  const template = fs.readFileSync("miniprogram/components/tl-category-tree/index.wxml", "utf8");
+  const childClass = template.match(/class="(tl-category-tree__child(?:\s[^"]*)?)"/)[1];
+  const selectedClass = (child, selectedCategoryId) =>
+    childClass.replace(/\{\{(.*?)\}\}/g, (_match, expression) =>
+      vm.runInNewContext(expression, { child, selectedCategoryId })
+    );
+  const children = [
+    { _id: "lunch", name: "午餐" },
+    { id: "dinner", name: "午餐" },
+  ];
+  for (const id of ["", "lunch", "dinner", "deleted"]) {
+    const selected = children.filter((child) => selectedClass(child, id).includes("is-selected"));
+    assert.equal(selected.length, id === "lunch" || id === "dinner" ? 1 : 0);
+    if (selected.length) assert.equal(selected[0]._id || selected[0].id, id);
+  }
+  assert.match(
+    template,
+    /wx:if="\{\{selectedCategoryId && \(child\._id \|\| child\.id\) === selectedCategoryId\}\}"/
+  );
+  assert.match(template, /name="check-line"/);
+  const style = fs.readFileSync("miniprogram/components/tl-category-tree/index.wxss", "utf8");
+  assert.match(style, /\.tl-category-tree__child\.is-selected\s*\{[^}]*border-color:/);
+  assert.match(style, /\.tl-category-tree__child\.is-selected\s*\{[^}]*background:/);
+  instance.select({ currentTarget: { dataset: { categoryId: "dinner" } } });
+  assert.equal(events[0].name, "select");
+  assert.equal(events[0].detail.categoryId, "dinner");
+  assert.equal(instance.data.selectedCategoryId, "");
+});
+
+test("record entry passes selected identity and keeps the category heading uncompressed", () => {
+  const template = fs.readFileSync("miniprogram/pages/record-edit/index.wxml", "utf8");
+  assert.match(template, /<tl-category-tree[^>]*selected-category-id="\{\{categoryId\}\}"/);
+  assert.match(template, /<tl-button[^>]*class="category-manage-button"[^>]*openCategoryManager/);
+  const style = fs.readFileSync("miniprogram/pages/record-edit/index.wxss", "utf8");
+  const heading = style.match(/\.category-heading-title\s*\{([^}]*)\}/)[1];
+  assert.match(heading, /flex:\s*0 0 auto;/);
+  assert.match(heading, /white-space:\s*nowrap;/);
+  const button = style.match(/\.category-manage-button\s*\{([^}]*)\}/)[1];
+  assert.match(button, /flex:\s*0 0 auto;/);
+  assert.match(button, /width:\s*auto;/);
+});
+
 test("ledger switcher normalizes both ledger shapes and only emits selection events", () => {
   const { definition, instance, events } = component("tl-ledger-switcher");
   definition.observers["ledgers, selectedId"].call(

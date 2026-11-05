@@ -257,7 +257,8 @@ test("continuous recording clears only record-specific fields after cloud confir
   assert.equal(page.data.date, "2026-03-13");
   assert.equal(page.data.accountIndex, 1);
   assert.equal(page.data.saving, false);
-  assert.equal(toasts[0].message, "已记账，可继续记录");
+  assert.equal(page.data.categoryId, "lunch");
+  assert.equal(toasts.length, 0);
 });
 
 test("continuous recording submits once and waits for cloud confirmation before resetting", async () => {
@@ -301,7 +302,8 @@ test("continuous recording submits once and waits for cloud confirmation before 
   await Promise.all([first, duplicate]);
   assert.equal(page.data.amount, "");
   assert.equal(page.data.saving, false);
-  assert.equal(toasts[0].message, "已记账，可继续记录");
+  assert.equal(page.data.categoryId, "lunch");
+  assert.equal(toasts.length, 0);
 });
 
 test("failed continuous recording retains all user input and unlocks submission", async () => {

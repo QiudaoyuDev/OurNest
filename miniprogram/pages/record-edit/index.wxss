@@ -263,9 +263,17 @@
 }
 
 .category-heading-title {
+  flex: 0 0 auto;
+  white-space: nowrap;
   color: var(--tl-color-text-secondary);
   font-size: var(--tl-font-body-sm);
   font-weight: var(--tl-font-weight-bold);
+}
+
+.category-manage-button {
+  flex: 0 0 auto;
+  width: auto;
+  white-space: nowrap;
 }
 
 .category-tree-scroll {

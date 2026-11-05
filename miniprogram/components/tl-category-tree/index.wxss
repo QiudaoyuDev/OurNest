@@ -57,6 +57,7 @@
   border-top: 1rpx solid var(--tl-color-divider-warm);
 }
 .tl-category-tree__child {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -75,6 +76,20 @@
   line-height: 1.15;
   text-align: center;
   background: var(--tl-palette-warm-100);
+  border: var(--tl-border-width) solid transparent;
+}
+.tl-category-tree__child.is-selected {
+  border-color: var(--tl-category-primary);
+  color: var(--tl-category-primary);
+  background: var(--tl-category-primary-soft);
+}
+.tl-category-tree__selected-mark {
+  position: absolute;
+  top: var(--tl-space-xs);
+  right: var(--tl-space-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .tl-category-tree__child-icon {
   width: 48rpx;

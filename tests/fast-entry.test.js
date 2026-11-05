@@ -36,7 +36,12 @@ function loadDefinition(relative, kind, stubs, globals = {}) {
   return definition;
 }
 
-function pageFixture({ ledger = {}, createRecord, listCategories = async () => categories } = {}) {
+function pageFixture({
+  ledger = {},
+  createRecord,
+  updateRecord,
+  listCategories = async () => categories,
+} = {}) {
   const calls = { creates: [], updates: [], toasts: [], navigation: [] };
   const currentLedger = { _id: "ledger", name: "日常账本", type: "personal", ...ledger };
   const definition = loadDefinition(
@@ -52,8 +57,9 @@ function pageFixture({ ledger = {}, createRecord, listCategories = async () => c
           calls.creates.push(plain(payload));
           return createRecord ? createRecord(payload) : Promise.resolve({ recordId: "new" });
         },
-        updateRecord: async (payload) => {
+        updateRecord(payload) {
           calls.updates.push(plain(payload));
+          return updateRecord ? updateRecord(payload) : Promise.resolve();
         },
       },
       "../../services/category.service": { listCategories },
@@ -192,6 +198,54 @@ test("expression saves evaluated amount with category metadata and normalized ta
   });
   assert.equal(calls.updates.length, 0);
   assert.equal(calls.navigation[0].name, "navigateBack");
+  assert.deepEqual(calls.toasts, []);
+});
+
+test("editing saves silently and returns only after cloud confirmation", async () => {
+  let resolveUpdate;
+  const { page, calls } = await readyPage({
+    updateRecord: () =>
+      new Promise((resolve) => {
+        resolveUpdate = resolve;
+      }),
+  });
+  page.setData({ isEditing: true, recordId: "existing", syncVersion: 4 });
+  const saving = page.saveAndLeave();
+  assert.equal(page.data.saving, true);
+  assert.equal(calls.navigation.length, 0);
+  assert.deepEqual(calls.toasts, []);
+  await page.saveAndLeave();
+  assert.equal(calls.updates.length, 1);
+  resolveUpdate();
+  await saving;
+  assert.equal(calls.creates.length, 0);
+  assert.equal(calls.updates.length, 1);
+  assert.equal(calls.updates[0].recordId, "existing");
+  assert.equal(calls.updates[0].syncVersion, 4);
+  assert.equal(calls.navigation[0].name, "navigateBack");
+  assert.deepEqual(calls.toasts, []);
+});
+
+test("editing failure preserves input and its error feedback while a retry saves silently", async () => {
+  let failing = true;
+  const { page, calls } = await readyPage({
+    updateRecord: async () => {
+      if (failing) throw new Error("network unavailable");
+    },
+  });
+  page.setData({ isEditing: true, recordId: "existing", note: "保留备注" });
+  const before = plain(page.data);
+  await page.saveAndLeave();
+  assert.deepEqual(plain(page.data), before);
+  assert.equal(calls.navigation.length, 0);
+  assert.equal(calls.toasts.length, 1);
+  assert.equal(calls.toasts[0].type, "error");
+  assert.match(calls.toasts[0].message, /输入已保留/);
+  failing = false;
+  await page.saveAndLeave();
+  assert.equal(calls.updates.length, 2);
+  assert.equal(calls.navigation.length, 1);
+  assert.equal(calls.toasts.length, 1);
 });
 
 test("invalid, zero and negative expressions cannot save even when invoked directly", async () => {
@@ -223,6 +277,17 @@ test("switching type or deleting selected category requires a fresh selection", 
   assert.equal(calls.creates.length, 0);
 });
 
+test("inline selection uses category identity even when names are identical", async () => {
+  const duplicateName = { ...categories[1], _id: "another-lunch" };
+  const { page } = await readyPage({ listCategories: async () => [...categories, duplicateName] });
+  assert.equal(page.data.categoryId, "lunch");
+  page.chooseCategory({ detail: { categoryId: "another-lunch" } });
+  assert.equal(page.data.categoryId, "another-lunch");
+  assert.equal(page.data.categoryName, "午餐");
+  page.renderCategories(categories);
+  assert.equal(page.data.categoryId, "");
+});
+
 test("pending save blocks duplicate leave/continue submissions and category changes", async () => {
   let resolve;
   const pending = new Promise((done) => {
@@ -231,6 +296,8 @@ test("pending save blocks duplicate leave/continue submissions and category chan
   const { page, calls } = await readyPage({ createRecord: () => pending });
   const first = page.saveAndLeave();
   assert.equal(page.data.saving, true);
+  assert.deepEqual(calls.toasts, []);
+  assert.equal(calls.navigation.length, 0);
   await page.saveAndContinue();
   await page.saveAndLeave();
   page.switchType(dataset({ type: "income" }));
@@ -241,6 +308,7 @@ test("pending save blocks duplicate leave/continue submissions and category chan
   resolve({ recordId: "new" });
   await first;
   assert.equal(calls.navigation.length, 1);
+  assert.deepEqual(calls.toasts, []);
 });
 
 test("save-and-continue resets entry fields and permits a deliberate second save", async () => {
@@ -264,6 +332,7 @@ test("save-and-continue resets entry fields and permits a deliberate second save
   await page.saveAndContinue();
   assert.equal(calls.creates.length, 2);
   assert.equal(calls.creates[1].amount, 0.3);
+  assert.deepEqual(calls.toasts, []);
 });
 
 test("service failure and conflict preserve all input and release saving for retry", async () => {
