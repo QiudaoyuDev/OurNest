@@ -123,10 +123,17 @@ async function ensureCollections() {
 }
 
 // --- 读取工具 ---
+function normalizeUserAvatar(user) {
+  if (!user || typeof user.avatarUrl !== "string" || !user.avatarUrl.startsWith("/images/brand/")) {
+    return user;
+  }
+  return { ...user, avatarUrl: defaultAvatarUrl };
+}
+
 async function getUser(openid) {
   const { db } = getDb();
   const found = await db.collection("users").where({ openid }).limit(1).get();
-  return found.data[0];
+  return normalizeUserAvatar(found.data[0]);
 }
 
 async function getLedgerById(ledgerId) {
@@ -202,7 +209,7 @@ async function getUsersByOpenids(openids = []) {
     .where({ openid: _.in(uniqueOpenids) })
     .get();
   return (result.data || []).reduce((map, user) => {
-    map[user.openid] = user;
+    map[user.openid] = normalizeUserAvatar(user);
     return map;
   }, {});
 }

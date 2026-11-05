@@ -28,7 +28,7 @@ references:
 
 ## 字段约束
 
-- `users.avatarUrl` 默认写入 `/images/brand/our-nest-logo-256-transparent.png`，用户上传头像使用云文件 ID；`errorLogs.type` 写入 `ourNestError`。
+- `users.avatarUrl` 默认写入 `/images/brand/our-nest-logo-256-transparent.png`，用户上传头像使用云文件 ID；读取资料和成员信息时，打包品牌头像路径在响应中统一为当前 Logo，不直接改写数据库原记录。`errorLogs.type` 写入 `ourNestError`。
 - 新建 `ledger`、`record` 写入 `schemaVersion: 1`。
 - `records.amount` 必须为有限数值。
 - `records.date` 使用 `YYYY-MM-DD`。
