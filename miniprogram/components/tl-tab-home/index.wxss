@@ -85,7 +85,7 @@
 }
 
 .summary-title {
-  margin-top: 10rpx;
+  margin-top: 0;
   color: var(--tl-color-text);
   font-size: var(--tl-font-heading);
   font-weight: var(--tl-font-weight-bold);

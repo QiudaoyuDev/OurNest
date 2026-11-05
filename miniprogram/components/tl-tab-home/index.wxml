@@ -103,11 +103,7 @@
             <view class="summary-glow">
             </view>
             <view class="summary-head">
-              <view>
-                <view class="section-kicker">本月概览</view>
-                <view class="summary-title">{{familyMood}}</view>
-              </view>
-              <view class="brand-badge">{{roleText}}</view>
+              <view class="summary-title">本月概览</view>
             </view>
             <view class="overview-grid">
               <view class="overview-item">
