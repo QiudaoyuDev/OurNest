@@ -69,7 +69,7 @@ function formatTooltipAmount(value) {
   return money(Array.isArray(value) ? value[value.length - 1] : value);
 }
 
-function getPieOption(data, chartType) {
+function getPieOption(data, chartType, ratio = false) {
   const rows = getRanking(data, chartType);
   return {
     color: CHART_COLORS,
@@ -79,18 +79,33 @@ function getPieOption(data, chartType) {
       triggerOn: "click",
       confine: true,
       formatter: (params) =>
-        `${params.name}\n${formatTooltipAmount(params.value)} · ${params.percent}%`,
+        `${params.data.displayName || params.name}\n${formatTooltipAmount(params.value)} · ${params.percent}%`,
     },
     series: [
       {
         type: "pie",
+        selectedMode: ratio ? "single" : false,
         radius: ["48%", "72%"],
         center: ["50%", "50%"],
         avoidLabelOverlap: true,
         itemStyle: { borderColor: CHART_THEME.surface, borderWidth: 3 },
-        label: { color: CHART_THEME.labelText, fontSize: 10, formatter: "{b}\n{d}%" },
+        label: {
+          color: CHART_THEME.labelText,
+          fontSize: 10,
+          formatter: (params) => `${params.data.displayName || params.name}\n${params.percent}%`,
+        },
         labelLine: { length: 10, length2: 8 },
-        data: rows.map((item) => ({ name: item.name, value: amount(item.amount) })),
+        data: rows.map((item) => ({
+          id: item.key || "ratio-remainder",
+          ratioKey: item.key || null,
+          ratioRemainder: !item.key,
+          // This ECharts version keys selectedMap by name before id. Keep display
+          // labels separate so equally named legacy categories remain independent.
+          name: ratio ? item.key || "ratio-remainder" : item.name,
+          displayName: item.name,
+          value: amount(item.amount),
+          selected: !!(item.key && data.ratioSelection && data.ratioSelection.key === item.key),
+        })),
       },
     ],
   };
@@ -263,7 +278,7 @@ function getMonthlyExpenseTrendOption(data) {
 
 function getChartOption(data, chartType = data.activeChart) {
   if (chartType === "monthTrend") return getMonthlyExpenseTrendOption(data);
-  if (chartType === "monthRatio") return getPieOption(data, "category");
+  if (chartType === "monthRatio") return getPieOption(data, "category", true);
   if (chartType === "yearCashflow") return getYearChartOption(data, "year-cashflow");
   if (chartType === "yearBalance") return getYearChartOption(data, "year-balance");
   if (chartType === "yearRatio") return getYearChartOption(data, "year-ratio");
@@ -289,7 +304,7 @@ function getYearChartOption(data, key) {
       splitLine: { lineStyle: { color: CHART_THEME.gridLine, type: "dashed" } },
     },
   };
-  if (key === "year-ratio") return getPieOption(data, "category");
+  if (key === "year-ratio") return getPieOption(data, "category", true);
   if (key === "year-cashflow") {
     const expenseValues = trend.map((item) => amount(item.expense)).filter((value) => value > 0);
     const maxExpense = expenseValues.length ? Math.max(...expenseValues) : null;

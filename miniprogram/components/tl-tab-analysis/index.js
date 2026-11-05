@@ -1,5 +1,7 @@
 import * as echarts from "../ec-canvas/echarts";
 const app = getApp();
+const recordService = require("../../services/record.service");
+const { initialRatioPreview, createRatioMethods } = require("./ratio-preview");
 const ledgerService = require("../../services/ledger.service");
 const ledgerStore = require("../../services/ledger.store");
 const feedback = require("../../services/feedback-ui");
@@ -33,6 +35,7 @@ const {
 
 Component({
   data: {
+    ...initialRatioPreview(),
     ledgerId: "",
     ledgerName: "分析账本",
     ledgerType: "personal",
@@ -114,6 +117,7 @@ Component({
       onEvent("records:changed", this._onRecordsChanged);
     },
     detached() {
+      this.clearRatioPreview();
       if (this._onRecordsChanged) offEvent("records:changed", this._onRecordsChanged);
       this.isAttached = false;
       this.analysisRequestId += 1;
@@ -123,6 +127,7 @@ Component({
   },
 
   methods: {
+    ...createRatioMethods(recordService, (options) => wx.navigateTo(options)),
     refreshAnalysis(syncResult = {}) {
       const changedLedgerIds = syncResult.changedLedgerIds || [];
       const removedLedgerIds = syncResult.removedLedgerIds || [];
@@ -131,6 +136,7 @@ Component({
           .getCachedLedgers()
           .find((ledger) => !removedLedgerIds.includes(ledger._id || ledger.id));
         if (!fallback) {
+          this.clearRatioPreview();
           this.analysisRequestId += 1;
           this.disposeChart();
           this.setData({
@@ -186,6 +192,7 @@ Component({
     },
 
     async loadAnalysis() {
+      this.clearRatioPreview();
       if (!this.data.ledgerId) return this.setData({ loading: false, noLedger: true });
       this._chartRetryCount = 0;
       const requestId = ++this.analysisRequestId;
@@ -468,6 +475,7 @@ Component({
     switchChart(event) {
       const activeChart = event.currentTarget.dataset.chart;
       if (!CHART_META[activeChart] || activeChart === this.data.activeChart) return;
+      this.clearRatioPreview();
       const meta = CHART_META[activeChart];
       const nextData = { ...this.data, activeChart };
       const detailRows = getDetailRows(nextData, activeChart);
@@ -499,6 +507,13 @@ Component({
 
     openCategoryRecords(event) {
       const source = event.currentTarget.dataset.source;
+      if (
+        ["monthRatio", "yearRatio"].includes(this.data.activeChart) &&
+        !["year", "custom"].includes(source)
+      ) {
+        const row = (this.data.activeRanking || [])[Number(event.currentTarget.dataset.index)];
+        return this.loadRatioPreview(row && row.key);
+      }
       const rows =
         source === "year"
           ? this.data.yearRankingRows
@@ -648,7 +663,11 @@ Component({
       });
       canvas.setChart(chart);
       chart.setOption(getChartOption(this.data), true);
-      chart.on("click", (params) => this.openTrendRecords(params));
+      chart.on("click", (params) => {
+        if (["monthRatio", "yearRatio"].includes(this.data.activeChart)) {
+          this.openRatioChartSelection(params);
+        } else this.openTrendRecords(params);
+      });
       this.chart = chart;
       const component = this.selectComponent("#analysis-chart");
       if (component && typeof component.setChart === "function") component.setChart(chart);
