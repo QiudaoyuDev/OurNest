@@ -204,12 +204,17 @@ test("saving waits for cloud; a failed save preserves input and supports retry",
   assert.equal(page.data.amount, "39");
   assert.equal(page.data.saving, false);
   assert.equal(navigations, 0);
+  assert.equal(toasts.length, 1);
+  assert.equal(toasts[0].type, "error");
+  assert.match(toasts[0].message, /输入已保留/);
   request = deferred();
   const retry = page.saveRecord();
+  assert.equal(page.data.saving, true);
+  assert.equal(navigations, 0);
   request.resolve({ recordId: "real" });
   await retry;
   assert.equal(navigations, 1);
-  assert.equal(toasts.at(-1).type, "success");
+  assert.equal(toasts.length, 1);
 });
 
 test("deletion waits for cloud and remains on page when rejected", async () => {
