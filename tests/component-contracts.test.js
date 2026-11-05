@@ -108,6 +108,30 @@ test("record entry passes selected identity and keeps the category heading uncom
   assert.match(button, /width:\s*auto;/);
 });
 
+test("analysis ratio UI shares a preview template and uses public loading, error and sheet components", () => {
+  const template = fs.readFileSync("miniprogram/components/tl-tab-analysis/index.wxml", "utf8");
+  assert.equal((template.match(/<template name="ratio-section">/g) || []).length, 1);
+  assert.equal((template.match(/<template\b[^>]*is="ratio-section"/g) || []).length, 2);
+  assert.match(template, /ratioPreviewStatus === 'loading'/);
+  assert.match(template, /ratioPreviewStatus === 'error'/);
+  assert.match(template, /ratioPreviewStatus === 'empty'/);
+  assert.match(template, /ratioPreviewStatus === 'ready'/);
+  assert.match(template, /<tl-skeleton[^>]*ratioPreviewStatus/);
+  assert.match(template, /<tl-empty-state[^>]*variant="error"/);
+  assert.match(
+    template,
+    /<tl-bottom-sheet[^>]*visible="\{\{ratioRemainderVisible\}\}"[^>]*closeRatioRemainder/
+  );
+  assert.match(template, /data-key="\{\{item.key\}\}" bindtap="chooseRatioRemainder"/);
+  assert.match(template, /data-key="\{\{item.key\}\}" bindtap="selectRatioCategory"/);
+  assert.match(template, /bind:tap="openRatioRecords"/);
+  assert.match(template, /bind:tap="retryRatioPreview"/);
+  assert.match(template, /bind:tap="refreshRatioAnalysis"/);
+  assert.match(template, /ratioPreviewCount/);
+  assert.match(template, /ratioPreviewAmountText/);
+  assert.match(template, /ratioSelection.parentCategory/);
+});
+
 test("ledger switcher normalizes both ledger shapes and only emits selection events", () => {
   const { definition, instance, events } = component("tl-ledger-switcher");
   definition.observers["ledgers, selectedId"].call(

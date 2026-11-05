@@ -1,3 +1,53 @@
+<template name="ratio-section">
+  <view wx:if="{{ratioSelection}}" class="ratio-preview card">
+    <view class="ratio-preview-heading">
+      <text class="card-title">{{ratioSelection.name}}明细</text>
+      <text wx:if="{{ratioSelection.parentCategory}}" class="ratio-preview-meta">{{ratioSelection.parentCategory}}</text>
+      <text class="ratio-preview-meta">{{ratioPreviewRangeLabel}}</text>
+    </view>
+    <tl-skeleton wx:if="{{ratioPreviewStatus === 'loading'}}" variant="list">
+    </tl-skeleton>
+    <tl-empty-state wx:elif="{{ratioPreviewStatus === 'error'}}" variant="error" title="{{ratioPreviewStale ? '分析数据需要刷新' : '明细加载失败'}}" description="{{ratioPreviewError}}">
+      <tl-button wx:if="{{ratioPreviewStale}}" variant="secondary" size="small" bind:tap="refreshRatioAnalysis">刷新分析</tl-button>
+      <tl-button wx:else variant="secondary" size="small" bind:tap="retryRatioPreview">重新加载</tl-button>
+    </tl-empty-state>
+    <block wx:elif="{{ratioPreviewStatus === 'ready' || ratioPreviewStatus === 'empty'}}">
+      <view class="ratio-preview-summary">
+        <text class="is-expense">合计 ¥{{ratioPreviewAmountText}}</text>
+        <text>共 {{ratioPreviewCount}} 笔</text>
+      </view>
+      <tl-empty-state wx:if="{{ratioPreviewStatus === 'empty'}}" title="本期该分类暂无支出" description="可以选择其他分类查看明细">
+      </tl-empty-state>
+      <block wx:else>
+        <text class="ratio-preview-meta">最近 {{ratioPreviewRecords.length}} 笔</text>
+        <view wx:for="{{ratioPreviewRecords}}" wx:key="id" class="ratio-preview-record">
+          <view class="ratio-preview-record-main">
+            <text class="ratio-preview-record-title">{{item.note || item.categoryName || '其他'}}</text>
+            <text class="ratio-preview-meta">{{item.date}} · {{item.account || '未设置账户'}}</text>
+          </view>
+          <text class="record-amount expense">-¥{{item.amountText}}</text>
+        </view>
+      </block>
+      <tl-button variant="text" size="small" bind:tap="openRatioRecords">查看全部 {{ratioPreviewCount}} 笔明细</tl-button>
+    </block>
+  </view>
+  <view wx:elif="{{activeRanking.length}}" class="ratio-preview-hint">点选扇区或分类，查看最近 3 笔支出</view>
+  <tl-empty-state wx:else title="本期暂无支出分类" description="可以选择其他时间范围查看">
+  </tl-empty-state>
+  <view wx:if="{{activeRanking.length}}" class="analysis-ratio-list">
+    <view wx:for="{{activeRanking}}" wx:key="key" class="analysis-ratio-row {{ratioSelection && ratioSelection.key === item.key ? 'is-selected' : ''}}" data-key="{{item.key}}" bindtap="selectRatioCategory">
+      <view class="ratio-category-main">
+        <text>{{item.name}}</text>
+        <text wx:if="{{item.parentCategory}}" class="ratio-preview-meta">{{item.parentCategory}}</text>
+      </view>
+      <view class="ratio-category-amount">
+        <text>¥{{item.amountText}} · {{item.rate}}%</text>
+        <tl-icon wx:if="{{ratioSelection && ratioSelection.key === item.key}}" name="check-line" size="26" colorKey="primary">
+        </tl-icon>
+      </view>
+    </view>
+  </view>
+</template>
 <view class="tab-panel analysis-page">
   <scroll-view class="analysis-scroll" scroll-y="{{true}}" enhanced="{{true}}" enable-flex="{{true}}" show-scrollbar="{{false}}">
     <view class="page-content">
@@ -94,12 +144,8 @@
               </ec-canvas>
             </view>
           </view>
-          <view wx:if="{{(activeChart === 'monthRatio' || activeChart === 'yearRatio') && activeRanking.length}}" class="analysis-ratio-list">
-            <view wx:for="{{activeRanking}}" wx:key="key" class="analysis-ratio-row" data-index="{{index}}" data-source="ratio" bindtap="openCategoryRecords">
-              <text>{{item.name}}</text>
-              <text>¥{{item.amountText}} · {{item.rate}}%</text>
-            </view>
-          </view>
+          <template wx:if="{{activeChart === 'monthRatio'}}" is="ratio-section" data="{{ratioSelection, ratioPreviewStatus, ratioPreviewRecords, ratioPreviewAmountText, ratioPreviewCount, ratioPreviewRangeLabel, ratioPreviewStale, ratioPreviewError, activeRanking}}">
+          </template>
           <view class="showcase-section fade-up">
             <view class="section-title-with-help">
               <text class="section-kicker">本月消费 Top 5</text>
@@ -160,12 +206,8 @@
               </ec-canvas>
             </view>
           </view>
-          <view wx:if="{{(activeChart === 'monthRatio' || activeChart === 'yearRatio') && activeRanking.length}}" class="analysis-ratio-list">
-            <view wx:for="{{activeRanking}}" wx:key="key" class="analysis-ratio-row" data-index="{{index}}" data-source="ratio" bindtap="openCategoryRecords">
-              <text>{{item.name}}</text>
-              <text>¥{{item.amountText}} · {{item.rate}}%</text>
-            </view>
-          </view>
+          <template wx:if="{{activeChart === 'yearRatio'}}" is="ratio-section" data="{{ratioSelection, ratioPreviewStatus, ratioPreviewRecords, ratioPreviewAmountText, ratioPreviewCount, ratioPreviewRangeLabel, ratioPreviewStale, ratioPreviewError, activeRanking}}">
+          </template>
           <view class="showcase-section fade-up">
             <view class="section-title-with-help">
               <text class="section-kicker">分类排名</text>
@@ -411,6 +453,29 @@
       </block>
     </view>
   </scroll-view>
+  <tl-bottom-sheet visible="{{ratioRemainderVisible}}" bind:close="closeRatioRemainder">
+    <view class="ratio-remainder-heading">
+      <text class="card-title">其余分类</text>
+      <tl-button class="ratio-sheet-close" variant="text" size="small" bind:tap="closeRatioRemainder">关闭</tl-button>
+    </view>
+    <text class="ratio-preview-meta">选择一个分类，查看对应明细</text>
+    <scroll-view wx:if="{{ratioRemainderOptions.length}}" class="ratio-remainder-scroll" scroll-y="{{true}}" show-scrollbar="{{false}}">
+      <view wx:for="{{ratioRemainderOptions}}" wx:key="key" class="analysis-ratio-row" data-key="{{item.key}}" bindtap="chooseRatioRemainder">
+        <view class="ratio-category-main">
+          <text>{{item.name}}</text>
+          <text wx:if="{{item.parentCategory}}" class="ratio-preview-meta">{{item.parentCategory}}</text>
+        </view>
+        <view class="ratio-category-amount">
+          <text>¥{{item.amountText}}</text>
+          <tl-icon name="arrow-right-s-line" size="26" colorKey="muted">
+          </tl-icon>
+        </view>
+      </view>
+    </scroll-view>
+    <tl-empty-state wx:else title="暂无可选分类" description="请刷新分析后重试">
+      <tl-button variant="secondary" size="small" bind:tap="refreshRatioAnalysis">刷新分析</tl-button>
+    </tl-empty-state>
+  </tl-bottom-sheet>
   <tl-bottom-sheet visible="{{isModeSheetVisible}}" bind:close="closeModeSheet">
     <view class="analysis-mode-sheet">
       <view class="analysis-mode-sheet__title">选择分析类型</view>

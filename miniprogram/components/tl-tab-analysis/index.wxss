@@ -838,6 +838,110 @@
   font-size: var(--tl-font-caption);
 }
 
+.ratio-preview {
+  margin-top: var(--tl-space-md);
+  padding: var(--tl-space-md);
+}
+
+.ratio-preview-heading {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--tl-space-xs);
+}
+
+.ratio-preview-heading .card-title {
+  overflow-wrap: anywhere;
+}
+
+.ratio-preview-meta,
+.ratio-preview-hint {
+  display: block;
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-caption);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.ratio-preview-hint {
+  margin-top: var(--tl-space-sm);
+}
+
+.ratio-preview-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--tl-space-xs);
+  margin: var(--tl-space-sm) 0;
+  color: var(--tl-color-text-secondary);
+  font-size: var(--tl-font-body-sm);
+  font-weight: var(--tl-font-weight-bold);
+}
+
+.ratio-preview-record {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--tl-space-sm);
+  padding: var(--tl-space-sm) 0;
+  border-bottom: var(--tl-border-width) solid var(--tl-color-divider);
+}
+
+.ratio-preview-record-main,
+.ratio-category-main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--tl-space-xs);
+}
+
+.ratio-preview-record-title,
+.ratio-category-main > text:first-child {
+  color: inherit;
+  font-size: var(--tl-font-body-sm);
+  font-weight: var(--tl-font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.ratio-preview-record .record-amount {
+  flex: 0 0 auto;
+  color: var(--tl-color-expense);
+  font-size: var(--tl-font-body-sm);
+  font-weight: var(--tl-font-weight-bold);
+}
+
+.analysis-ratio-row.is-selected {
+  color: var(--tl-color-primary);
+  background: var(--tl-color-primary-soft);
+}
+
+.ratio-category-amount {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--tl-space-xs);
+  color: var(--tl-color-text-secondary);
+  font-size: var(--tl-font-caption);
+}
+
+.ratio-remainder-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--tl-space-sm);
+}
+
+.ratio-sheet-close {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.ratio-remainder-scroll {
+  height: 45vh;
+  margin-top: var(--tl-space-sm);
+}
+
 .family-category-row {
   display: flex;
   justify-content: space-between;
