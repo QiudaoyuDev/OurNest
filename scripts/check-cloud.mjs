@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { spawnSync } from "child_process";
-const root = "cloudfunctions/tomatoLedger";
+const root = "cloudfunctions/ourNest";
 const walk = (dir) =>
   fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     if (entry.isDirectory() && entry.name === "node_modules") return [];

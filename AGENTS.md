@@ -4,8 +4,8 @@
 
 ## 项目边界
 
-- 这是微信小程序云开发项目：前端位于 `miniprogram/`，云函数位于 `cloudfunctions/`；核心业务云函数为 `tomatoLedger`。
-- 前端只能通过 `miniprogram/services/` 调用 `tomatoLedger`。使用 `{ route, payload }` 新协议和 `{ ok, data }` / `{ ok, error }` 返回结构；不要重新引入旧的 `action + data` 协议。
+- 这是微信小程序云开发项目：前端位于 `miniprogram/`，云函数位于 `cloudfunctions/`；核心业务云函数为 `ourNest`。
+- 前端只能通过 `miniprogram/services/` 调用 `ourNest`。使用 `{ route, payload }` 新协议和 `{ ok, data }` / `{ ok, error }` 返回结构；不要重新引入旧的 `action + data` 协议。
 
 ## 代码与接口约定
 
@@ -28,7 +28,7 @@
 
 - 云环境配置以 `miniprogram/config/cloud-env.js` 为准：开发版和体验版使用 `test`，正式版使用 `production`。本地 `LOCAL_OVERRIDE` 仅作临时用途，提交前恢复为空。
 - 不得将测试数据、用户数据或生产环境密钥写入仓库。环境切换必须避免复用登录缓存，防止测试与生产数据混用。
-- 上传正式版本前，确认 `production.id` 已配置，并部署同名 `tomatoLedger` 云函数。
+- 上传正式版本前，确认 `production.id` 已配置，并部署同名 `ourNest` 云函数。
 - 发布前运行 `npm run verify`，并按 `docs/REGRESSION.md` 完成手工回归（登录、账本、收支 CRUD、分页筛选、邀请权限、分类迁移、预算）。
 
 ## UI 与产品一致性

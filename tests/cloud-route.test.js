@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
 test("cloud entrypoint exposes required route protocol", () => {
-  const source = fs.readFileSync("cloudfunctions/tomatoLedger/index.js", "utf8");
+  const source = fs.readFileSync("cloudfunctions/ourNest/index.js", "utf8");
   for (const route of [
     "auth/login",
     "ledger/create",
@@ -20,7 +20,7 @@ test("cloud entrypoint exposes required route protocol", () => {
 });
 
 test("cloud entrypoint preserves handler success and failure results", async () => {
-  const source = fs.readFileSync("cloudfunctions/tomatoLedger/index.js", "utf8");
+  const source = fs.readFileSync("cloudfunctions/ourNest/index.js", "utf8");
   let handlerResult = { success: true, data: { loggedIn: true } };
   const handler = new Proxy({}, { get: () => async () => handlerResult });
   const cloud = {

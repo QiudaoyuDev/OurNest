@@ -145,7 +145,7 @@ App({
         return auth;
       })
       .catch((error) => {
-        console.error("tomatoLedger login failed", error);
+        console.error("ourNest login failed", error);
         throw error;
       })
       .finally(() => {

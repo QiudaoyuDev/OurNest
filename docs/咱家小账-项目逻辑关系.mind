@@ -9,9 +9,9 @@
     <node TEXT="运行架构" POSITION="right">
       <node TEXT="微信小程序前端（miniprogram）">
         <node TEXT="页面 + 自定义组件 + services + utils"/>
-        <node TEXT="wx.cloud.callFunction 调用 tomatoLedger"/>
+        <node TEXT="wx.cloud.callFunction 调用 ourNest"/>
       </node>
-      <node TEXT="云开发云函数（cloudfunctions/tomatoLedger）">
+      <node TEXT="云开发云函数（cloudfunctions/ourNest）">
         <node TEXT="唯一业务入口：{ route, payload }"/>
         <node TEXT="统一响应：{ ok, data } / { ok, error }"/>
         <node TEXT="CloudBase 数据库"/>

@@ -25,7 +25,7 @@ miniprogram/                         小程序前端
   services/                           云函数路由调用封装与本地缓存
   utils/                              金额、日期、映射等纯工具函数
   config/cloud-env.js                测试/生产环境配置
-cloudfunctions/tomatoLedger/         业务云函数
+cloudfunctions/ourNest/              业务云函数
   index.js                            路由入口、统一响应、结构化日志
   actions/                            认证、账本、记录、分类、邀请入口
   shared/ validators/ policies/       响应、校验、权限边界
@@ -38,13 +38,13 @@ plan/PENDING.md                       待办清单
 
 ## 云函数接口
 
-前端通过 `miniprogram/services/` 统一调用业务云函数 `tomatoLedger`。
+前端通过 `miniprogram/services/` 统一调用业务云函数 `ourNest`。
 
 请求使用路由协议：
 
 ```js
 wx.cloud.callFunction({
-  name: "tomatoLedger",
+  name: "ourNest",
   data: {
     route: "record/list",
     payload: { ledgerId, start, end, cursor },
@@ -65,7 +65,7 @@ wx.cloud.callFunction({
 1. 使用微信开发者工具导入项目根目录 `D:\CRRC\OurNest`。
 2. 确认 `miniprogram/config/cloud-env.js` 中的测试环境 ID 为你自己的 CloudBase 环境 ID。
 3. 在微信开发者工具中展开 `cloudfunctions` 目录。
-4. 右键点击 `tomatoLedger` 云函数，选择 **“上传并部署：云端安装依赖”**。
+4. 右键点击 `ourNest` 云函数，选择 **“上传并部署：云端安装依赖”**。
 5. 点击 **“编译”**（Ctrl + B）即可启动。
 
 ## 质量与测试验证
@@ -83,9 +83,9 @@ npm test
 - `test`：开发版与体验版自动使用。
 - `production`：正式版自动使用；当前 `id` 留空。
 
-创建生产云环境后，只填写 `production.id`，并部署同名 `tomatoLedger` 云函数。若正式版未配置生产 ID，应用会明确报错，不会误连测试库。
+创建生产云环境后，只填写 `production.id`，并部署同名 `ourNest` 云函数。若正式版未配置生产 ID，应用会明确报错，不会误连测试库。
 
-环境切换时会清除本地登录缓存，避免测试与生产数据混用。详见 [云环境说明](./docs/CLOUD-ENVIRONMENTS.md)。
+环境切换时会清除本地登录缓存，避免测试与生产数据混用。详见 [云环境说明](./docs/CLOUD-ENVIRONMENTS.md)。从 `tomatoLedger` 迁移时，先部署新函数再发布小程序；已发布旧客户端仍依赖旧云函数，不要提前删除。完整兼容与回滚步骤见该说明。
 
 ## 数据与一致性
 
@@ -131,7 +131,7 @@ UI 修改遵循 [UI 视觉与语义规则](./docs/UI-GUIDELINES.md)。视觉基�
 ## 日志与排错
 
 - 前端错误：微信开发者工具“调试器 → Console”。
-- 云函数错误：CloudBase 控制台 → 云函数 → `tomatoLedger` → 日志。
+- 云函数错误：CloudBase 控制台 → 云函数 → `ourNest` → 日志。
 
 云函数日志以 JSON 输出，包含 `requestId`、`route`、`ledgerId`、耗时、状态和错误码，不记录完整请求 payload。部署新云函数后日志格式才会生效。
 

@@ -8,7 +8,7 @@ parent: product-goal
 
 ## 系统结构
 
-微信小程序 `miniprogram` 负责交互与客户端状态，通过服务层调用 `ledger-cloud`；云函数 `tomatoLedger` 负责业务、身份、权限及 CloudBase 数据访问。前端不直接绕过服务层调用业务云函数。请求使用 `{ route, payload }`，响应使用 `{ ok, data }` 或 `{ ok, error }`。
+微信小程序 `miniprogram` 负责交互与客户端状态，通过服务层调用 `ledger-cloud`；云函数 `ourNest` 负责业务、身份、权限及 CloudBase 数据访问。前端不直接绕过服务层调用业务云函数。请求使用 `{ route, payload }`，响应使用 `{ ok, data }` 或 `{ ok, error }`。
 
 ## 关键边界
 

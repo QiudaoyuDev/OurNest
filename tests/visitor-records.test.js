@@ -323,13 +323,13 @@ test("cloud handlers reject visitor create/update/delete before any database wri
   };
   const sdk = { init() {}, database: () => db };
   const helpers = load(
-    "cloudfunctions/tomatoLedger/shared/helpers.js",
+    "cloudfunctions/ourNest/shared/helpers.js",
     {},
     {},
     { "wx-server-sdk": sdk }
   );
   const handler = load(
-    "cloudfunctions/tomatoLedger/handlers/record.handler.js",
+    "cloudfunctions/ourNest/handlers/record.handler.js",
     {},
     {},
     {
@@ -457,7 +457,7 @@ function importFixture(html) {
     },
   };
   const handler = load(
-    "cloudfunctions/tomatoLedger/handlers/record.handler.js",
+    "cloudfunctions/ourNest/handlers/record.handler.js",
     {},
     {},
     {
@@ -867,7 +867,7 @@ test("similar rows are flagged but remain selectable for legitimate repeated spe
 
 test("category record filter preserves ledger scope and legacy identity fields", () => {
   const handler = load(
-    "cloudfunctions/tomatoLedger/handlers/record.handler.js",
+    "cloudfunctions/ourNest/handlers/record.handler.js",
     {},
     {},
     {
@@ -922,7 +922,7 @@ test("category detail totals and pages use the same server filter", async () => 
     in: (values) => ({ values }),
   };
   const handler = load(
-    "cloudfunctions/tomatoLedger/handlers/record.handler.js",
+    "cloudfunctions/ourNest/handlers/record.handler.js",
     {},
     {},
     {
@@ -964,7 +964,7 @@ test("category detail totals and pages use the same server filter", async () => 
 });
 
 test("source bill parser separates successful spending from special and closed transactions", () => {
-  const { parseSourceTable } = require("../cloudfunctions/tomatoLedger/import-source");
+  const { parseSourceTable } = require("../cloudfunctions/ourNest/import-source");
   const table = [
     ["账单说明"],
     [
@@ -1003,7 +1003,7 @@ test("source bill parser separates successful spending from special and closed t
 });
 
 test("alipay parser preserves source IDs and never trusts numeric transaction IDs", () => {
-  const { parseSourceTable } = require("../cloudfunctions/tomatoLedger/import-source");
+  const { parseSourceTable } = require("../cloudfunctions/ourNest/import-source");
   const parsed = parseSourceTable([
     [
       "交易时间",
@@ -1121,7 +1121,7 @@ test("GB18030 Alipay bill flags cross-source possible matches without removing t
 });
 
 test("Excel source timestamps retain the correct calendar day", () => {
-  const { parseSourceRow } = require("../cloudfunctions/tomatoLedger/import-source");
+  const { parseSourceRow } = require("../cloudfunctions/ourNest/import-source");
   const row = parseSourceRow("wechat", {
     交易时间: new Date("2026-01-01T11:59:59.999Z"),
     交易类型: "商户消费",
@@ -1269,7 +1269,7 @@ test("record creation validates category identity and uses server category metad
     },
   };
   const handler = load(
-    "cloudfunctions/tomatoLedger/handlers/record.handler.js",
+    "cloudfunctions/ourNest/handlers/record.handler.js",
     {},
     {},
     {
@@ -1451,7 +1451,7 @@ test("family and category drill-down use matching totals and cursor pages", asyn
     }),
   };
   const handler = load(
-    "cloudfunctions/tomatoLedger/handlers/record.handler.js",
+    "cloudfunctions/ourNest/handlers/record.handler.js",
     {},
     {},
     {
@@ -1518,7 +1518,7 @@ test("shared records validate family members and keep creator authority on serve
     familyAttribution: { payerOpenid: "b", consumerKind: "personal", consumerOpenid: "b" },
   };
   const handler = load(
-    "cloudfunctions/tomatoLedger/handlers/record.handler.js",
+    "cloudfunctions/ourNest/handlers/record.handler.js",
     {},
     {},
     {

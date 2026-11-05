@@ -22,7 +22,7 @@ test("cloud helpers keep database primitives available to login handlers", () =>
 
   let helpers;
   try {
-    helpers = require("../cloudfunctions/tomatoLedger/shared/helpers");
+    helpers = require("../cloudfunctions/ourNest/shared/helpers");
   } finally {
     Module._load = originalLoad;
   }

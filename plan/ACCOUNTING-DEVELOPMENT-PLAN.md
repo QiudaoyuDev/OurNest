@@ -41,10 +41,10 @@
 ### 主要代码入口
 
 - 记账：`miniprogram/pages/record-edit/`、`record-detail/`、`miniprogram/components/tl-tab-records/`。
-- 分类：`miniprogram/pages/category-manage/`、`category-operation/`、`cloudfunctions/tomatoLedger/handlers/category-tree.js`。
-- 分析：`miniprogram/components/tl-tab-analysis/`、`cloudfunctions/tomatoLedger/handlers/analysis.handler.js`、`cloudfunctions/tomatoLedger/analysis.helpers.js`。
-- 导入：`miniprogram/pages/record-import/`、`miniprogram/services/record.service.js`、`cloudfunctions/tomatoLedger/handlers/record.handler.js`。
-- 家庭与权限：`miniprogram/services/ledger.service.js`、`cloudfunctions/tomatoLedger/handlers/ledger.handler.js`。
+- 分类：`miniprogram/pages/category-manage/`、`category-operation/`、`cloudfunctions/ourNest/handlers/category-tree.js`。
+- 分析：`miniprogram/components/tl-tab-analysis/`、`cloudfunctions/ourNest/handlers/analysis.handler.js`、`cloudfunctions/ourNest/analysis.helpers.js`。
+- 导入：`miniprogram/pages/record-import/`、`miniprogram/services/record.service.js`、`cloudfunctions/ourNest/handlers/record.handler.js`。
+- 家庭与权限：`miniprogram/services/ledger.service.js`、`cloudfunctions/ourNest/handlers/ledger.handler.js`。
 - 对照测试：`tests/analysis-helpers.test.js`、`analysis-view.test.js`、`home-summary.test.js`、`visitor-records.test.js`；以领取任务时实际文件为准。
 
 ## 4. 借鉴范围

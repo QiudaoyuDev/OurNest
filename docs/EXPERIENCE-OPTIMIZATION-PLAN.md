@@ -17,10 +17,10 @@
 
 ## 当前代码事实与边界
 
-- [首页接口](../cloudfunctions/tomatoLedger/handlers/dashboard.handler.js)逐页读取当月记录，在云函数内计算汇总；最近 10 条和历史总笔数另行查询。
-- [分析接口](../cloudfunctions/tomatoLedger/handlers/analysis.handler.js)每次以 100 条一页读取目标范围，使用 `skip(offset)`；年度、同期对比可能再读取其他范围。
-- [明细接口](../cloudfunctions/tomatoLedger/handlers/record.handler.js)已使用游标分页，月度汇总、月笔数和历史笔数由云端返回。不要为了本方案把明细退回到客户端按已加载记录求和。
-- [请求入口](../miniprogram/services/api.js)统一调用 `tomatoLedger`；[反馈模块](../miniprogram/services/feedback-ui.js)已提供 Loading、Toast；[页面跳转计时](../miniprogram/utils/navigation-timing.js)已有基础日志。
+- [首页接口](../cloudfunctions/ourNest/handlers/dashboard.handler.js)逐页读取当月记录，在云函数内计算汇总；最近 10 条和历史总笔数另行查询。
+- [分析接口](../cloudfunctions/ourNest/handlers/analysis.handler.js)每次以 100 条一页读取目标范围，使用 `skip(offset)`；年度、同期对比可能再读取其他范围。
+- [明细接口](../cloudfunctions/ourNest/handlers/record.handler.js)已使用游标分页，月度汇总、月笔数和历史笔数由云端返回。不要为了本方案把明细退回到客户端按已加载记录求和。
+- [请求入口](../miniprogram/services/api.js)统一调用 `ourNest`；[反馈模块](../miniprogram/services/feedback-ui.js)已提供 Loading、Toast；[页面跳转计时](../miniprogram/utils/navigation-timing.js)已有基础日志。
 - 云函数按请求重新读取用户和账本并校验角色。优化只能改变读取和展示方式，不能依赖客户端传来的权限、身份或缓存结论。
 - `plan/PENDING.md` 暂缓 CI、监控面板、告警和灰度发布。本方案使用现有日志、测试命令和测试环境，不预设引入这些设施。
 
@@ -41,7 +41,7 @@
 | ---------------------------------- | ----------------------------------------- | ------------------------------------------------ |
 | 点击到页面壳层显示                 | 现有 `navigation-timing`                  | 识别导航或页面初始化问题                         |
 | 点击到真实内容可见                 | 首页、明细、分析的 Loading → Ready 切换后 | 代表用户实际等待；`onReady` 本身不能代替这个指标 |
-| 云函数总耗时、结果与错误码         | `tomatoLedger/index.js` 的结构化日志      | 区分服务端慢、失败和前端渲染慢                   |
+| 云函数总耗时、结果与错误码         | `ourNest/index.js` 的结构化日志           | 区分服务端慢、失败和前端渲染慢                   |
 | 数据库查询次数、每段耗时、返回行数 | 只在测试环境对热点 handler 增加分段计时   | 找到全量读取、排序、用户信息补全等具体成本       |
 | 接口调用次数                       | 前端按 route 统计，或按服务端日志聚合     | 发现切换 Tab、返回页面、同步时的重复请求         |
 

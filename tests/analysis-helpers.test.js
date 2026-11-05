@@ -9,12 +9,12 @@ const {
   makeRecentYearTrend,
   makeTrendBuckets,
   summarizeRecords,
-} = require("../cloudfunctions/tomatoLedger/analysis.helpers");
+} = require("../cloudfunctions/ourNest/analysis.helpers");
 
 test("analysis handler marks current month and year trends as partial", () => {
   const module = { exports: {} };
   vm.runInNewContext(
-    fs.readFileSync("cloudfunctions/tomatoLedger/handlers/analysis.handler.js", "utf8"),
+    fs.readFileSync("cloudfunctions/ourNest/handlers/analysis.handler.js", "utf8"),
     {
       module,
       exports: module.exports,
@@ -135,7 +135,7 @@ test("large repeated amounts conserve cents across summaries, trends and family 
   const {
     familyExpenseGroups,
     creatorExpenseGroups,
-  } = require("../cloudfunctions/tomatoLedger/family.helpers");
+  } = require("../cloudfunctions/ourNest/family.helpers");
   const rows = Array.from({ length: 5000 }, (_, index) => ({
     date: "2026-03-01",
     type: "expense",
@@ -222,7 +222,7 @@ test("empty current periods still compare with real previous records", async () 
     },
   };
   vm.runInNewContext(
-    fs.readFileSync("cloudfunctions/tomatoLedger/handlers/analysis.handler.js", "utf8"),
+    fs.readFileSync("cloudfunctions/ourNest/handlers/analysis.handler.js", "utf8"),
     {
       module,
       exports: module.exports,
@@ -230,8 +230,8 @@ test("empty current periods still compare with real previous records", async () 
         path.includes("shared/helpers")
           ? helpers
           : path.includes("family.helpers")
-            ? require("../cloudfunctions/tomatoLedger/family.helpers")
-            : require("../cloudfunctions/tomatoLedger/analysis.helpers"),
+            ? require("../cloudfunctions/ourNest/family.helpers")
+            : require("../cloudfunctions/ourNest/analysis.helpers"),
     }
   );
   const previous = module.exports.getPreviousAnalysisRange;
@@ -353,7 +353,7 @@ test("category grouping uses stable identifiers and distinguishes unlinked paren
 });
 
 test("family attribution validates members and preserves unknown historical values", () => {
-  const { normalizeFamilyAttribution } = require("../cloudfunctions/tomatoLedger/family.helpers");
+  const { normalizeFamilyAttribution } = require("../cloudfunctions/ourNest/family.helpers");
   const ledger = {
     type: "shared",
     ownerOpenid: "a",
@@ -390,7 +390,7 @@ test("family attribution validates members and preserves unknown historical valu
 });
 
 test("family payer and consumption totals count each expense once with public attributed to recorder", () => {
-  const { familyExpenseGroups } = require("../cloudfunctions/tomatoLedger/family.helpers");
+  const { familyExpenseGroups } = require("../cloudfunctions/ourNest/family.helpers");
   const rows = [
     {
       type: "expense",

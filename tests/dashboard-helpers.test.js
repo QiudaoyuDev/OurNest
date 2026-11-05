@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const {
   loadAllMonthRecords,
   summarizeDashboardRecords,
-} = require("../cloudfunctions/tomatoLedger/dashboard.helpers");
+} = require("../cloudfunctions/ourNest/dashboard.helpers");
 
 test("dashboard reads every month page before calculating totals", async () => {
   const records = [

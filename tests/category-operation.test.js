@@ -87,14 +87,11 @@ test("existing ledgers receive missing transport defaults once without replacing
     }),
   };
   const module = { exports: {} };
-  vm.runInNewContext(
-    fs.readFileSync("cloudfunctions/tomatoLedger/handlers/category-tree.js", "utf8"),
-    {
-      module,
-      exports: module.exports,
-      require: () => ({ db, now: () => "now", OTHER_CATEGORY_SORT: 999 }),
-    }
-  );
+  vm.runInNewContext(fs.readFileSync("cloudfunctions/ourNest/handlers/category-tree.js", "utf8"), {
+    module,
+    exports: module.exports,
+    require: () => ({ db, now: () => "now", OTHER_CATEGORY_SORT: 999 }),
+  });
   const traffic = {
     _id: "traffic",
     type: "expense",
@@ -123,7 +120,7 @@ test("category list bumps the ledger revision after repairing a default tree", a
   const ledger = { _id: "ledger", ownerOpenid: "owner" };
   const module = { exports: {} };
   vm.runInNewContext(
-    fs.readFileSync("cloudfunctions/tomatoLedger/handlers/category.handler.js", "utf8"),
+    fs.readFileSync("cloudfunctions/ourNest/handlers/category.handler.js", "utf8"),
     {
       module,
       exports: module.exports,
@@ -200,7 +197,7 @@ test("category creation checks migration state within the transaction and create
       }),
   };
   vm.runInNewContext(
-    fs.readFileSync("cloudfunctions/tomatoLedger/handlers/category.handler.js", "utf8"),
+    fs.readFileSync("cloudfunctions/ourNest/handlers/category.handler.js", "utf8"),
     {
       module,
       exports: module.exports,
@@ -330,7 +327,7 @@ test("category deletion targets linked IDs as well as unlinked matching legacy r
     and: (items) => ({ and: items }),
   };
   vm.runInNewContext(
-    fs.readFileSync("cloudfunctions/tomatoLedger/handlers/category.handler.js", "utf8"),
+    fs.readFileSync("cloudfunctions/ourNest/handlers/category.handler.js", "utf8"),
     {
       module,
       exports: module.exports,
