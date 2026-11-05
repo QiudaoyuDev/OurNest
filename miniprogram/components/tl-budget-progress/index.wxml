@@ -1,6 +1,6 @@
-<view wx:if="{{enabled}}" class="tl-budget-progress">
+<view wx:if="{{enabled}}" class="tl-budget-progress {{statusClass}}">
   <view class="tl-budget-progress__track">
-    <view class="tl-budget-progress__bar" style="{{barStyle}}">
+    <view class="tl-budget-progress__bar {{statusClass}}" style="{{barStyle}}">
     </view>
   </view>
 </view>

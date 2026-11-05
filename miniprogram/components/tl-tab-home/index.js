@@ -65,6 +65,9 @@ function normalizeDashboard(data = {}) {
   const recordCount = Number(data.recordCount || 0);
   const totalRecordCount = Number(data.totalRecordCount || 0);
   const hasMonthExpense = Number(data.monthExpense || 0) > 0;
+  const budgetLeftNum = Number(data.budgetLeft || 0);
+  const isOverBudget = budgetLeftNum < 0;
+  const budgetLeftAbs = Math.abs(budgetLeftNum);
   return {
     ledgerId: data.ledgerId || "",
     ledgerName: data.ledgerName || "我的账本",
@@ -85,8 +88,10 @@ function normalizeDashboard(data = {}) {
     budgetEnabled: Boolean(data.budgetEnabled),
     monthRange: data.monthRange || null,
     budgetLeft: formatDisplayMoney(data.budgetLeft),
+    budgetLeftAbs: formatDisplayMoney(budgetLeftAbs),
+    isOverBudget,
     budgetRate: Number(data.budgetRate || 0),
-    budgetRateText: Number(data.budgetRate || 0).toFixed(2),
+    budgetRateText: Number(data.budgetRate || 0).toFixed(1),
     recordCount,
     totalRecordCount,
     hasMonthRecords: recordCount > 0,
@@ -128,7 +133,10 @@ Component({
     budgetEnabled: false,
     monthRange: null,
     budgetLeft: "0",
+    budgetLeftAbs: "0",
+    isOverBudget: false,
     budgetRate: 0,
+    budgetRateText: "0.0",
     recordCount: 0,
     hasMonthExpense: false,
     topExpenseCategory: "-",

@@ -258,9 +258,13 @@
           <view class="custom-range card">
             <text class="card-title">选择日期范围</text>
             <view class="custom-range__dates">
-              <picker mode="date" value="{{customStart}}" end="{{customToday}}" bindchange="changeCustomStart"><view>{{customStart}} ▾</view></picker>
+              <picker mode="date" value="{{customStart}}" end="{{customToday}}" bindchange="changeCustomStart">
+                <view>{{customStart}} ▾</view>
+              </picker>
               <text>至</text>
-              <picker mode="date" value="{{customEnd}}" end="{{customToday}}" bindchange="changeCustomEnd"><view>{{customEnd}} ▾</view></picker>
+              <picker mode="date" value="{{customEnd}}" end="{{customToday}}" bindchange="changeCustomEnd">
+                <view>{{customEnd}} ▾</view>
+              </picker>
             </view>
             <text class="custom-range__note">最多 366 天，比较前一个等长区间。</text>
           </view>
@@ -270,16 +274,28 @@
             <text class="summary-copy">收入 ¥{{overview.incomeText}} · 支出 ¥{{overview.expenseText}} · 共 {{overview.recordCount}} 笔</text>
             <text wx:if="{{comparisonRange}}" class="summary-copy">对比 {{comparisonRange.start}} 起至 {{comparisonRange.end}} 前 · 结余 {{balanceCompareText}}</text>
           </view>
-          <view class="showcase-section fade-up"><text class="section-kicker">区间收支走势</text></view>
-          <view wx:if="{{hasChartData}}" class="chart-card card fade-up">
-            <view class="analysis-chart-canvas"><ec-canvas id="analysis-chart" canvas-id="analysis-chart" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError" force-use-old-canvas="true"></ec-canvas></view>
+          <view class="showcase-section fade-up">
+            <text class="section-kicker">区间收支走势</text>
           </view>
-          <tl-empty-state wx:else title="暂无收支记录" description="选择其他日期范围查看"></tl-empty-state>
-          <view wx:if="{{categories.length}}" class="showcase-section fade-up"><text class="section-kicker">支出分类</text></view>
+          <view wx:if="{{hasChartData}}" class="chart-card card fade-up">
+            <view class="analysis-chart-canvas">
+              <ec-canvas id="analysis-chart" canvas-id="analysis-chart" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError" force-use-old-canvas="true">
+              </ec-canvas>
+            </view>
+          </view>
+          <tl-empty-state wx:else title="暂无收支记录" description="选择其他日期范围查看">
+          </tl-empty-state>
+          <view wx:if="{{categories.length}}" class="showcase-section fade-up">
+            <text class="section-kicker">支出分类</text>
+          </view>
           <view wx:if="{{categories.length}}" class="category-ranking card fade-up">
             <view wx:for="{{categories}}" wx:key="key" class="category-ranking-row" data-index="{{index}}" data-source="custom" bindtap="openCategoryRecords">
-              <view class="category-main"><text>{{item.name}}</text><text>¥{{item.amountText}} · 占比 {{item.rate}}%</text></view>
-              <tl-icon name="arrow-right-s-line" size="24" colorKey="muted"></tl-icon>
+              <view class="category-main">
+                <text>{{item.name}}</text>
+                <text>¥{{item.amountText}} · 占比 {{item.rate}}%</text>
+              </view>
+              <tl-icon name="arrow-right-s-line" size="24" colorKey="muted">
+              </tl-icon>
             </view>
           </view>
         </block>
