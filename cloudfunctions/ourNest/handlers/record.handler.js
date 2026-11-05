@@ -553,7 +553,7 @@ async function getImportTemplate(openid) {
   xlsx.utils.book_append_sheet(workbook, sheet, "导入模板");
   const fileContent = xlsx.write(workbook, { bookType: "xlsx", type: "buffer" });
   const uploaded = await cloud.uploadFile({
-    cloudPath: "templates/tomato-ledger-import-template.xlsx",
+    cloudPath: "templates/our-nest-import-template.xlsx",
     fileContent,
   });
   const temporary = await cloud.getTempFileURL({ fileList: [uploaded.fileID] });

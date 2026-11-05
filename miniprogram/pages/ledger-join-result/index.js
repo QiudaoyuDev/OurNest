@@ -44,7 +44,7 @@ Page({
 
   restoreCachedAuth() {
     if (app.globalData.loggedIn) return;
-    const auth = wx.getStorageSync("tomatoLedgerAuth");
+    const auth = wx.getStorageSync("ourNestAuth");
     if (auth && auth.user) app.restoreAuthState();
   },
 

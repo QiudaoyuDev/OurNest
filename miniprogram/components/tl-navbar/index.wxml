@@ -8,7 +8,7 @@
         </tl-icon>
       </view>
       <block wx:elif="{{!hideBrand}}">
-        <image class="brand-mark" src="/images/brand/tomato-ledger-logo-256-transparent.png" mode="aspectFit">
+        <image class="brand-mark" src="/images/brand/our-nest-logo-256-transparent.png" mode="aspectFit">
         </image>
         <text class="brand-name">咱家记一笔</text>
       </block>

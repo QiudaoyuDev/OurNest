@@ -8,8 +8,8 @@ page {
   --tl-palette-brown-400: #9a8278;
   --tl-palette-brown-600: #6f625d;
   --tl-palette-brown-900: #312522;
-  --tl-palette-tomato-500: #f0442f;
-  --tl-palette-tomato-600: #d9483b;
+  --tl-palette-our-nest-500: #f0442f;
+  --tl-palette-our-nest-600: #d9483b;
   --tl-palette-green-500: #25a66a;
 
   /* Semantic colors */

@@ -7,7 +7,7 @@
         <view class="scene {{stage === 'details' ? 'scene-detail' : ''}}">
           <view class="logo-glow">
           </view>
-          <image class="brand-logo" src="/images/brand/tomato-ledger-logo-256-transparent.png" mode="aspectFit">
+          <image class="brand-logo" src="/images/brand/our-nest-logo-256-transparent.png" mode="aspectFit">
           </image>
           <view class="scene-title">新建一个账本</view>
           <view class="scene-subtitle">先选一种记录方式，再给它取个好记的名字</view>

@@ -54,7 +54,7 @@ function normalizeRecord(item = {}) {
     categoryText,
     selectedTimeText,
     memberName: item.memberName || item.ownerName || "我",
-    memberAvatar: item.memberAvatar || "/images/brand/tomato-ledger-logo-256-transparent.png",
+    memberAvatar: item.memberAvatar || "/images/brand/our-nest-logo-256-transparent.png",
   };
 }
 

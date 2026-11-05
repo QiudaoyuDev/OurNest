@@ -258,7 +258,7 @@ test("category memory is scoped and a previous login request cannot repopulate s
   assert.equal(categories.getCategoriesSync("shared").length, 0);
   request.resolve({ categories: [{ _id: "old-response" }] });
   await assert.rejects(stale, /状态已变化/);
-  assert.equal(storage.tomatoLedgerCategoryCache, undefined);
+  assert.equal(storage.ourNestCategoryCache, undefined);
 });
 
 test("category invalidation and deletion do not retain stale memory", async () => {
@@ -367,14 +367,14 @@ test("logout invalidates a pending login and persisted auth excludes ledger/stat
     environment: { key: "test" },
   };
   app.persistAuthState();
-  assert.equal(storage.tomatoLedgerAuth.currentLedger, undefined);
-  assert.equal(storage.tomatoLedgerAuth.stats, undefined);
+  assert.equal(storage.ourNestAuth.currentLedger, undefined);
+  assert.equal(storage.ourNestAuth.stats, undefined);
   const login = app.loginWithWechat();
   app.logout();
   request.resolve({ openid: "user", user: {} });
   await assert.rejects(login, /登录状态已变化/);
   assert.equal(app.globalData.loggedIn, false);
-  assert.equal(storage.tomatoLedgerAuth, undefined);
+  assert.equal(storage.ourNestAuth, undefined);
 });
 
 test("shared ledger revisions invalidate categories and removed ledgers clear categories", async () => {
@@ -425,7 +425,7 @@ test("logout rejects pending ledger reads without restoring their cache", async 
   store.clearLedgers();
   request.resolve({ ledgers: [{ _id: "old" }] });
   await assert.rejects(pending, /登录状态已变化/);
-  assert.equal(storage.tomatoLedgerLedgerCache, undefined);
+  assert.equal(storage.ourNestLedgerCache, undefined);
 });
 
 test("import page previews before writing and submits only selected rows", async () => {

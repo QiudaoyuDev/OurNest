@@ -4,7 +4,7 @@ const ledgerService = require("../../services/ledger.service");
 const ledgerStore = require("../../services/ledger.store");
 
 function hasCachedAuth() {
-  const auth = wx.getStorageSync("tomatoLedgerAuth");
+  const auth = wx.getStorageSync("ourNestAuth");
   return Boolean(auth && auth.user);
 }
 

@@ -32,7 +32,7 @@ Object.defineProperty(module.exports, "$", {
 });
 
 // --- 常量 ---
-const defaultAvatarUrl = "/images/brand/tomato-ledger-logo-256-transparent.png";
+const defaultAvatarUrl = "/images/brand/our-nest-logo-256-transparent.png";
 const SCHEMA_VERSION = 1;
 const OTHER_CATEGORY_SORT = 9999999999999;
 const defaultQuickAmounts = [18, 32, 68, 128];

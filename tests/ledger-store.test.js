@@ -59,7 +59,7 @@ test("forced ledger refresh retries after an in-flight stale request", async () 
   assert.deepEqual(await forcedRefresh, [{ _id: "fresh", name: "新账本" }]);
   assert.equal(callCount, 2);
   assert.deepEqual(app.globalData.ledgers, [{ _id: "fresh", name: "新账本" }]);
-  assert.deepEqual(storage.tomatoLedgerLedgerCache.ledgers, [{ _id: "fresh", name: "新账本" }]);
+  assert.deepEqual(storage.ourNestLedgerCache.ledgers, [{ _id: "fresh", name: "新账本" }]);
 });
 
 test("ledger reads fetch only when no scoped cache record exists", async () => {
@@ -78,7 +78,7 @@ test("ledger reads fetch only when no scoped cache record exists", async () => {
     callCount += 1;
     return Promise.resolve({ ledgers: [{ _id: "unexpected" }] });
   });
-  second.storage.tomatoLedgerLedgerCache = {
+  second.storage.ourNestLedgerCache = {
     scope: "test:user-1",
     ledgers: [],
     updatedAt: Date.now(),
@@ -104,7 +104,7 @@ test("ledger sync respects TTL and updates cache only when revisions change", as
       };
     }
   );
-  storage.tomatoLedgerLedgerCache = {
+  storage.ourNestLedgerCache = {
     scope: "test:user-1",
     ledgers: [{ _id: "shared-1", name: "旧名称", syncRevision: 1 }],
     revisions: { "shared-1": 1 },
@@ -116,7 +116,7 @@ test("ledger sync respects TTL and updates cache only when revisions change", as
   const result = await ledgerStore.syncLedgers({ force: true });
   assert.equal(result.changed, true);
   assert.equal(syncCount, 1);
-  assert.equal(storage.tomatoLedgerLedgerCache.ledgers[0].name, "共享账本");
+  assert.equal(storage.ourNestLedgerCache.ledgers[0].name, "共享账本");
   assert.equal(app.globalData.currentLedger._id, "shared-1");
 });
 
@@ -138,7 +138,7 @@ test("ledger edit keeps cache current when the post-mutation sync fails", async 
       }),
     }
   );
-  storage.tomatoLedgerLedgerCache = {
+  storage.ourNestLedgerCache = {
     scope: "test:user-1",
     ledgers: [
       {
@@ -152,7 +152,7 @@ test("ledger edit keeps cache current when the post-mutation sync fails", async 
     revisions: { "ledger-1": 1 },
     lastSyncedAt: Date.now(),
   };
-  app.globalData.currentLedger = storage.tomatoLedgerLedgerCache.ledgers[0];
+  app.globalData.currentLedger = storage.ourNestLedgerCache.ledgers[0];
 
   await ledgerStore.updateLedger({
     ledgerId: "ledger-1",
@@ -160,9 +160,9 @@ test("ledger edit keeps cache current when the post-mutation sync fails", async 
     remark: "新备注",
   });
 
-  assert.equal(storage.tomatoLedgerLedgerCache.ledgers[0].name, "新名称");
-  assert.equal(storage.tomatoLedgerLedgerCache.ledgers[0].remark, "新备注");
-  assert.equal(storage.tomatoLedgerLedgerCache.revisions["ledger-1"], 2);
-  assert.equal(storage.tomatoLedgerLedgerCache.lastSyncedAt, 0);
+  assert.equal(storage.ourNestLedgerCache.ledgers[0].name, "新名称");
+  assert.equal(storage.ourNestLedgerCache.ledgers[0].remark, "新备注");
+  assert.equal(storage.ourNestLedgerCache.revisions["ledger-1"], 2);
+  assert.equal(storage.ourNestLedgerCache.lastSyncedAt, 0);
   assert.equal(app.globalData.currentLedger.name, "新名称");
 });

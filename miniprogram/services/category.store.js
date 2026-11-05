@@ -1,7 +1,7 @@
 // 分类变化少，保留按环境、账号隔离的本地缓存；请求结果只允许写回原会话。
 const { callApi } = require("./api");
 
-const CACHE_KEY = "tomatoLedgerCategoryCache";
+const CACHE_KEY = "ourNestCategoryCache";
 const DEFAULT_SYNC_INTERVAL_MS = 2 * 60 * 1000;
 const memoryCache = {};
 const syncListeners = new Set();

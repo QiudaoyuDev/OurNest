@@ -13,7 +13,7 @@ const { assertOpenid, assertProfileInput } = require("../validators/schemas");
 // --- 用户辅助函数 ---
 
 function isPlaceholderName(name) {
-  return !name || name === "微信用户" || name === "小家成员" || name === "番茄用户" || /^小家成员#\d{4}$/.test(name) || /^番茄用户#\d{4}$/.test(name);
+  return !name || name === "微信用户" || name === "小家成员" || /^小家成员#\d{4}$/.test(name);
 }
 
 function makeUserName(userNo) {

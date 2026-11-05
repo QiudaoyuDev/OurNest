@@ -79,10 +79,10 @@ App({
   },
 
   restoreAuthState() {
-    const auth = wx.getStorageSync("tomatoLedgerAuth");
+    const auth = wx.getStorageSync("ourNestAuth");
     if (!auth || !auth.user) return;
     if (!this.globalData.environment || auth.environmentKey !== this.globalData.environment.key) {
-      wx.removeStorageSync("tomatoLedgerAuth");
+      wx.removeStorageSync("ourNestAuth");
       ledgerStore.clearLedgers();
       categoryStore.clearAll();
       return;
@@ -102,7 +102,7 @@ App({
   },
 
   persistAuthState() {
-    wx.setStorageSync("tomatoLedgerAuth", {
+    wx.setStorageSync("ourNestAuth", {
       openid: this.globalData.openid,
       user: this.globalData.user,
       environmentKey: this.globalData.environment && this.globalData.environment.key,
@@ -179,7 +179,7 @@ App({
     this.authVerifiedInSession = false;
     this.authRequest = null;
     this.stopLedgerAutoSync();
-    wx.removeStorageSync("tomatoLedgerAuth");
+    wx.removeStorageSync("ourNestAuth");
     emit("ledger:current-changed");
   },
 });

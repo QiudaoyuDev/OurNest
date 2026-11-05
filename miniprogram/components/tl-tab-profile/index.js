@@ -28,7 +28,7 @@ function getUsageDays(user) {
 Component({
   data: {
     userName: "小家成员",
-    userAvatar: "/images/brand/tomato-ledger-logo-256-transparent.png",
+    userAvatar: "/images/brand/our-nest-logo-256-transparent.png",
 
     usageDays: 1,
     recordCount: 0,
@@ -68,7 +68,7 @@ Component({
 
       this.setData({
         userName: user.nickName || "小家成员",
-        userAvatar: user.avatarUrl || "/images/brand/tomato-ledger-logo-256-transparent.png",
+        userAvatar: user.avatarUrl || "/images/brand/our-nest-logo-256-transparent.png",
 
         usageDays: getUsageDays(user),
         recordCount: Number((stats && stats.recordCount) || 0),
@@ -89,7 +89,7 @@ Component({
     },
 
     onAvatarError() {
-      this.setData({ userAvatar: "/images/brand/tomato-ledger-logo-256-transparent.png" });
+      this.setData({ userAvatar: "/images/brand/our-nest-logo-256-transparent.png" });
     },
 
     async refreshHeroData() {

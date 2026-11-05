@@ -1,7 +1,7 @@
 const feedback = require("../../services/feedback-ui");
 const app = getApp();
 
-const defaultAvatar = "/images/brand/tomato-ledger-logo-256-transparent.png";
+const defaultAvatar = "/images/brand/our-nest-logo-256-transparent.png";
 
 Page({
   data: {

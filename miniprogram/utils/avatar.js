@@ -1,4 +1,4 @@
-const DEFAULT_AVATAR_URL = "/images/brand/tomato-ledger-logo-256-transparent.png";
+const DEFAULT_AVATAR_URL = "/images/brand/our-nest-logo-256-transparent.png";
 
 function isCloudFileId(value) {
   return typeof value === "string" && value.startsWith("cloud://");

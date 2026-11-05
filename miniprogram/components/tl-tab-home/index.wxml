@@ -14,7 +14,7 @@
             </view>
             <view class="month-line">{{monthLabel}}</view>
           </view>
-          <image class="hero-logo soft-pop" src="/images/brand/tomato-ledger-logo-256-transparent.png" mode="aspectFit">
+          <image class="hero-logo soft-pop" src="/images/brand/our-nest-logo-256-transparent.png" mode="aspectFit">
           </image>
         </view>
         <view wx:if="{{isNoLedger}}" class="state-card card fade-up">
@@ -61,7 +61,7 @@
                 <view class="section-kicker">本月概览</view>
                 <view class="summary-title">{{familyMood}}</view>
               </view>
-              <view class="tomato-badge">{{roleText}}</view>
+              <view class="brand-badge">{{roleText}}</view>
             </view>
             <view class="overview-grid">
               <view class="overview-item">

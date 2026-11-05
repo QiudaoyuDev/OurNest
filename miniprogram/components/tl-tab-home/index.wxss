@@ -91,7 +91,7 @@
   font-weight: var(--tl-font-weight-bold);
 }
 
-.tomato-badge {
+.brand-badge {
   position: relative;
   z-index: 1;
   padding: 12rpx 20rpx;

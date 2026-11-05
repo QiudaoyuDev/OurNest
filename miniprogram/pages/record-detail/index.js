@@ -32,7 +32,7 @@ function normalizeRecord(record = {}, ledger = {}) {
     ledgerName: ledger.name || "我的账本",
     ledgerTypeText: getLedgerTypeText(ledger.type),
     memberName: record.memberName || "我",
-    memberAvatar: record.memberAvatar || "/images/brand/tomato-ledger-logo-256-transparent.png",
+    memberAvatar: record.memberAvatar || "/images/brand/our-nest-logo-256-transparent.png",
     accountText: record.account || "未选择账户",
     sourceText:
       record.source === "wechat"

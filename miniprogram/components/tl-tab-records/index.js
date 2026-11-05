@@ -55,7 +55,7 @@ function normalizeRecord(record = {}) {
     dateLabel: formatDateLabel(record.date),
     timeText: record.date || "未选择日期",
     memberName: record.memberName || "我",
-    memberAvatar: record.memberAvatar || "/images/brand/tomato-ledger-logo-256-transparent.png",
+    memberAvatar: record.memberAvatar || "/images/brand/our-nest-logo-256-transparent.png",
   };
 }
 

@@ -107,8 +107,8 @@ let savedAuth;
 let authTemporarilyRemoved = false;
 
 async function prepareLoggedOutState() {
-  savedAuth = await miniProgram.callWxMethod("getStorageSync", "tomatoLedgerAuth");
-  await miniProgram.callWxMethod("removeStorageSync", "tomatoLedgerAuth");
+  savedAuth = await miniProgram.callWxMethod("getStorageSync", "ourNestAuth");
+  await miniProgram.callWxMethod("removeStorageSync", "ourNestAuth");
   await miniProgram.evaluate(() => {
     const app = getApp();
     app.globalData.loggedIn = false;
@@ -122,7 +122,7 @@ async function prepareLoggedOutState() {
 async function restoreAuthState() {
   if (!authTemporarilyRemoved) return;
   if (savedAuth) {
-    await miniProgram.callWxMethod("setStorageSync", "tomatoLedgerAuth", savedAuth);
+    await miniProgram.callWxMethod("setStorageSync", "ourNestAuth", savedAuth);
     await miniProgram.evaluate(() => getApp().restoreAuthState());
   }
   authTemporarilyRemoved = false;

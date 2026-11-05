@@ -2,7 +2,7 @@ const ledgerService = require("./ledger.service");
 const categoryStore = require("./category.store");
 const { getLedgerRole } = require("../utils/mapper");
 
-const CACHE_KEY = "tomatoLedgerLedgerCache";
+const CACHE_KEY = "ourNestLedgerCache";
 const DEFAULT_SYNC_INTERVAL_MS = 2 * 60 * 1000;
 let refreshRequest = null;
 let syncRequest = null;

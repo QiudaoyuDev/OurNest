@@ -132,7 +132,7 @@ function assertProfileInput({ nickName, avatarUrl, systemNickName }) {
     error.code = ERR.INVALID_NICKNAME;
     throw error;
   }
-  if ((/^小家成员#\d{4}$/.test(trimmedNick) || /^番茄用户#\d{4}$/.test(trimmedNick)) && trimmedNick !== systemNickName) {
+  if (/^小家成员#\d{4}$/.test(trimmedNick) && trimmedNick !== systemNickName) {
     const error = new Error("该昵称为系统编号格式，请换一个昵称");
     error.code = ERR.RESERVED_NICKNAME;
     throw error;

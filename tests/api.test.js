@@ -41,7 +41,7 @@ test("API preserves business errors from ourNest", async () => {
   });
 });
 
-test("API does not retry writes against the legacy function on transport failure", async () => {
+test("API does not retry writes on transport failure", async () => {
   const requests = [];
   const failure = new Error("transport failed");
   const callApi = loadApi(async (options) => {
