@@ -34,6 +34,17 @@ function component(name, overrides = {}) {
   return { definition, instance, events };
 }
 
+test("analysis record row preserves the record identity when opened", () => {
+  const { instance, events } = component("tl-analysis-record");
+  instance.data.record = { _id: "record-1", type: "income", categoryIcon: "funds-line" };
+  instance.open();
+  assert.equal(events[0].name, "open");
+  assert.equal(events[0].detail.id, "record-1");
+  instance.data.record = { id: "record-2" };
+  instance.open();
+  assert.equal(events[1].detail.id, "record-2");
+});
+
 test("every component tag resolves through its global or local registration", () => {
   const root = path.resolve("miniprogram");
   const global = JSON.parse(fs.readFileSync(path.join(root, "app.json"))).usingComponents;
@@ -105,28 +116,25 @@ test("record entry opens its keypad only after selecting a category", () => {
   assert.match(template, /class="entry-family"/);
 });
 
-test("analysis ratio UI shares a preview template and uses public loading, error and sheet components", () => {
+test("analysis dashboard exposes loading, error and category detail actions", () => {
   const template = fs.readFileSync("miniprogram/components/tl-tab-analysis/index.wxml", "utf8");
-  assert.equal((template.match(/<template name="ratio-section">/g) || []).length, 1);
-  assert.equal((template.match(/<template\b[^>]*is="ratio-section"/g) || []).length, 2);
-  assert.match(template, /ratioPreviewStatus === 'loading'/);
-  assert.match(template, /ratioPreviewStatus === 'error'/);
-  assert.match(template, /ratioPreviewStatus === 'empty'/);
-  assert.match(template, /ratioPreviewStatus === 'ready'/);
-  assert.match(template, /<tl-skeleton[^>]*ratioPreviewStatus/);
+  assert.match(template, /categoryPreviewStatus === 'loading'/);
+  assert.match(template, /categoryPreviewStatus === 'error'/);
+  assert.match(template, /categoryPreviewStatus === 'stale'/);
+  assert.match(template, /categoryPreviewStatus === 'ready'/);
+  assert.match(template, /<tl-skeleton[^>]*categoryPreviewStatus/);
   assert.match(template, /<tl-empty-state[^>]*variant="error"/);
-  assert.match(
-    template,
-    /<tl-bottom-sheet[^>]*visible="\{\{ratioRemainderVisible\}\}"[^>]*closeRatioRemainder/
-  );
-  assert.match(template, /data-key="\{\{item.key\}\}" bindtap="chooseRatioRemainder"/);
-  assert.match(template, /data-key="\{\{item.key\}\}" bindtap="selectRatioCategory"/);
-  assert.match(template, /bind:tap="openRatioRecords"/);
-  assert.match(template, /bind:tap="retryRatioPreview"/);
-  assert.match(template, /bind:tap="refreshRatioAnalysis"/);
-  assert.match(template, /ratioPreviewCount/);
-  assert.match(template, /ratioPreviewAmountText/);
-  assert.match(template, /ratioSelection.parentCategory/);
+  assert.match(template, /bindtap="selectDashboardCategory"/);
+  assert.match(template, /bind:tap="openDashboardCategoryRecords"/);
+});
+
+test("analysis uses the 2D-capable canvas path and record icons", () => {
+  const template = fs.readFileSync("miniprogram/components/tl-tab-analysis/index.wxml", "utf8");
+  const chart = template.match(/<ec-canvas\b[^>]*id="dashboard-category-chart"[^>]*>/);
+  assert.ok(chart);
+  assert.doesNotMatch(chart[0], /force-use-old-canvas/);
+  assert.match(template, /item\.displayIcon/);
+  assert.match(template, /<tl-analysis-record/);
 });
 
 test("ledger switcher normalizes both ledger shapes and only emits selection events", () => {

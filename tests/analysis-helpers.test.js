@@ -9,7 +9,118 @@ const {
   makeRecentYearTrend,
   makeTrendBuckets,
   summarizeRecords,
+  makeAnalysisDashboard,
+  applyCategoryIcons,
 } = require("../cloudfunctions/ourNest/analysis.helpers");
+
+test("category icon resolution uses category id and preserves historical fallback", () => {
+  const rows = [
+    { key: "a", categoryId: "a", categoryIcon: "old-line" },
+    { key: "b", categoryId: "b", categoryIcon: "history-line" },
+    { key: "legacy", categoryId: "", categoryIcon: "legacy-line" },
+  ];
+  const resolved = applyCategoryIcons(rows, [
+    { _id: "a", icon: "new-line" },
+    { _id: "b", icon: "" },
+  ]);
+  assert.equal(resolved[0].categoryIcon, "new-line");
+  assert.equal(resolved[0].recordCategoryIcon, "old-line");
+  assert.equal(resolved[1].categoryIcon, "history-line");
+  assert.equal(resolved[2].categoryIcon, "legacy-line");
+});
+
+test("dashboard aggregates income and expense independently without merging missing accounts", () => {
+  const rows = [
+    {
+      _id: "a",
+      date: "2026-03-01",
+      type: "income",
+      amount: 0.1,
+      categoryId: "pay",
+      account: "银行卡",
+    },
+    { _id: "b", date: "2026-03-01", type: "income", amount: 0.2, categoryId: "pay", account: "" },
+    {
+      _id: "c",
+      date: "2026-03-02",
+      type: "expense",
+      amount: 8,
+      categoryId: "food",
+      account: "银行卡",
+    },
+  ];
+  const result = makeAnalysisDashboard(
+    rows,
+    [{ type: "income", amount: 1, categoryId: "old" }],
+    "income",
+    2
+  );
+  assert.equal(result.total, 0.3);
+  assert.equal(result.recordCount, 2);
+  assert.equal(result.dailyAverage, 0.15);
+  assert.equal(result.categories.find((row) => row.categoryId === "pay").recordCount, 2);
+  assert.equal(result.categories.find((row) => row.categoryId === "old").previousAmount, 1);
+  assert.equal(result.accounts.find((row) => row.missing).recordCount, 1);
+  assert.equal(result.daily[0].income, 0.3);
+  assert.equal(result.topRecords[0]._id, "b");
+});
+
+test("category aggregation carries the recorded icon without changing category identity", () => {
+  const rows = groupCategories(
+    [
+      {
+        type: "expense",
+        categoryId: "food",
+        categoryName: "餐饮",
+        categoryIcon: "restaurant-line",
+        amount: 10,
+      },
+      {
+        type: "expense",
+        categoryId: "food",
+        categoryName: "餐饮",
+        categoryIcon: "restaurant-line",
+        amount: 20,
+      },
+      {
+        type: "expense",
+        categoryId: "travel",
+        categoryName: "出行",
+        categoryIcon: "bus-line",
+        amount: 5,
+      },
+    ],
+    "expense"
+  );
+  assert.equal(rows[0].categoryIcon, "restaurant-line");
+  assert.equal(rows[0].amount, 30);
+  assert.equal(rows[1].categoryIcon, "bus-line");
+});
+
+test("dashboard keeps recent historical icon candidates for legacy categories", () => {
+  const dashboard = makeAnalysisDashboard(
+    [
+      {
+        date: "2026-01-01",
+        type: "expense",
+        categoryName: "交通",
+        categoryIcon: "bus-line",
+        amount: 1,
+      },
+      {
+        date: "2026-01-02",
+        type: "expense",
+        categoryName: "交通",
+        categoryIcon: "not-a-glyph",
+        amount: 2,
+      },
+    ],
+    [],
+    "expense",
+    2
+  );
+  assert.deepEqual(dashboard.categories[0].recordCategoryIcons, ["not-a-glyph", "bus-line"]);
+});
 
 test("analysis handler marks current month and year trends as partial", () => {
   const module = { exports: {} };
@@ -33,6 +144,13 @@ test("analysis handler marks current month and year trends as partial", () => {
     }
   );
   const current = { year: 2026, month: 3, day: 13, start: "2026-03-01" };
+  const week = module.exports.getAnalysisRange("week", "2026-03-13");
+  assert.equal(week.start, "2026-03-09");
+  assert.equal(week.end, "2026-03-16");
+  const previous = module.exports.getPreviousAnalysisRange("week", week, current);
+  assert.equal(previous.start, "2026-03-02");
+  assert.equal(previous.end, "2026-03-07");
+  assert.throws(() => module.exports.getAnalysisRange("week", "2026-03-14"));
   assert.equal(
     module.exports.getTrendRange("month", { start: "2026-03-01", end: "2026-04-01" }, current).end,
     "2026-03-14"
@@ -95,6 +213,16 @@ test("custom trends show unambiguous cross-month dates", () => {
     rows.map((item) => item.label),
     ["12-31", "01-01"]
   );
+});
+
+test("weekly trends include every day across year boundaries", () => {
+  const rows = makeTrendBuckets("week", { start: "2025-12-29", end: "2026-01-05" }, [
+    { date: "2026-01-01", type: "income", amount: 12.34 },
+  ]);
+  assert.equal(rows.length, 7);
+  assert.equal(rows[0].key, "2025-12-29");
+  assert.equal(rows[3].income, 12.34);
+  assert.equal(rows[6].key, "2026-01-04");
 });
 
 test("recent year trend always includes current year and the previous four years", () => {
@@ -186,26 +314,43 @@ test("chart ranking keeps top five and combines the remainder", () => {
 test("empty current periods still compare with real previous records", async () => {
   const module = { exports: {} };
   const rows = [{ date: "2026-02-10", type: "expense", amount: 42, ownerOpenid: "user" }];
-  const command = { gte: (start) => ({ and: (end) => ({ start, end }) }), lt: (end) => end };
+  const categoryQueries = [];
+  const command = {
+    gte: (start) => ({ and: (end) => ({ start, end }) }),
+    lt: (end) => end,
+    in: (values) => values,
+  };
   const helpers = {
     db: {
-      collection: () => ({
-        where: (query) => ({
-          orderBy: () => ({
-            orderBy: () => ({
-              skip: () => ({
-                limit: () => ({
-                  get: async () => ({
-                    data: rows.filter(
-                      (row) => row.date >= query.date.start && row.date < query.date.end
-                    ),
+      collection: (name) =>
+        name === "categories"
+          ? {
+              where: (query) => {
+                categoryQueries.push(query);
+                return {
+                  limit: () => ({
+                    get: async () => ({ data: [{ _id: "food", icon: "restaurant-line" }] }),
+                  }),
+                };
+              },
+            }
+          : {
+              where: (query) => ({
+                orderBy: () => ({
+                  orderBy: () => ({
+                    skip: () => ({
+                      limit: () => ({
+                        get: async () => ({
+                          data: rows.filter(
+                            (row) => row.date >= query.date.start && row.date < query.date.end
+                          ),
+                        }),
+                      }),
+                    }),
                   }),
                 }),
               }),
-            }),
-          }),
-        }),
-      }),
+            },
     },
     _: command,
     ok: (data) => data,
@@ -284,6 +429,17 @@ test("empty current periods still compare with real previous records", async () 
   });
   assert.equal(currentMonth.range.end, "2026-03-14");
   assert.equal(currentMonth.overview.expense, 0);
+  const dashboardMonth = await module.exports.getAnalysis("user", {
+    mode: "month",
+    anchor: "2026-03",
+    analysisView: true,
+    analysisType: "expense",
+  });
+  assert.equal(dashboardMonth.dashboard.total, 0);
+  assert.equal(dashboardMonth.previousOverview.expense, 42);
+  assert.equal(dashboardMonth.recentMonths.length, 6);
+  assert.equal(dashboardMonth.recentMonths[4].expense, 42);
+  assert.equal(dashboardMonth.recentMonths[5].expense, 0);
   const currentYear = await module.exports.getAnalysis("user", { mode: "year", anchor: "2026" });
   assert.equal(currentYear.range.end, "2026-03-14");
   assert.equal(currentYear.overview.expense, 42);
@@ -319,6 +475,22 @@ test("empty current periods still compare with real previous records", async () 
   );
   const future = await module.exports.getAnalysis("user", { mode: "year", anchor: "2027" });
   assert.equal(future.recentYearTrend.length, 0);
+  rows.push({
+    date: "2026-03-02",
+    type: "expense",
+    amount: 10,
+    categoryId: "food",
+    categoryIcon: "bus-line",
+  });
+  const withCategory = await module.exports.getAnalysis("user", {
+    mode: "month",
+    anchor: "2026-03",
+    analysisView: true,
+  });
+  assert.equal(withCategory.dashboard.categories[0].categoryIcon, "restaurant-line");
+  assert.equal(withCategory.dashboard.categories[0].recordCategoryIcon, "bus-line");
+  assert.equal(categoryQueries[0].ledgerId, "ledger");
+  assert.equal(categoryQueries[0]._id[0], "food");
 });
 
 test("category grouping uses stable identifiers and distinguishes unlinked parents", () => {

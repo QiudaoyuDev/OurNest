@@ -17,13 +17,8 @@
             <view>共 {{count}} 笔 · 收入 ¥{{incomeText}} · 支出 ¥{{expenseText}}</view>
           </view>
           <view wx:if="{{records.length}}" class="filtered-list card">
-            <view wx:for="{{records}}" wx:key="id" class="filtered-row" data-id="{{item.id}}" bindtap="openRecord">
-              <view>
-                <view>{{item.categoryName || '其他'}}</view>
-                <view class="filtered-meta">{{item.date}} · {{item.note || item.account}}</view>
-              </view>
-              <text>¥{{item.amountText}}</text>
-            </view>
+            <tl-analysis-record wx:for="{{records}}" wx:key="id" record="{{item}}" type="{{item.type}}" bind:open="openRecord">
+            </tl-analysis-record>
             <view wx:if="{{loadingMore}}" class="filtered-meta">正在加载更多…</view>
           </view>
           <tl-empty-state wx:else title="暂无明细" description="此范围内没有匹配的记录">

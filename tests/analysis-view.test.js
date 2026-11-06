@@ -17,6 +17,81 @@ const {
   getChartOption,
   hasChartData,
 } = require("../miniprogram/components/tl-tab-analysis/chart-options");
+const {
+  makeDashboardView,
+  calendarAmount,
+  categoryDisplayIcon,
+} = require("../miniprogram/components/tl-tab-analysis/dashboard");
+
+test("category display icons prefer valid configuration then valid historical icon", () => {
+  assert.equal(
+    categoryDisplayIcon(
+      { categoryIcon: "restaurant-line", recordCategoryIcon: "bus-line" },
+      "expense"
+    ),
+    "restaurant-line"
+  );
+  assert.equal(
+    categoryDisplayIcon(
+      { categoryIcon: "invalid-glyph", recordCategoryIcon: "bus-line" },
+      "expense"
+    ),
+    "bus-line"
+  );
+  assert.equal(categoryDisplayIcon({}, "income"), "funds-line");
+  assert.equal(
+    categoryDisplayIcon(
+      { categoryIcon: "unknown", recordCategoryIcons: ["also-unknown", "bus-line"] },
+      "expense"
+    ),
+    "bus-line"
+  );
+});
+
+test("calendar amounts stay compact without changing stored amounts", () => {
+  assert.equal(calendarAmount(0), "—");
+  assert.equal(calendarAmount(8.5), "8.50");
+  assert.equal(calendarAmount(1234.56), "≈1235");
+  assert.equal(calendarAmount(12500), "≈1.3万");
+});
+
+test("dashboard preserves zero, future dates and the selected income series", () => {
+  const result = {
+    range: { start: "2024-02-01", end: "2024-02-11" },
+    dashboard: {
+      total: 25,
+      recordCount: 1,
+      dailyAverage: 2.5,
+      daily: [{ date: "2024-02-02", income: 25, expense: 3 }],
+    },
+    comparison: { income: { delta: 25 } },
+    recentMonths: [{ key: "2024-02", label: "2月", income: 25, expense: 3 }],
+  };
+  const view = makeDashboardView(result, "month", "income", "2024-02-10");
+  assert.equal(view.cells.filter((item) => !item.blank).length, 29);
+  assert.equal(view.cells.find((item) => item.key === "2024-02-02").amountText, "25.00");
+  assert.equal(view.cells.find((item) => item.key === "2024-02-11").future, true);
+  assert.equal(view.bars[0].height, 100);
+  assert.match(view.comparisonText, /增加/);
+});
+
+test("dashboard weekly bars align the previous period across a year boundary", () => {
+  const view = makeDashboardView(
+    {
+      range: { start: "2025-12-29", end: "2026-01-02" },
+      dashboard: {},
+      trend: [{ key: "2026-01-01", expense: 10 }],
+      previousTrend: [{ expense: 1 }, { expense: 2 }, { expense: 3 }, { expense: 5 }],
+    },
+    "week",
+    "expense",
+    "2026-01-01"
+  );
+  assert.equal(view.bars.length, 7);
+  assert.equal(view.bars[3].key, "2026-01-01");
+  assert.equal(view.bars[3].previous, 5);
+  assert.equal(view.bars[4].future, true);
+});
 
 test("analysis dates cross year boundaries and calendar preserves leap-day records", () => {
   assert.equal(shiftMonth("2026-01", -1), "2025-12");
@@ -169,6 +244,7 @@ test("an older analysis response cannot replace a newer ledger selection", async
     range: { label: "2026年10月" },
     trendMeta: { isPartial: true, asOf: "2026-10-13" },
     overview: { recordCount: 1, expense },
+    dashboard: { total: expense, recordCount: 1 },
   });
   pending[1](result("新账本", 20));
   await second;
@@ -177,6 +253,12 @@ test("an older analysis response cannot replace a newer ledger selection", async
   assert.equal(instance.data.ledgerName, "新账本");
   assert.equal(instance.data.overview.expense, 20);
   assert.equal(instance.data.trendCaption, "截至2026-10-13");
+  const outdated = instance.loadAnalysis();
+  const oldResponse = result("旧接口", 30);
+  delete oldResponse.dashboard;
+  pending[2](oldResponse);
+  await outdated;
+  assert.equal(instance.data.error, true);
 });
 
 test("negative balance from a zero baseline is not described as returning to zero", () => {
@@ -551,6 +633,153 @@ function ratioPreviewHarness(overrides = {}) {
   });
   return { page, pending, destinations, actions, choose, result, definition, category };
 }
+
+test("dashboard income category preview ignores stale results and opens the matching filter", async () => {
+  const category = {
+    key: '["id","salary"]',
+    categoryId: "salary",
+    name: "工资",
+    amount: 100,
+    recordCount: 1,
+    displayIcon: "funds-line",
+  };
+  const h = ratioPreviewHarness({
+    analysisType: "income",
+    dashboardView: { categories: [category] },
+  });
+  h.page.categoryRequestId = 0;
+  const first = h.page.selectDashboardCategory({ currentTarget: { dataset: { index: 0 } } });
+  h.page.selectDashboardCategory({ currentTarget: { dataset: { index: 0 } } });
+  assert.equal(h.page.data.selectedCategory, null);
+  const second = h.page.selectDashboardCategory({ currentTarget: { dataset: { index: 0 } } });
+  assert.equal(h.pending[0].query.type, "income");
+  h.pending[1].resolve({
+    records: [{ _id: "new", amount: 100, categoryIcon: "bus-line" }],
+    rangeSummary: { income: 100 },
+    rangeRecordCount: 1,
+  });
+  await second;
+  h.pending[0].resolve({
+    records: [{ _id: "old", amount: 100 }],
+    rangeSummary: { income: 100 },
+    rangeRecordCount: 1,
+  });
+  await first;
+  assert.equal(h.page.data.categoryPreview[0]._id, "new");
+  assert.equal(h.page.data.categoryPreview[0].categoryIcon, "funds-line");
+  h.page.openDashboardCategoryRecords();
+  assert.equal(h.destinations[0].searchParams.get("type"), "income");
+  assert.equal(JSON.parse(h.destinations[0].searchParams.get("filter")).id, "salary");
+});
+
+test("dashboard category switching closes old preview and prevents stale response reopening", async () => {
+  const categories = [
+    {
+      key: '["id","a"]',
+      categoryId: "a",
+      name: "餐饮",
+      amount: 10,
+      recordCount: 1,
+      displayIcon: "restaurant-line",
+    },
+    {
+      key: '["id","b"]',
+      categoryId: "b",
+      name: "交通",
+      amount: 20,
+      recordCount: 1,
+      displayIcon: "bus-line",
+    },
+  ];
+  const h = ratioPreviewHarness({ dashboardView: { categories } });
+  h.page.categoryRequestId = 0;
+  const first = h.page.selectDashboardCategory({ currentTarget: { dataset: { index: 0 } } });
+  const second = h.page.selectDashboardCategory({ currentTarget: { dataset: { index: 1 } } });
+  h.pending[1].resolve({
+    records: [{ _id: "b", amount: 20 }],
+    rangeSummary: { expense: 20 },
+    rangeRecordCount: 1,
+  });
+  await second;
+  h.pending[0].resolve({
+    records: [{ _id: "a", amount: 10 }],
+    rangeSummary: { expense: 10 },
+    rangeRecordCount: 1,
+  });
+  await first;
+  assert.equal(h.page.data.selectedCategory.key, categories[1].key);
+  assert.equal(h.page.data.categoryPreview[0].categoryIcon, "bus-line");
+  h.page.selectDashboardCategory({ currentTarget: { dataset: { index: 1 } } });
+  assert.equal(h.page.data.selectedCategory, null);
+  assert.equal(h.pending.length, 2);
+});
+
+test("dashboard day pagination appends matching records and ignores an older selected day", async () => {
+  const h = ratioPreviewHarness({ analysisType: "expense" });
+  h.page.dayRequestId = 0;
+  const first = h.page.selectDashboardDay({ currentTarget: { dataset: { date: "2026-01-01" } } });
+  const second = h.page.selectDashboardDay({ currentTarget: { dataset: { date: "2026-01-02" } } });
+  h.pending[1].resolve({
+    records: [{ _id: "new", amount: 1 }],
+    hasMore: true,
+    nextCursor: { date: "2026-01-02", id: "new" },
+  });
+  await second;
+  h.pending[0].resolve({ records: [{ _id: "old", amount: 1 }], hasMore: false });
+  await first;
+  assert.equal(h.page.data.dayRecords[0]._id, "new");
+  const more = h.page.loadMoreDashboardDay();
+  assert.equal(h.pending[2].query.cursor.id, "new");
+  h.pending[2].resolve({ records: [{ _id: "next", amount: 2 }], hasMore: false });
+  await more;
+  assert.deepEqual(
+    Array.from(h.page.data.dayRecords, (item) => item._id),
+    ["new", "next"]
+  );
+});
+
+test("section navigation reissues the same target after manual scrolling and ignores stale measurements", () => {
+  const h = ratioPreviewHarness();
+  const callbacks = [];
+  const writes = [];
+  h.page.createSelectorQuery = () => ({
+    select() {
+      return this;
+    },
+    boundingClientRect() {
+      return this;
+    },
+    scrollOffset() {
+      return this;
+    },
+    exec(callback) {
+      callbacks.push(callback);
+    },
+  });
+  h.page.setData = (patch, callback) => {
+    writes.push(patch);
+    Object.assign(h.page.data, patch);
+    if (callback) callback();
+  };
+  h.page._scrollTop = 200;
+  h.page.data.scrollTop = 500;
+  h.page.goSection({ currentTarget: { dataset: { section: "category" } } });
+  h.page.goSection({ currentTarget: { dataset: { section: "account" } } });
+  callbacks[1]([{ top: 100 }, { height: 48 }, { top: 448 }]);
+  callbacks[0]([{ top: 100 }, { height: 48 }, { top: 348 }]);
+  assert.equal(h.page.data.activeSection, "account");
+  assert.equal(h.page.data.scrollTop, 500);
+  assert.ok(writes.length >= 2);
+  h.page.goSection({ currentTarget: { dataset: { section: "account" } } });
+  callbacks[2]([
+    { top: 100, height: 600 },
+    { height: 48 },
+    { top: 448 },
+    { scrollTop: 200, scrollHeight: 900 },
+  ]);
+  assert.equal(h.page.data.scrollTop, 500);
+  assert.equal(h.page.data.sectionEndSpace, 200);
+});
 
 test("ratio selection queries three records but displays full server totals and identical readonly detail filters", async () => {
   for (const [activeChart, start, end] of [

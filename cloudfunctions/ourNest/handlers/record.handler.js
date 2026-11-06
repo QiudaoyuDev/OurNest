@@ -167,6 +167,24 @@ function applyCategoryFilter(query, filter) {
   throw new Error("INVALID_CATEGORY_FILTER");
 }
 
+function applyAccountFilter(query, filter) {
+  if (!filter) return;
+  if (filter.kind === "missing") {
+    query.account = _.in(["", null]);
+    return;
+  }
+  if (
+    filter.kind === "name" &&
+    typeof filter.name === "string" &&
+    filter.name.length > 0 &&
+    filter.name.length <= 100
+  ) {
+    query.account = filter.name;
+    return;
+  }
+  throw new Error("INVALID_ACCOUNT_FILTER");
+}
+
 function makeFamilyFilter(filter, ledger) {
   if (!filter) return null;
   if (
@@ -211,6 +229,9 @@ async function listRecords(openid, data = {}) {
   if (data.categoryFilter && !["income", "expense"].includes(data.type))
     throw new Error("INVALID_CATEGORY_FILTER");
   applyCategoryFilter(baseQuery, data.categoryFilter);
+  if (data.accountFilter && !["income", "expense"].includes(data.type))
+    throw new Error("INVALID_ACCOUNT_FILTER");
+  applyAccountFilter(baseQuery, data.accountFilter);
   if (data.familyFilter && data.type !== "expense") throw new Error("INVALID_FAMILY_FILTER");
   const familyClause = makeFamilyFilter(data.familyFilter, ledger);
   const cursor = data.cursor && data.cursor.date && data.cursor.id ? data.cursor : null;
@@ -242,12 +263,13 @@ async function listRecords(openid, data = {}) {
   let rangeQuery = { ledgerId: ledger._id };
   if (data.start && data.end) rangeQuery.date = _.gte(data.start).and(_.lt(data.end));
   if (
-    (data.categoryFilter || data.familyFilter || data.summaryFiltered) &&
+    (data.categoryFilter || data.familyFilter || data.accountFilter || data.summaryFiltered) &&
     ["income", "expense"].includes(data.type)
   ) {
     rangeQuery.type = data.type;
   }
   if (data.categoryFilter) applyCategoryFilter(rangeQuery, data.categoryFilter);
+  if (data.accountFilter) applyAccountFilter(rangeQuery, data.accountFilter);
   if (familyClause) rangeQuery = _.and([rangeQuery, familyClause]);
   const [historyCountResult, rangeCountResult, rangeSummaryResult, latestRecordResult] =
     await Promise.all([

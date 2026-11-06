@@ -58,7 +58,7 @@ function makeTrendBuckets(mode, range, records = []) {
   const ensureBucket = (key, label) => {
     buckets[key] = buckets[key] || { key, label, income: 0, expense: 0, balance: 0 };
   };
-  if (["month", "calendar", "custom"].includes(mode)) {
+  if (["week", "month", "calendar", "custom"].includes(mode)) {
     const days = Math.round(
       (new Date(`${range.end}T00:00:00Z`) - new Date(`${range.start}T00:00:00Z`)) /
         (24 * 60 * 60 * 1000)
@@ -87,12 +87,12 @@ function makeTrendBuckets(mode, range, records = []) {
     for (let year = firstYear; year <= lastYear; year += 1) ensureBucket(String(year), `${year}年`);
   }
   records.forEach((record) => {
-    const key = ["month", "calendar", "custom"].includes(mode)
+    const key = ["week", "month", "calendar", "custom"].includes(mode)
       ? record.date
       : mode === "year"
         ? record.date.slice(0, 7)
         : record.date.slice(0, 4);
-    const label = ["month", "calendar", "custom"].includes(mode)
+    const label = ["week", "month", "calendar", "custom"].includes(mode)
       ? mode === "custom"
         ? record.date.slice(5)
         : `${Number(record.date.slice(8, 10))}日`
@@ -151,6 +151,7 @@ function groupCategories(records = [], type) {
       const item = grouped.get(key) || { key, categoryId, categoryName, parentCategory, amount: 0 };
       item.categoryName = categoryName;
       item.parentCategory = parentCategory;
+      if (record.categoryIcon) item.categoryIcon = String(record.categoryIcon);
       item.name = categoryName || parentCategory || "其他";
       item.amount += moneyCents(record.amount);
       total += moneyCents(record.amount);
@@ -164,6 +165,15 @@ function groupCategories(records = [], type) {
       rate: total ? Math.round((item.amount * 100) / total) : 0,
     }))
     .sort((a, b) => b.amount - a.amount);
+}
+
+function applyCategoryIcons(rows = [], categories = []) {
+  const icons = new Map(categories.map((category) => [String(category._id || ""), category.icon]));
+  return rows.map((row) => ({
+    ...row,
+    recordCategoryIcon: row.categoryIcon || "",
+    categoryIcon: (row.categoryId && icons.get(String(row.categoryId))) || row.categoryIcon || "",
+  }));
 }
 
 function collapseRanking(rows = [], limit = 5) {
@@ -182,10 +192,115 @@ function collapseRanking(rows = [], limit = 5) {
   ];
 }
 
+function makeAnalysisDashboard(records = [], previousRecords = [], type = "expense", dayCount = 0) {
+  const selected = records.filter((record) => record.type === type);
+  const totalCents = selected.reduce((sum, record) => sum + moneyCents(record.amount), 0);
+  const currentCategories = groupCategories(selected, type);
+  const previousCategories = groupCategories(previousRecords, type);
+  const counts = new Map();
+  const iconCandidates = new Map();
+  const accounts = new Map();
+  const daily = new Map();
+  [...previousRecords, ...records].forEach((record) => {
+    if (record.type !== type || typeof record.categoryIcon !== "string" || !record.categoryIcon)
+      return;
+    const key = record.categoryId
+      ? JSON.stringify(["id", String(record.categoryId)])
+      : JSON.stringify([
+          "legacy",
+          String(record.parentCategory || ""),
+          String(record.categoryName || ""),
+        ]);
+    const candidates = iconCandidates.get(key) || new Map();
+    candidates.delete(record.categoryIcon);
+    candidates.set(record.categoryIcon, true);
+    iconCandidates.set(key, candidates);
+  });
+  records.forEach((record) => {
+    const day = daily.get(record.date) || { date: record.date, income: 0, expense: 0 };
+    if (record.type === "income" || record.type === "expense") {
+      day[record.type] += moneyCents(record.amount);
+      daily.set(record.date, day);
+    }
+  });
+  selected.forEach((record) => {
+    const key = record.categoryId
+      ? JSON.stringify(["id", String(record.categoryId)])
+      : JSON.stringify([
+          "legacy",
+          String(record.parentCategory || ""),
+          String(record.categoryName || ""),
+        ]);
+    counts.set(key, (counts.get(key) || 0) + 1);
+    const missing = !record.account;
+    const accountKey = JSON.stringify([missing, String(record.account || "")]);
+    const account = accounts.get(accountKey) || {
+      name: missing ? "未设置账户" : String(record.account),
+      missing,
+      amount: 0,
+      recordCount: 0,
+    };
+    account.amount += moneyCents(record.amount);
+    account.recordCount += 1;
+    accounts.set(accountKey, account);
+  });
+  const previousByKey = new Map(previousCategories.map((item) => [item.key, item]));
+  const currentByKey = new Map(currentCategories.map((item) => [item.key, item]));
+  const categories = [...new Set([...currentByKey.keys(), ...previousByKey.keys()])].map((key) => {
+    const current = currentByKey.get(key);
+    const previous = previousByKey.get(key);
+    return {
+      ...(current || { ...previous, amount: 0, rate: 0 }),
+      recordCount: counts.get(key) || 0,
+      recordCategoryIcons: Array.from((iconCandidates.get(key) || new Map()).keys()).reverse(),
+      previousAmount: previous ? previous.amount : 0,
+    };
+  });
+  categories.sort(
+    (left, right) => right.amount - left.amount || right.previousAmount - left.previousAmount
+  );
+  return {
+    type,
+    total: totalCents / 100,
+    recordCount: selected.length,
+    dailyAverage: dayCount > 0 ? Math.round(totalCents / dayCount) / 100 : 0,
+    categories,
+    accounts: Array.from(accounts.values())
+      .map((item) => ({
+        ...item,
+        amount: item.amount / 100,
+        rate: totalCents ? Math.round((item.amount * 100) / totalCents) : 0,
+      }))
+      .sort((left, right) => right.amount - left.amount),
+    daily: Array.from(daily.values())
+      .sort((left, right) => left.date.localeCompare(right.date))
+      .map((item) => ({ ...item, income: item.income / 100, expense: item.expense / 100 })),
+    topRecords: [...selected]
+      .sort(
+        (left, right) =>
+          Number(right.amount) - Number(left.amount) ||
+          String(right.date).localeCompare(String(left.date)) ||
+          String(right._id).localeCompare(String(left._id))
+      )
+      .slice(0, 5)
+      .map((record) => ({
+        _id: record._id,
+        date: record.date,
+        amount: roundMoney(record.amount),
+        categoryName: record.categoryName || record.parentCategory || "其他",
+        categoryIcon: record.categoryIcon || "",
+        account: record.account || "",
+        note: record.note || "",
+      })),
+  };
+}
+
 module.exports = {
+  applyCategoryIcons,
   collapseRanking,
   groupCategories,
   makeComparison,
+  makeAnalysisDashboard,
   makeRecentYearTrend,
   makeTrendBuckets,
   moneyCents,

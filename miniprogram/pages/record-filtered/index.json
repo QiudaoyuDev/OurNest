@@ -1,4 +1,6 @@
 {
   "navigationBarTitleText": "分类明细",
-  "usingComponents": {}
+  "usingComponents": {
+    "tl-analysis-record": "/components/tl-analysis-record/index"
+  }
 }
