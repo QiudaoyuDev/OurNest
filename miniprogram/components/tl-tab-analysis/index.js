@@ -7,7 +7,7 @@ const ledgerStore = require("../../services/ledger.store");
 const feedback = require("../../services/feedback-ui");
 const { on: onEvent, off: offEvent } = require("../../utils/event-bus");
 const { formatDisplayMoney, formatMoney } = require("../../utils/money");
-const { makeDashboardView, dayAdd } = require("./dashboard");
+const { makeDashboardView, dayAdd, categoryDisplayIcon } = require("./dashboard");
 const {
   monthAnchor,
   dateAnchor,
@@ -58,6 +58,10 @@ Component({
     scrollTop: 0,
     sectionEndSpace: 0,
     dashboardChartError: false,
+    trendChartError: false,
+    selectedTrend: null,
+    trendRows: [],
+    rangeCategories: [],
     canShiftNext: false,
     modeOptions: [
       { value: "week", label: "周度" },
@@ -505,6 +509,7 @@ Component({
         customEnd: this.data.customEnd,
         analysisType: this.data.analysisType,
         analysisView: ["week", "month", "year"].includes(this.data.mode),
+        autoTrend: this.data.mode === "all",
       };
       this.disposeChart();
       this.disposeSecondaryCharts();
@@ -522,6 +527,9 @@ Component({
         scrollTop: 0,
         sectionEndSpace: 0,
         dashboardChartError: false,
+        trendChartError: false,
+        selectedTrend: null,
+        showTrendDetails: false,
         activeSection: "summary",
       });
       try {
@@ -532,6 +540,8 @@ Component({
           return;
         }
         if (request.analysisView && !result.dashboard) throw new Error("ANALYSIS_API_OUTDATED");
+        if (request.autoTrend && !(result.trendMeta && result.trendMeta.granularity))
+          throw new Error("ANALYSIS_API_OUTDATED");
         const chartType =
           this.data.activeChart === "member" && result.ledger.type !== "shared"
             ? "trend"
@@ -577,6 +587,14 @@ Component({
               ? `截至${result.trendMeta.asOf}`
               : "",
           activeDetailRows,
+          trendRows: getDetailRows(result, "trend"),
+          rangeCategories: (request.analysisType === "income"
+            ? result.incomeCategories
+            : result.categories
+          ).map((item) => ({
+            ...item,
+            displayIcon: categoryDisplayIcon(item, request.analysisType || "expense"),
+          })),
           hasDetailRows: activeDetailRows.length > 0,
           hasInsights:
             Object.values(result.insightGroups || {}).some((items) => items.length) ||
@@ -837,6 +855,51 @@ Component({
       );
     },
 
+    openRangeCategory(event) {
+      const item = this.data.rangeCategories[Number(event.currentTarget.dataset.index)];
+      const range = this.data.mode === "all" ? this.data.recordRange : this.data.range;
+      if (!item || !range || !range.start || !range.end || !this.data.ledgerId) return;
+      const filter = item.categoryId
+        ? { kind: "id", id: item.categoryId }
+        : { kind: "legacy", name: item.categoryName || "", parent: item.parentCategory || "" };
+      const query = {
+        ledgerId: this.data.ledgerId,
+        start: range.start,
+        end: range.end,
+        type: this.data.analysisType,
+        filter: JSON.stringify(filter),
+        name: item.name || "其他",
+      };
+      wx.navigateTo({
+        url: `/pages/record-filtered/index?${Object.keys(query)
+          .map((key) => `${key}=${encodeURIComponent(query[key])}`)
+          .join("&")}`,
+      });
+    },
+
+    selectTrendPoint(params = {}) {
+      if (params.componentType !== "series" || !Number.isInteger(params.dataIndex)) return;
+      const row = (this.data.trendRows || [])[params.dataIndex];
+      if (row) this.setData({ selectedTrend: row });
+    },
+
+    openTrendRow(event) {
+      const index = Number(event.currentTarget.dataset.index);
+      this.openTrendRecords({ componentType: "series", dataIndex: index });
+    },
+
+    openSelectedTrend() {
+      const index = (this.data.trend || []).findIndex(
+        (row) => this.data.selectedTrend && row.key === this.data.selectedTrend.key
+      );
+      if (index >= 0) this.openTrendRecords({ componentType: "series", dataIndex: index });
+    },
+
+    retryTrendChart() {
+      this._chartRetryCount = 0;
+      this.setData({ trendChartError: false });
+    },
+
     openCategoryRecords(event) {
       const source = event.currentTarget.dataset.source;
       if (
@@ -988,21 +1051,28 @@ Component({
       )
         return;
       this.disposeChart();
-      const chart = echarts.init(canvas, null, {
-        width,
-        height,
-        devicePixelRatio: Math.min(Number(detail.dpr || detail.canvasDpr || 1), 2),
-      });
-      canvas.setChart(chart);
-      chart.setOption(getChartOption(this.data), true);
-      chart.on("click", (params) => {
-        if (["monthRatio", "yearRatio"].includes(this.data.activeChart)) {
-          this.openRatioChartSelection(params);
-        } else this.openTrendRecords(params);
-      });
-      this.chart = chart;
-      const component = this.selectComponent("#analysis-chart");
-      if (component && typeof component.setChart === "function") component.setChart(chart);
+      try {
+        const chart = echarts.init(canvas, null, {
+          width,
+          height,
+          devicePixelRatio: Math.min(Number(detail.dpr || detail.canvasDpr || 1), 2),
+        });
+        canvas.setChart(chart);
+        chart.setOption(getChartOption(this.data), true);
+        chart.on("click", (params) => {
+          if (["monthRatio", "yearRatio"].includes(this.data.activeChart)) {
+            this.openRatioChartSelection(params);
+          } else if (["custom", "all"].includes(this.data.mode)) this.selectTrendPoint(params);
+          else this.openTrendRecords(params);
+        });
+        this.chart = chart;
+        const component = this.selectComponent("#analysis-chart");
+        if (component && typeof component.setChart === "function") component.setChart(chart);
+      } catch (error) {
+        console.warn("analysis chart initialization failed", error);
+        this.disposeChart();
+        this.setData({ trendChartError: true });
+      }
     },
 
     onSecondaryChartInit(event) {
@@ -1066,6 +1136,7 @@ Component({
         }, 150);
       } else {
         this._chartRetryCount = 0;
+        this.setData({ trendChartError: true });
       }
     },
 

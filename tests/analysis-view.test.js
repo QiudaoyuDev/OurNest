@@ -964,3 +964,31 @@ test("record change events clear ratio selection and reject obsolete responses",
     h.definition.lifetimes.detached.call(h.page);
   }
 });
+
+test("range trend selection and category drill-down preserve bucket and ledger range", () => {
+  const row = { key: "2026-02", label: "2026-02", incomeText: "2.00", expenseText: "1.00" };
+  const { page, destinations } = trendDrillDown({
+    mode: "all",
+    activeChart: "trend",
+    analysisType: "income",
+    range: {},
+    recordRange: { start: "2026-02-11", end: "2026-03-06" },
+    trend: [row],
+    trendRows: [row],
+    rangeCategories: [{ categoryId: "salary", name: "工资" }],
+  });
+  page.setData = (patch) => Object.assign(page.data, patch);
+  page.selectTrendPoint({ componentType: "series", dataIndex: 0 });
+  assert.equal(page.data.selectedTrend.key, "2026-02");
+  page.openSelectedTrend();
+  assert.equal(destinations[0].searchParams.get("start"), "2026-02-01");
+  assert.equal(destinations[0].searchParams.get("end"), "2026-03-01");
+  page.openRangeCategory({ currentTarget: { dataset: { index: 0 } } });
+  assert.equal(destinations[1].searchParams.get("start"), "2026-02-11");
+  assert.equal(destinations[1].searchParams.get("end"), "2026-03-06");
+  assert.equal(destinations[1].searchParams.get("type"), "income");
+  assert.deepEqual(JSON.parse(destinations[1].searchParams.get("filter")), {
+    kind: "id",
+    id: "salary",
+  });
+});

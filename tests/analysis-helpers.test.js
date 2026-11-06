@@ -610,3 +610,23 @@ test("family payer and consumption totals count each expense once with public at
   assert.equal(result.consumers[1].multipleAmount, 30);
   assert.equal(result.consumers[0].categories[0].amount, 30);
 });
+
+test("all-time trend automatically selects monthly buckets up to 24 months", () => {
+  const { makeAllTimeTrend } = require("../cloudfunctions/ourNest/analysis.helpers");
+  const records = [
+    { date: "2025-01-05", type: "income", amount: 20 },
+    { date: "2026-12-10", type: "expense", amount: 5 },
+  ];
+  const monthly = makeAllTimeTrend(records);
+  assert.equal(monthly.granularity, "month");
+  assert.equal(monthly.buckets.length, 24);
+  assert.equal(monthly.buckets[1].income, 0);
+  assert.equal(monthly.buckets[23].expense, 5);
+  const yearly = makeAllTimeTrend([...records, { date: "2027-01-01", type: "income", amount: 1 }]);
+  assert.equal(yearly.granularity, "year");
+  assert.deepEqual(
+    yearly.buckets.map((item) => item.key),
+    ["2025", "2026", "2027"]
+  );
+  assert.deepEqual(makeAllTimeTrend([]), { granularity: "month", buckets: [] });
+});
