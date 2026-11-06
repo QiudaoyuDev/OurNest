@@ -221,6 +221,7 @@ test("index shell page lazily mounts and preserves visited tabs across switches"
   };
   page.onLoad();
   assert.equal(page.data.activeTab, "index");
+  assert.equal(page.data.foreground, true);
   assert.equal(page.data.visitedTabs.index, true);
 
   page.switchTab({ detail: { tab: "records" } });
@@ -238,6 +239,11 @@ test("index shell page lazily mounts and preserves visited tabs across switches"
   assert.equal(page.data.visitedTabs.analysis, true);
   assert.equal(page.data.visitedTabs.records, true);
   assert.equal(page.data.visitedTabs.index, true);
+
+  page.onHide();
+  assert.equal(page.data.foreground, false);
+  page.onShow();
+  assert.equal(page.data.foreground, true);
 });
 
 test("joinLedger rejects personal ledgers with PERSONAL_LEDGER_NOT_SHARED", async () => {

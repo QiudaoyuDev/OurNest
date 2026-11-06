@@ -191,6 +191,7 @@ async function syncLedgers(options = {}) {
         removedLedgerIds: data.removedLedgerIds || [],
         ledgers,
         syncedAt: Date.now(),
+        mutationId: String(options.mutationId || ""),
       };
       if (options.notify !== false) emitSync(result);
       return result;

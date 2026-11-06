@@ -1,5 +1,6 @@
 const ledgerStore = require("./ledger.store");
 const categoryStore = require("./category.store");
+const dataRefresh = require("./data-refresh.service");
 
 let syncRequest = null;
 let syncOwner = "";
@@ -26,6 +27,12 @@ async function syncData() {
     if (scope !== scopeOf(app)) throw new Error("登录状态已变化，请重试");
     const syncedAt = Date.now();
     app.globalData.dataSyncedAt = syncedAt;
+    dataRefresh.invalidate({
+      ledgerIds: result.changedLedgerIds,
+      removedLedgerIds: result.removedLedgerIds,
+      source: "manual-sync",
+      manual: true,
+    });
     return { ...result, syncedAt };
   })();
   syncRequest = request;
