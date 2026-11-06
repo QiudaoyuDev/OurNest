@@ -5,7 +5,7 @@ const { initialRatioPreview, createRatioMethods } = require("./ratio-preview");
 const ledgerService = require("../../services/ledger.service");
 const ledgerStore = require("../../services/ledger.store");
 const feedback = require("../../services/feedback-ui");
-const { on: onEvent, off: offEvent } = require("../../utils/event-bus");
+const dataRefresh = require("../../services/data-refresh.service");
 const { formatDisplayMoney, formatMoney } = require("../../utils/money");
 const { makeDashboardView, dayAdd } = require("./dashboard");
 const {
@@ -32,6 +32,22 @@ const {
 } = require("./chart-options");
 
 Component({
+  properties: {
+    active: {
+      type: Boolean,
+      value: false,
+      observer() {
+        this.updateAvailability();
+      },
+    },
+    foreground: {
+      type: Boolean,
+      value: true,
+      observer() {
+        this.updateAvailability();
+      },
+    },
+  },
   data: {
     ...initialRatioPreview(),
     ledgerId: "",
@@ -124,15 +140,17 @@ Component({
       this.analysisRequestId = 0;
       this.categoryRequestId = 0;
       this.dayRequestId = 0;
-      this.bootstrap();
-      this._onRecordsChanged = (result = {}) => {
-        if (!result.ledgerId || result.ledgerId === this.data.ledgerId) this.loadAnalysis();
-      };
-      onEvent("records:changed", this._onRecordsChanged);
+      this.dirty = true;
+      this.isBootstrapped = false;
+      this._unsubscribeRefresh = dataRefresh.subscribe((event) =>
+        this.handleDataInvalidation(event)
+      );
+      this.updateAvailability();
     },
     detached() {
       this.clearRatioPreview();
-      if (this._onRecordsChanged) offEvent("records:changed", this._onRecordsChanged);
+      if (this._unsubscribeRefresh) this._unsubscribeRefresh();
+      this._unsubscribeRefresh = null;
       this.isAttached = false;
       this.analysisRequestId += 1;
       this.categoryRequestId += 1;
@@ -145,6 +163,38 @@ Component({
 
   methods: {
     ...createRatioMethods(recordService, (options) => wx.navigateTo(options)),
+    isActiveAndForeground() {
+      return this.data.active !== false && this.data.foreground !== false;
+    },
+
+    updateAvailability() {
+      if (!this.isAttached) return;
+      if (!this.isActiveAndForeground()) {
+        this.dirty = true;
+        this.analysisRequestId = (this.analysisRequestId || 0) + 1;
+        return;
+      }
+      if (!this.isBootstrapped) {
+        this.isBootstrapped = true;
+        this.bootstrap();
+      } else if (this.dirty) this.loadAnalysis();
+    },
+
+    handleDataInvalidation(event = {}) {
+      const ledgerIds = event.ledgerIds || [];
+      const removedLedgerIds = event.removedLedgerIds || [];
+      if (
+        ledgerIds.length &&
+        this.data.ledgerId &&
+        !ledgerIds.includes(this.data.ledgerId) &&
+        !removedLedgerIds.includes(this.data.ledgerId)
+      )
+        return;
+      this.dirty = true;
+      this.clearRatioPreview();
+      if (this.isActiveAndForeground())
+        this.refreshAnalysis({ removedLedgerIds, changedLedgerIds: ledgerIds });
+    },
     changeAnalysisType(event) {
       const type = event.currentTarget.dataset.type;
       if (!["income", "expense"].includes(type) || type === this.data.analysisType) return;
@@ -490,8 +540,15 @@ Component({
     },
 
     async loadAnalysis() {
+      if (!this.isActiveAndForeground()) {
+        this.dirty = true;
+        return;
+      }
       this.clearRatioPreview();
-      if (!this.data.ledgerId) return this.setData({ loading: false, noLedger: true });
+      if (!this.data.ledgerId) {
+        this.dirty = false;
+        return this.setData({ loading: false, noLedger: true });
+      }
       this._sectionRequestId = (this._sectionRequestId || 0) + 1;
       this._chartRetryCount = 0;
       const requestId = ++this.analysisRequestId;
@@ -585,6 +642,7 @@ Component({
           yearRankingRows:
             this.data.yearRankingType === "income" ? result.incomeCategories : result.categories,
         };
+        this.dirty = false;
         this.setData(nextData, () => this.renderChart());
       } catch (error) {
         if (!this.isAttached || requestId !== this.analysisRequestId) return;
@@ -964,7 +1022,7 @@ Component({
     },
 
     renderChart() {
-      if (!this.data.hasChartData || !this.isAttached) {
+      if (!this.data.hasChartData || !this.isAttached || !this.isActiveAndForeground()) {
         this.disposeChart();
         return;
       }
@@ -980,6 +1038,7 @@ Component({
       const height = Number(detail.height || 0);
       if (
         !this.isAttached ||
+        !this.isActiveAndForeground() ||
         this.data.loading ||
         !this.data.hasChartData ||
         !canvas ||
@@ -1011,7 +1070,16 @@ Component({
       const canvas = detail.canvas;
       const width = Number(detail.width || 0);
       const height = Number(detail.height || 0);
-      if (!this.isAttached || this.data.loading || !key || !canvas || !width || !height) return;
+      if (
+        !this.isAttached ||
+        !this.isActiveAndForeground() ||
+        this.data.loading ||
+        !key ||
+        !canvas ||
+        !width ||
+        !height
+      )
+        return;
       this.secondaryCharts = this.secondaryCharts || {};
       if (this.secondaryCharts[key]) this.secondaryCharts[key].dispose();
       const chart = echarts.init(canvas, null, {
@@ -1053,12 +1121,12 @@ Component({
       this.secondaryCharts = {};
     },
     onChartInitError() {
-      if (!this.isAttached || this.data.loading) return;
+      if (!this.isAttached || !this.isActiveAndForeground() || this.data.loading) return;
       console.warn("analysis chart initialization failed");
       this._chartRetryCount = (this._chartRetryCount || 0) + 1;
       if (this._chartRetryCount <= 1) {
         setTimeout(() => {
-          if (!this.isAttached || this.data.loading) return;
+          if (!this.isAttached || !this.isActiveAndForeground() || this.data.loading) return;
           const component = this.selectComponent("#analysis-chart");
           if (component && typeof component.init === "function") {
             component.init();

@@ -945,16 +945,19 @@ test("ratio category rows preview rather than navigate and refresh invalidates s
   assert.equal(h.page.data.loading, true);
 });
 
-test("record change events clear ratio selection and reject obsolete responses", async () => {
-  const bus = require("../miniprogram/utils/event-bus");
+test("record change invalidations clear ratio selection and reject obsolete responses", async () => {
+  const dataRefresh = require("../miniprogram/services/data-refresh.service");
+  dataRefresh.clear();
   for (const reject of [false, true]) {
     const h = ratioPreviewHarness();
     h.page.bootstrap = () => {};
     h.definition.lifetimes.attached.call(h.page);
     const work = h.choose(h.page.data.categories[0].key);
-    bus.emit("records:changed", { ledgerId: "unrelated" });
+    dataRefresh.invalidate({ ledgerId: "unrelated", source: "test" });
+    await Promise.resolve();
     assert.equal(h.page.data.ratioPreviewStatus, "loading");
-    bus.emit("records:changed", { ledgerId: "ledger" });
+    dataRefresh.invalidate({ ledgerId: "ledger", source: "test" });
+    await Promise.resolve();
     assert.equal(h.page.data.ratioPreviewStatus, "idle");
     if (reject) h.pending[0].reject(new Error("obsolete"));
     else h.pending[0].resolve(h.result(100));

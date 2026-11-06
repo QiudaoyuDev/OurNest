@@ -1,12 +1,19 @@
 const { callApi } = require("./api");
 const ledgerStore = require("./ledger.store");
+const dataRefresh = require("./data-refresh.service");
 const { emit } = require("../utils/event-bus");
 
 async function mutateRecord(route, payload) {
   const result = await callApi(route, payload);
-  emit("records:changed", { ledgerId: payload.ledgerId || "" });
+  const mutationId = `record_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const ledgerId = String(result.ledgerId || "");
+  // The current cloud contract does not return an authoritative ledger ID for every mutation.
+  // An empty scope deliberately invalidates all mounted views instead of trusting client payload.
+  const invalidation = { ledgerId, mutationId, source: "record-mutation" };
+  dataRefresh.invalidate(invalidation);
+  emit("records:changed", invalidation);
   try {
-    await ledgerStore.syncLedgers({ force: true });
+    await ledgerStore.syncLedgers({ force: true, mutationId });
   } catch (error) {
     ledgerStore.markSyncRequired();
     console.warn("record mutation succeeded but synchronization failed", route, error);
