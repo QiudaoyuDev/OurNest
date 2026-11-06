@@ -1588,6 +1588,27 @@ test("family and category drill-down use matching totals and cursor pages", asyn
   assert.equal(empty.records.length, 0);
   assert.equal(empty.rangeRecordCount, 0);
   assert.equal(empty.rangeSummary.expense, 0);
+  records[0].account = "微信";
+  records[1].account = "未设置账户";
+  const byAccount = await handler.listRecords("visitor", {
+    ...previewQuery,
+    accountFilter: { kind: "name", name: "微信" },
+  });
+  assert.equal(byAccount.rangeRecordCount, 1);
+  assert.equal(byAccount.rangeSummary.expense, 10);
+  assert.equal(byAccount.records[0]._id, "4");
+  const missingAccount = await handler.listRecords("visitor", {
+    ...previewQuery,
+    accountFilter: { kind: "missing" },
+  });
+  assert.equal(missingAccount.rangeRecordCount, 2);
+  assert.equal(missingAccount.rangeSummary.expense, 5.25);
+  const literalAccount = await handler.listRecords("visitor", {
+    ...previewQuery,
+    accountFilter: { kind: "name", name: "未设置账户" },
+  });
+  assert.equal(literalAccount.rangeRecordCount, 1);
+  assert.equal(literalAccount.rangeSummary.expense, 20);
 });
 
 test("shared records validate family members and keep creator authority on server", async () => {

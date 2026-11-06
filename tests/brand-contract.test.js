@@ -127,6 +127,7 @@ test("OurNest entry copy welcomes individual and shared-ledger use without famil
   assert.match(navbar, /class="brand-name">OurNest<\/text>/);
   assert.match(keypad, /<text>记一笔<\/text>/);
   assert.match(login, /记好每一笔，生活更有数。/);
+  assert.match(login, /顺手记一笔/);
   assert.match(profile, /class="function-tip">查看最近更新<\/view>/);
   assert.doesNotMatch(navbar + keypad, /咱家记一笔/);
   assert.doesNotMatch(login, /家庭与个人记账小程序/);

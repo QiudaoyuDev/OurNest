@@ -1,0 +1,12 @@
+<view class="analysis-record" bindtap="open">
+  <text wx:if="{{rank}}" class="analysis-record__rank">{{rank}}</text>
+  <view class="analysis-record__icon {{type}}">
+    <tl-icon name="{{record.categoryIcon || (type === 'income' ? 'funds-line' : 'price-tag-3-line')}}" size="32" colorKey="{{type === 'income' ? 'income' : 'primary'}}">
+    </tl-icon>
+  </view>
+  <view class="analysis-record__content">
+    <text class="analysis-record__title">{{(preferNote && record.note) || record.categoryName || record.note || '其他'}}</text>
+    <text class="analysis-record__meta">{{record.date}} · {{preferNote ? (record.account || '未设置账户') : (record.note || record.account || '未设置账户')}}</text>
+  </view>
+  <text class="analysis-record__amount {{type}}">{{type === 'income' ? '+' : '-'}}¥{{record.amountText}}</text>
+</view>

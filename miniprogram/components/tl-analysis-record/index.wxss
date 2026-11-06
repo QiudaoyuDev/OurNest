@@ -1,0 +1,58 @@
+.analysis-record {
+  display: flex;
+  min-height: 104rpx;
+  align-items: center;
+  gap: var(--tl-space-sm);
+  padding: var(--tl-space-sm) 0;
+  border-bottom: 1rpx solid var(--tl-color-divider);
+}
+.analysis-record__rank {
+  width: 28rpx;
+  flex: 0 0 28rpx;
+  color: var(--tl-color-text-tertiary);
+  text-align: center;
+  font-size: var(--tl-font-caption);
+}
+.analysis-record__icon {
+  display: flex;
+  width: 72rpx;
+  height: 72rpx;
+  flex: 0 0 72rpx;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--tl-radius-sm);
+  background: var(--tl-color-primary-soft);
+}
+.analysis-record__icon.income {
+  background: var(--tl-color-surface-income);
+}
+.analysis-record__content {
+  min-width: 0;
+  flex: 1;
+}
+.analysis-record__title,
+.analysis-record__meta {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.analysis-record__title {
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-body);
+  font-weight: var(--tl-font-weight-bold);
+}
+.analysis-record__meta {
+  margin-top: var(--tl-space-xs);
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-caption);
+}
+.analysis-record__amount {
+  flex: 0 0 auto;
+  color: var(--tl-color-expense);
+  font-weight: var(--tl-font-weight-bold);
+  text-align: right;
+}
+.analysis-record__amount.income {
+  color: var(--tl-color-income);
+}

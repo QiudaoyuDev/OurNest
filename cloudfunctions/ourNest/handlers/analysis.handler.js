@@ -13,9 +13,11 @@ const {
   addMonth,
 } = require("../shared/helpers");
 const {
+  applyCategoryIcons,
   collapseRanking: collapseAnalysisRanking,
   groupCategories: groupAnalysisCategories,
   makeComparison: getAnalysisComparison,
+  makeAnalysisDashboard,
   makeRecentYearTrend: makeAnalysisRecentYearTrend,
   makeTrendBuckets: makeAnalysisTrendBuckets,
   moneyCents,
@@ -42,6 +44,14 @@ function getAnalysisRange(mode, anchor, customStart, customEnd) {
   const current = getCurrentMonthRange();
   const today = makeDateText(current.year, current.month, current.day);
   if (mode === "all") return { start: "", end: "", label: "全部时间" };
+  if (mode === "week") {
+    const selected = String(anchor || today);
+    if (!isAnalysisDate(selected) || selected > today) throw new Error("INVALID_ANALYSIS_RANGE");
+    const weekday = new Date(`${selected}T00:00:00Z`).getUTCDay();
+    const start = addAnalysisDays(selected, -((weekday + 6) % 7));
+    const end = addAnalysisDays(start, 7);
+    return { start, end, label: `${start} 至 ${addAnalysisDays(end, -1)}` };
+  }
   if (mode === "year") {
     const year = Number(anchor) || current.year;
     return {
@@ -95,6 +105,14 @@ function getAnalysisRange(mode, anchor, customStart, customEnd) {
 }
 
 function getTrendRange(mode, range, current) {
+  if (mode === "week" && range.end > makeDateText(current.year, current.month, current.day)) {
+    return {
+      ...range,
+      end: addAnalysisDays(makeDateText(current.year, current.month, current.day), 1),
+      isPartial: true,
+      asOf: makeDateText(current.year, current.month, current.day),
+    };
+  }
   if (mode === "month" && range.start === current.start) {
     return {
       ...range,
@@ -125,6 +143,11 @@ function makeComparablePeriodEnd(year, month, day) {
 }
 
 function getPreviousAnalysisRange(mode, range, current) {
+  if (mode === "week") {
+    const today = makeDateText(current.year, current.month, current.day);
+    const end = range.end > today ? addAnalysisDays(today, -6) : range.start;
+    return { start: addAnalysisDays(range.start, -7), end };
+  }
   if (mode === "month") {
     const previous = addMonth(range.year, range.month, -1);
     return {
@@ -187,7 +210,7 @@ async function getAnalysis(openid, data = {}) {
   if (!ledger) return ok({ noLedger: true });
   const role = getLedgerRole(openid, ledger);
   assertReadable(role);
-  const mode = ["month", "year", "calendar", "custom", "all"].includes(data.mode)
+  const mode = ["week", "month", "year", "calendar", "custom", "all"].includes(data.mode)
     ? data.mode
     : "month";
   const range = getAnalysisRange(mode, data.anchor, data.customStart, data.customEnd);
@@ -198,6 +221,7 @@ async function getAnalysis(openid, data = {}) {
     currentMonthRange.day
   );
   if (
+    (mode === "week" && range.end > today) ||
     (mode === "month" && range.start === currentMonthRange.start) ||
     (mode === "year" && range.start === `${currentMonthRange.year}-01-01`)
   ) {
@@ -205,12 +229,23 @@ async function getAnalysis(openid, data = {}) {
   }
   const query = { ledgerId: ledger._id };
   if (range.start) query.date = _.gte(range.start).and(_.lt(range.end));
-  const records = await getAnalysisRecords(query);
+  let extendedRecords = null;
+  if (data.analysisView && mode === "month") {
+    const first = addMonth(range.year, range.month, -5);
+    const start = makeDateText(first.year, first.month, 1);
+    extendedRecords = await getAnalysisRecords({
+      ledgerId: ledger._id,
+      date: _.gte(start).and(_.lt(range.end)),
+    });
+  }
+  const records = extendedRecords
+    ? extendedRecords.filter((record) => record.date >= range.start && record.date < range.end)
+    : await getAnalysisRecords(query);
   let previousRecords = [];
   const isCurrentMonth = mode === "month" && range.start === currentMonthRange.start;
   let recentYearRecords = [];
   const selectedYear = mode === "year" ? Number(range.start.slice(0, 4)) : 0;
-  if (mode === "year" && selectedYear <= currentMonthRange.year) {
+  if (mode === "year" && selectedYear <= currentMonthRange.year && !data.analysisView) {
     recentYearRecords = await getAnalysisRecords({
       ledgerId: ledger._id,
       date: _.gte(String(selectedYear - 4) + "-01-01").and(
@@ -223,13 +258,29 @@ async function getAnalysis(openid, data = {}) {
     });
   }
   const previousRange = getPreviousAnalysisRange(mode, range, currentMonthRange);
-  if (previousRange) {
+  if (previousRange && extendedRecords) {
+    previousRecords = extendedRecords.filter(
+      (record) => record.date >= previousRange.start && record.date < previousRange.end
+    );
+  } else if (previousRange) {
     previousRecords = await getAnalysisRecords({
       ledgerId: ledger._id,
       date: _.gte(previousRange.start).and(_.lt(previousRange.end)),
     });
   }
-  const hasDailyRange = ["month", "calendar", "custom"].includes(mode);
+  let recentMonths = [];
+  if (data.analysisView && mode === "month") {
+    const first = addMonth(range.year, range.month, -5);
+    recentMonths = Array.from({ length: 6 }, (_, index) => {
+      const month = addMonth(first.year, first.month, index);
+      const key = `${month.year}-${String(month.month).padStart(2, "0")}`;
+      const summary = summarizeAnalysisRecords(
+        extendedRecords.filter((record) => record.date.slice(0, 7) === key)
+      );
+      return { key, label: `${month.month}月`, income: summary.income, expense: summary.expense };
+    });
+  }
+  const hasDailyRange = ["week", "month", "year", "calendar", "custom"].includes(mode);
   const analysisEnd = hasDailyRange ? range.end : "";
   const analysisDayCount = hasDailyRange
     ? mode === "month" && isCurrentMonth
@@ -379,6 +430,27 @@ async function getAnalysis(openid, data = {}) {
         ? (users[item.openid] || {}).nickName || (item.openid === openid ? "我" : "历史成员")
         : "其他",
     }));
+  let dashboard = null;
+  if (data.analysisView) {
+    dashboard = makeAnalysisDashboard(
+      records,
+      previousRecords,
+      data.analysisType === "income" ? "income" : "expense",
+      analysisDayCount
+    );
+    const ids = [...new Set(dashboard.categories.map((item) => item.categoryId).filter(Boolean))];
+    const categoryRows = [];
+    for (let index = 0; index < ids.length; index += 20) {
+      const batch = ids.slice(index, index + 20);
+      const result = await db
+        .collection("categories")
+        .where({ ledgerId: ledger._id, _id: _.in(batch) })
+        .limit(20)
+        .get();
+      categoryRows.push(...(result.data || []));
+    }
+    dashboard.categories = applyCategoryIcons(dashboard.categories, categoryRows);
+  }
   return ok({
     ledger: {
       _id: ledger._id,
@@ -389,6 +461,10 @@ async function getAnalysis(openid, data = {}) {
     readonly: role === "readonly",
     mode,
     range,
+    ...(dashboard ? { dashboard } : {}),
+    recentMonths,
+    previousTrend:
+      mode === "week" ? makeAnalysisTrendBuckets("week", previousRange, previousRecords) : [],
     overview: {
       ...overview,
       dayCount: analysisDayCount,

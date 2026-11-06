@@ -29,12 +29,15 @@ Page({
     try {
       const filter = options.filter ? JSON.parse(decode(options.filter)) : null;
       const familyFilter = options.family ? JSON.parse(decode(options.family)) : null;
+      const accountFilter = options.account ? JSON.parse(decode(options.account)) : null;
       if (
         !options.ledgerId ||
         !/^\d{4}-\d{2}-\d{2}$/.test(options.start || "") ||
         !/^\d{4}-\d{2}-\d{2}$/.test(options.end || "") ||
         !["all", "income", "expense"].includes(options.type) ||
         (filter && (!["id", "legacy"].includes(filter.kind) || options.type === "all")) ||
+        (accountFilter &&
+          (!["name", "missing"].includes(accountFilter.kind) || options.type === "all")) ||
         (familyFilter &&
           (!["payer", "consumer", "creator"].includes(familyFilter.dimension) ||
             options.type !== "expense"))
@@ -49,6 +52,7 @@ Page({
         summaryFiltered: true,
         ...(filter ? { categoryFilter: filter } : {}),
         ...(familyFilter ? { familyFilter } : {}),
+        ...(accountFilter ? { accountFilter } : {}),
       };
       this.requestId = 0;
       this.setData({
@@ -117,7 +121,7 @@ Page({
     return this.loadRecords(false);
   },
   openRecord(event) {
-    const id = event.currentTarget.dataset.id;
+    const id = (event.detail && event.detail.id) || event.currentTarget.dataset.id;
     if (!id) return;
     const page = this.data.readonly ? "record-detail" : "record-edit";
     wx.navigateTo({ url: `/pages/${page}/index?id=${encodeURIComponent(id)}` });
