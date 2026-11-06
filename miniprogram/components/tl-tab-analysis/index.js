@@ -6,6 +6,7 @@ const ledgerService = require("../../services/ledger.service");
 const ledgerStore = require("../../services/ledger.store");
 const feedback = require("../../services/feedback-ui");
 const dataRefresh = require("../../services/data-refresh.service");
+const { createChartController } = require("./chart-controller");
 const { formatDisplayMoney, formatMoney } = require("../../utils/money");
 const { makeDashboardView, dayAdd, categoryDisplayIcon } = require("./dashboard");
 const {
@@ -141,6 +142,17 @@ Component({
       this.isAttached = true;
       this.chart = null;
       this.secondaryCharts = {};
+      this.chartController = createChartController({
+        canRender: () => this.isAttached && this.isActiveAndForeground() && !this.data.loading,
+        createChart: (canvas, width, height, dpr) =>
+          echarts.init(canvas, null, {
+            width,
+            height,
+            devicePixelRatio: Math.min(Number(dpr || 1), 2),
+          }),
+        getOption: (key) => this.getChartOptionForKey(key),
+        onChartEvent: (key, params) => this.handleChartEvent(key, params),
+      });
       this.analysisRequestId = 0;
       this.categoryRequestId = 0;
       this.dayRequestId = 0;
@@ -162,11 +174,42 @@ Component({
       this._sectionRequestId = (this._sectionRequestId || 0) + 1;
       this.disposeChart();
       this.disposeSecondaryCharts();
+      this.chartController = null;
     },
   },
 
   methods: {
     ...createRatioMethods(recordService, (options) => wx.navigateTo(options)),
+    getChartOptionForKey(key) {
+      if (key !== "dashboardCategory")
+        return getChartOption(this.data, key === "main" ? undefined : key);
+      const rows = (this.data.dashboardView.categories || []).filter((item) => item.amount > 0);
+      const visible = rows.slice(0, 5);
+      const remainder = rows.slice(5).reduce((sum, item) => sum + Math.round(item.amount * 100), 0);
+      const categoryChart = remainder
+        ? [...visible, { name: "其余分类", amount: remainder / 100 }]
+        : visible;
+      return getChartOption({ ...this.data, categoryChart }, "category");
+    },
+
+    handleChartEvent(key, params) {
+      if (key === "dashboardCategory") {
+        const visible = (this.data.dashboardView.categories || [])
+          .filter((item) => item.amount > 0)
+          .slice(0, 5);
+        if (params.dataIndex >= visible.length) return this.setData({ showAllCategories: true });
+        const index = (this.data.dashboardView.categories || []).findIndex(
+          (item) => item.key === visible[params.dataIndex].key
+        );
+        if (index >= 0) this.selectDashboardCategory({ currentTarget: { dataset: { index } } });
+        return;
+      }
+      if (key === "category" || ["monthRatio", "yearRatio"].includes(this.data.activeChart))
+        return this.openRatioChartSelection(params);
+      if (["custom", "all"].includes(this.data.mode)) return this.selectTrendPoint(params);
+      this.openTrendRecords(params);
+    },
+
     isActiveAndForeground() {
       return this.data.active !== false && this.data.foreground !== false;
     },
@@ -1089,44 +1132,25 @@ Component({
         this.disposeChart();
         return;
       }
-      if (this.chart) {
-        this.chart.setOption(getChartOption(this.data), true);
-      }
+      if (this.chartController) this.chartController.update("main");
+      else if (this.chart) this.chart.setOption(getChartOption(this.data), true);
     },
 
     onChartInit(event) {
       const detail = event.detail || {};
-      const canvas = detail.canvas;
-      const width = Number(detail.width || 0);
-      const height = Number(detail.height || 0);
-      if (
-        !this.isAttached ||
-        !this.isActiveAndForeground() ||
-        this.data.loading ||
-        !this.data.hasChartData ||
-        !canvas ||
-        !width ||
-        !height
-      )
-        return;
-      this.disposeChart();
+      if (!this.chartController || !this.data.hasChartData) return;
       try {
-        const chart = echarts.init(canvas, null, {
-          width,
-          height,
-          devicePixelRatio: Math.min(Number(detail.dpr || detail.canvasDpr || 1), 2),
+        const chart = this.chartController.mount("main", {
+          canvas: detail.canvas,
+          width: Number(detail.width || 0),
+          height: Number(detail.height || 0),
+          dpr: detail.dpr || detail.canvasDpr,
+          component: this.selectComponent("#analysis-chart"),
+          generation: this.analysisRequestId,
         });
-        canvas.setChart(chart);
-        chart.setOption(getChartOption(this.data), true);
-        chart.on("click", (params) => {
-          if (["monthRatio", "yearRatio"].includes(this.data.activeChart)) {
-            this.openRatioChartSelection(params);
-          } else if (["custom", "all"].includes(this.data.mode)) this.selectTrendPoint(params);
-          else this.openTrendRecords(params);
-        });
+        if (!chart) return;
         this.chart = chart;
-        const component = this.selectComponent("#analysis-chart");
-        if (component && typeof component.setChart === "function") component.setChart(chart);
+        this.chartController.update("main");
       } catch (error) {
         console.warn("analysis chart initialization failed", error);
         this.disposeChart();
@@ -1137,49 +1161,21 @@ Component({
     onSecondaryChartInit(event) {
       const detail = event.detail || {};
       const key = event.currentTarget.dataset.chartKey;
-      const canvas = detail.canvas;
-      const width = Number(detail.width || 0);
-      const height = Number(detail.height || 0);
-      if (
-        !this.isAttached ||
-        !this.isActiveAndForeground() ||
-        this.data.loading ||
-        !key ||
-        !canvas ||
-        !width ||
-        !height
-      )
-        return;
-      this.secondaryCharts = this.secondaryCharts || {};
-      if (this.secondaryCharts[key]) this.secondaryCharts[key].dispose();
-      const chart = echarts.init(canvas, null, {
-        width,
-        height,
-        devicePixelRatio: Math.min(Number(detail.dpr || detail.canvasDpr || 1), 2),
+      if (!this.chartController || !key) return;
+      const componentId =
+        key === "dashboardCategory" ? "#dashboard-category-chart" : "#all-category-chart";
+      const chart = this.chartController.mount(key, {
+        canvas: detail.canvas,
+        width: Number(detail.width || 0),
+        height: Number(detail.height || 0),
+        dpr: detail.dpr || detail.canvasDpr,
+        component: this.selectComponent(componentId),
+        generation: this.analysisRequestId,
       });
-      canvas.setChart(chart);
-      if (key === "dashboardCategory") {
-        const rows = (this.data.dashboardView.categories || []).filter((item) => item.amount > 0);
-        const visible = rows.slice(0, 5);
-        const remainder = rows
-          .slice(5)
-          .reduce((sum, item) => sum + Math.round(item.amount * 100), 0);
-        const chartRows = remainder
-          ? [...visible, { name: "其余分类", amount: remainder / 100 }]
-          : visible;
-        chart.setOption(
-          getChartOption({ ...this.data, categoryChart: chartRows }, "category"),
-          true
-        );
-        chart.on("click", (params) => {
-          if (params.dataIndex >= visible.length) return this.setData({ showAllCategories: true });
-          const index = (this.data.dashboardView.categories || []).findIndex(
-            (item) => item.key === visible[params.dataIndex].key
-          );
-          if (index >= 0) this.selectDashboardCategory({ currentTarget: { dataset: { index } } });
-        });
-      } else chart.setOption(getChartOption(this.data, key), true);
+      if (!chart) return;
+      this.secondaryCharts = this.secondaryCharts || {};
       this.secondaryCharts[key] = chart;
+      this.chartController.update(key);
     },
 
     onDashboardChartError() {
@@ -1187,7 +1183,10 @@ Component({
     },
 
     disposeSecondaryCharts() {
-      Object.values(this.secondaryCharts || {}).forEach((chart) => chart.dispose());
+      Object.keys(this.secondaryCharts || {}).forEach((key) => {
+        if (this.chartController) this.chartController.dispose(key);
+        else this.secondaryCharts[key].dispose();
+      });
       this.secondaryCharts = {};
     },
     onChartInitError() {
@@ -1209,12 +1208,9 @@ Component({
     },
 
     disposeChart() {
-      if (this.chart) this.chart.dispose();
+      if (this.chartController) this.chartController.dispose("main");
+      else if (this.chart) this.chart.dispose();
       this.chart = null;
-      if (this.isAttached) {
-        const component = this.selectComponent("#analysis-chart");
-        if (component && typeof component.setChart === "function") component.setChart(null);
-      }
     },
 
     reload() {
