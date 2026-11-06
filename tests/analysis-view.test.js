@@ -240,12 +240,20 @@ test("an older analysis response cannot replace a newer ledger selection", async
   const first = instance.loadAnalysis();
   instance.data.ledgerId = "second";
   const second = instance.loadAnalysis();
-  const result = (name, expense) => ({
-    ledger: { name, type: "personal" },
-    range: { label: "2026年10月" },
+  const result = (name, expense, ledgerId = "second") => ({
+    ledger: { _id: ledgerId, name, type: "personal" },
+    range: { start: "2026-10-01", end: "2026-11-01", label: "2026年10月" },
     trendMeta: { isPartial: true, asOf: "2026-10-13" },
-    overview: { recordCount: 1, expense },
-    dashboard: { total: expense, recordCount: 1 },
+    overview: { income: 0, expense, balance: -expense, recordCount: 1 },
+    dashboard: {
+      type: "expense",
+      total: expense,
+      recordCount: 1,
+      daily: [{ date: "2026-10-01", expense }],
+      categories: [{ amount: expense }],
+      accounts: [{ amount: expense }],
+      topRecords: [],
+    },
   });
   pending[1](result("新账本", 20));
   await second;
