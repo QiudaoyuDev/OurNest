@@ -7,6 +7,7 @@ const ledgerStore = require("../../services/ledger.store");
 const feedback = require("../../services/feedback-ui");
 const dataRefresh = require("../../services/data-refresh.service");
 const { createChartController } = require("./chart-controller");
+const { validateAnalysisResponse } = require("../../services/analysis-contract");
 const { formatDisplayMoney, formatMoney } = require("../../utils/money");
 const { makeDashboardView, dayAdd, categoryDisplayIcon } = require("./dashboard");
 const {
@@ -633,7 +634,10 @@ Component({
         activeSection: "summary",
       });
       try {
-        const result = decorate(await ledgerService.getAnalysis(request));
+        const rawResult = await ledgerService.getAnalysis(request);
+        if (!this.isAttached || requestId !== this.analysisRequestId) return;
+        if (!rawResult.noLedger && rawResult.ledger) validateAnalysisResponse(rawResult, request);
+        const result = decorate(rawResult);
         if (!this.isAttached || requestId !== this.analysisRequestId) return;
         if (result.noLedger || !result.ledger) {
           this.setData({ loading: false, noLedger: true });
