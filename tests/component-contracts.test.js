@@ -204,8 +204,12 @@ test("budget progress clamps invalid percentages and skeleton rejects unknown va
 test("index shell page lazily mounts and preserves visited tabs across switches", () => {
   const filename = path.resolve("miniprogram/pages/index/index.js");
   let definition;
+  const requireFromIndex = createRequire(filename);
   vm.runInNewContext(fs.readFileSync(filename, "utf8"), {
-    require: createRequire(filename),
+    require: (name) =>
+      name.includes("ledger.store")
+        ? { subscribeSync: () => () => {}, syncLedgers: () => Promise.resolve({}) }
+        : requireFromIndex(name),
     Page(value) {
       definition = value;
     },
