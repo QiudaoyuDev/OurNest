@@ -273,69 +273,6 @@
             </tl-empty-state>
           </view>
         </block>
-        <block wx:elif="{{mode === 'calendar'}}">
-          <view class="showcase-section calendar-first-head fade-up">
-            <text class="section-kicker">消费日历</text>
-          </view>
-          <view class="calendar-card card fade-up">
-            <view class="calendar-weekdays">
-              <text>日</text>
-              <text>一</text>
-              <text>二</text>
-              <text>三</text>
-              <text>四</text>
-              <text>五</text>
-              <text>六</text>
-            </view>
-            <view class="calendar-grid">
-              <view wx:for="{{calendarCells}}" wx:key="key" class="calendar-cell {{item.blank ? 'is-blank' : ''}} {{item.isActive ? 'is-active' : ''}} {{item.isToday ? 'is-today' : ''}}" data-date="{{item.date}}" bindtap="selectCalendarDay">
-                <text wx:if="{{!item.blank}}" class="calendar-day">{{item.day}}</text>
-                <view wx:if="{{!item.blank}}" class="calendar-money">
-                  <text class="calendar-expense">-{{item.expenseText}}</text>
-                  <text class="calendar-income">+{{item.incomeText}}</text>
-                </view>
-              </view>
-            </view>
-          </view>
-          <view class="showcase-section fade-up">
-            <text class="section-kicker">本月关注</text>
-          </view>
-          <view class="showcase-insights card fade-up">
-            <view wx:for="{{insights}}" wx:key="*this" class="showcase-insight">
-              <text class="insight-label neutral">提示</text>
-              <text>{{item}}</text>
-            </view>
-          </view>
-          <view class="calendar-list-head fade-up">
-            <view>
-              <text class="section-kicker">{{selectedCalendarDateLabel}}</text>
-              <text class="calendar-list-count">共 {{selectedCalendarSummary.count}} 笔</text>
-            </view>
-            <view class="calendar-day-total">
-              <text class="is-income">+¥{{selectedCalendarSummary.incomeText}}</text>
-              <text class="is-expense">-¥{{selectedCalendarSummary.expenseText}}</text>
-            </view>
-          </view>
-          <view wx:if="{{selectedCalendarRecords.length}}" class="calendar-detail-list card fade-up">
-            <view wx:for="{{selectedCalendarRecords}}" wx:key="_id" class="record-row calendar-detail-row">
-              <view class="category-mark {{item.type}}">
-                <tl-icon name="{{item.iconName}}" size="32" colorKey="{{item.type === 'income' ? 'income' : 'primary'}}">
-                </tl-icon>
-              </view>
-              <view class="record-main">
-                <view class="record-line">
-                  <text class="record-title">{{item.categoryText}}</text>
-                  <text class="record-amount {{item.type}}">{{item.type === 'income' ? '+' : '-'}}¥{{item.amountText}}</text>
-                </view>
-                <view class="record-line record-subline">
-                  <text class="record-meta">{{item.metaText}}</text>
-                </view>
-                <text wx:if="{{item.hasNote}}" class="record-note">{{item.noteText}}</text>
-              </view>
-            </view>
-          </view>
-          <view wx:else class="calendar-record-empty card fade-up">当天还没有收支记录</view>
-        </block>
         <block wx:elif="{{mode === 'custom'}}">
           <view class="custom-range card">
             <text class="card-title">选择日期范围</text>
@@ -427,7 +364,7 @@
             </view>
           </view>
         </block>
-        <tl-empty-state wx:else title="暂无可展示的分析" description="请选择月度、年度或日历查看账本数据">
+        <tl-empty-state wx:else title="暂无可展示的分析" description="请选择周度、月度、年度或自定义查看账本数据">
         </tl-empty-state>
         <block wx:if="{{family && ((analysisType === 'expense' && (mode === 'week' || mode === 'month' || mode === 'year')) || mode === 'custom')}}">
           <view id="analysis-family">

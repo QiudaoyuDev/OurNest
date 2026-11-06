@@ -11,7 +11,6 @@ const {
 const {
   comparisonText,
   decorate,
-  decorateCalendar,
 } = require("../miniprogram/components/tl-tab-analysis/view-model");
 const {
   getChartOption,
@@ -22,6 +21,27 @@ const {
   calendarAmount,
   categoryDisplayIcon,
 } = require("../miniprogram/components/tl-tab-analysis/dashboard");
+
+test("analysis offers supported modes without removed views", () => {
+  const filename = path.resolve("miniprogram/components/tl-tab-analysis/index.js");
+  let definition;
+  vm.runInNewContext(fs.readFileSync(filename, "utf8").replace(/^import .*;\r?\n/, ""), {
+    getApp: () => ({}),
+    require: createRequire(filename),
+    Component: (value) => {
+      definition = value;
+    },
+  });
+  assert.deepEqual(
+    Array.from(definition.data.modeOptions, (item) => item.value),
+    ["week", "month", "year", "custom", "all"]
+  );
+  assert.ok(
+    !JSON.parse(fs.readFileSync("miniprogram/app.json", "utf8")).pages.includes(
+      "pages/analysis-comparison/index"
+    )
+  );
+});
 
 test("category display icons prefer valid configuration then valid historical icon", () => {
   assert.equal(
@@ -93,32 +113,13 @@ test("dashboard weekly bars align the previous period across a year boundary", (
   assert.equal(view.bars[4].future, true);
 });
 
-test("analysis dates cross year boundaries and calendar preserves leap-day records", () => {
+test("analysis dates cross year boundaries", () => {
   assert.equal(shiftMonth("2026-01", -1), "2025-12");
   assert.equal(shiftMonth("2026-12", 1), "2027-01");
   assert.equal(
     formatAnalysisRangeLabel("custom", "", "2024-02-01 至 2024-02-29"),
     "2024-02-01 至 2024-02-29"
   );
-  const calendar = decorateCalendar(
-    {
-      range: { start: "2024-02-01" },
-      calendarDays: [{ date: "2024-02-29", income: 100, expense: 25.5, recordCount: 2 }],
-      calendarRecords: [
-        { _id: "income", date: "2024-02-29", type: "income", amount: 100 },
-        { _id: "expense", date: "2024-02-29", type: "expense", amount: 25.5, note: "午餐" },
-      ],
-    },
-    "2024-02-29"
-  );
-  assert.equal(calendar.calendarCells.filter((cell) => !cell.blank).length, 29);
-  assert.equal(calendar.calendarCells.filter((cell) => cell.blank).length, 4);
-  assert.equal(calendar.selectedCalendarSummary.count, 2);
-  assert.equal(calendar.selectedCalendarSummary.expenseText, "25.50");
-  assert.equal(calendar.selectedCalendarRecords[1].noteText, "午餐");
-  const nextMonth = decorateCalendar({ range: { start: "2024-03-01" } }, "2024-02-29");
-  assert.equal(nextMonth.selectedCalendarDate, "2024-03-01");
-  assert.deepEqual(nextMonth.selectedCalendarRecords, []);
 });
 
 test("custom analysis supports bounded selection and category and day drill-down", () => {
@@ -266,116 +267,6 @@ test("negative balance from a zero baseline is not described as returning to zer
     comparisonText({ enabled: true, balance: { direction: "down", rate: null } }, "balance"),
     "上期为 0"
   );
-});
-
-test("comparison periods cross years and preserve category identities and zero baselines", () => {
-  const {
-    recentPeriods,
-    makeCategoryOptions,
-    comparisonRows,
-  } = require("../miniprogram/pages/analysis-comparison/view-model");
-  assert.deepEqual(recentPeriods("month", 3, new Date(2026, 0, 10)), [
-    "2025-11",
-    "2025-12",
-    "2026-01",
-  ]);
-  const periods = [
-    {
-      key: "2025",
-      overview: { income: 0, expense: 0, balance: 0 },
-      expenseCategories: [],
-      incomeCategories: [],
-    },
-    {
-      key: "2026",
-      overview: { income: 0, expense: 5, balance: -5 },
-      expenseCategories: [{ key: "id-food", categoryId: "food", name: "餐饮", amount: 5 }],
-      incomeCategories: [],
-    },
-  ];
-  const categories = makeCategoryOptions(periods);
-  assert.equal(categories[1].categoryFilter.id, "food");
-  const rows = comparisonRows(periods, categories[1]);
-  assert.equal(rows[0].amountText, "0");
-  assert.match(rows[1].changeText, /基准为 0/);
-  assert.equal(rows[1].amountText, "5");
-});
-
-test("comparison trend widths preserve zeros and negative balance magnitudes", () => {
-  const { comparisonRows } = require("../miniprogram/pages/analysis-comparison/view-model");
-  const rows = comparisonRows(
-    [
-      { key: "2025", overview: { income: 0, expense: 0, balance: 0 } },
-      { key: "2026", overview: { income: 3, expense: 8, balance: -5 } },
-    ],
-    { value: "all" }
-  );
-  assert.equal(rows[0].balanceWidth, 0);
-  assert.equal(rows[1].expenseWidth, 100);
-  assert.equal(rows[1].balanceWidth, 62.5);
-  assert.equal(rows[1].chartBalance, -5);
-});
-
-test("category comparison scales small values independently from ledger totals", () => {
-  const { comparisonRows } = require("../miniprogram/pages/analysis-comparison/view-model");
-  const rows = comparisonRows(
-    [
-      {
-        overview: { income: 1000, expense: 500, balance: 500 },
-        expenseCategories: [{ key: "food", amount: 0.01 }],
-      },
-      {
-        overview: { income: 2000, expense: 800, balance: 1200 },
-        expenseCategories: [{ key: "food", amount: 0.02 }],
-      },
-    ],
-    { value: "expense:food", type: "expense", key: "food" }
-  );
-  assert.equal(rows[0].amountWidth, 50);
-  assert.equal(rows[1].amountWidth, 100);
-});
-
-test("family comparison preserves payer and consumer views across periods", () => {
-  const {
-    makeFamilyOptions,
-    makeCategoryOptions,
-    comparisonRows,
-  } = require("../miniprogram/pages/analysis-comparison/view-model");
-  const category = { key: "food-id", categoryId: "food", name: "餐饮", amount: 10 };
-  const periods = [
-    {
-      key: "2025",
-      overview: { income: 0, expense: 10, balance: -10 },
-      family: {
-        payers: [{ openid: "a", name: "甲", amount: 10, categories: [category] }],
-        consumers: [{ openid: "b", name: "乙", amount: 10, categories: [category] }],
-      },
-      creators: [],
-    },
-    {
-      key: "2026",
-      overview: { income: 0, expense: 20, balance: -20 },
-      family: {
-        payers: [
-          { openid: "a", name: "甲", amount: 20, categories: [{ ...category, amount: 20 }] },
-        ],
-        consumers: [
-          { openid: "b", name: "乙", amount: 20, categories: [{ ...category, amount: 20 }] },
-        ],
-      },
-      creators: [],
-    },
-  ];
-  const families = makeFamilyOptions(periods);
-  const payer = families.find((item) => item.dimension === "payer" && item.openid === "a");
-  const consumer = families.find((item) => item.dimension === "consumer" && item.openid === "b");
-  assert.ok(payer && consumer);
-  const categories = makeCategoryOptions(periods, payer);
-  const rows = comparisonRows(periods, categories[1], payer);
-  assert.equal(rows[0].chartAmount, 10);
-  assert.equal(rows[1].chartAmount, 20);
-  assert.match(rows[1].changeText, /100%/);
-  assert.equal(categories[1].categoryFilter.id, "food");
 });
 
 function trendDrillDown(data) {

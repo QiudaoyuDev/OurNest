@@ -883,39 +883,6 @@ test("record-filtered automatically reloads when records change in the viewed le
   assert.equal(calls.length, 2);
 });
 
-test("comparison ignores an older response after switching the time range", async () => {
-  const pending = [deferred(), deferred()];
-  let call = 0;
-  const definition = load("miniprogram/pages/analysis-comparison/index.js", {
-    "../../services/ledger.service": { getPeriodComparison: () => pending[call++].promise },
-  });
-  const page = instance(definition);
-  page.ledgerId = "ledger";
-  page.requestId = 0;
-  page.data.selected = ["2025-01", "2025-02"];
-  const old = page.load();
-  page.data.selected = ["2025-03", "2025-04"];
-  const current = page.load();
-  const period = (key, expense) => ({
-    key,
-    overview: { income: 0, expense, balance: -expense },
-    expenseCategories: [],
-    incomeCategories: [],
-  });
-  pending[1].resolve({
-    ledger: { name: "新账本" },
-    periods: [period("2025-03", 3), period("2025-04", 4)],
-  });
-  await current;
-  pending[0].resolve({
-    ledger: { name: "旧数据" },
-    periods: [period("2025-01", 1), period("2025-02", 2)],
-  });
-  await old;
-  assert.equal(page.data.ledgerName, "新账本");
-  assert.equal(page.data.rows[0].key, "2025-03");
-});
-
 test("source import requires an explicit category choice before submitting", async () => {
   let submitted;
   const notices = [];

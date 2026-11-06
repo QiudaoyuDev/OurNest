@@ -13,7 +13,6 @@ const {
   dateAnchor,
   customRangeDefaults,
   shiftMonth,
-  formatCalendarDateLabel,
   formatAnalysisRangeLabel,
 } = require("./dates");
 const {
@@ -21,8 +20,6 @@ const {
   comparisonLabel,
   decorateRanking,
   getDetailRows,
-  summarizeCalendarRecords,
-  decorateCalendar,
   decorateTopExpenseRecords,
   decorate,
   getRanking,
@@ -66,10 +63,8 @@ Component({
       { value: "week", label: "周度" },
       { value: "month", label: "月度" },
       { value: "year", label: "年度" },
-      { value: "calendar", label: "日历" },
       { value: "custom", label: "自定义" },
       { value: "all", label: "累计" },
-      { value: "comparison", label: "多期对比" },
     ],
     modeIndex: 1,
     modeLabel: "\u6708\u5ea6",
@@ -113,12 +108,6 @@ Component({
     hasInsights: false,
     insightGroups: { up: [], down: [], neutral: [] },
     insights: [],
-    calendarAnchor: "",
-    selectedCalendarDate: "",
-    selectedCalendarDateLabel: "",
-    calendarCells: [],
-    calendarRecordsByDate: {},
-    selectedCalendarRecords: [],
     monthlyTopRecords: [],
     yearRankingType: "expense",
     yearRankingRows: [],
@@ -549,10 +538,6 @@ Component({
             : this.data.activeChart;
         const meta = CHART_META[chartType];
         const activeDetailRows = getDetailRows(result, chartType);
-        const calendarData =
-          request.mode === "calendar"
-            ? decorateCalendar(result, this.data.selectedCalendarDate)
-            : {};
         const nextData = {
           ...result,
           dashboardView: makeDashboardView(
@@ -561,7 +546,6 @@ Component({
             request.analysisType || "expense",
             dateAnchor()
           ),
-          ...calendarData,
           loading: false,
           ledgerName: result.ledger.name,
           ledgerType: result.ledger.type,
@@ -572,7 +556,7 @@ Component({
           activeChart: chartType,
           chartTitle: meta.title,
           chartSubtitle: meta.subtitle,
-          hasRecords: request.mode === "calendar" || Number(result.overview.recordCount || 0) > 0,
+          hasRecords: Number(result.overview.recordCount || 0) > 0,
           hasChartData: hasChartData(result, chartType),
           activeRanking: decorateRanking(
             ["category", "monthRatio", "yearRatio"].includes(chartType)
@@ -691,26 +675,17 @@ Component({
     chooseMode(event) {
       const mode = event.currentTarget.dataset.mode;
       this.closeModeSheet();
-      if (mode === "comparison") {
-        return this.openComparison();
-      }
       this.setAnalysisMode(mode);
     },
 
     switchMode(event) {
       const mode = event.currentTarget.dataset.mode;
-      if (mode === "comparison") {
-        return this.openComparison();
-      }
       this.setAnalysisMode(mode);
     },
 
     selectMode(event) {
       const option = this.data.modeOptions[Number(event.detail.value)];
       if (!option) return;
-      if (option.value === "comparison") {
-        return this.openComparison();
-      }
       this.setAnalysisMode(option.value);
     },
 
@@ -724,7 +699,7 @@ Component({
       const reference =
         oldMode === "year"
           ? `${oldAnchor}-12-31`
-          : oldMode === "month" || oldMode === "calendar"
+          : oldMode === "month"
             ? `${oldAnchor}-01`
             : oldMode === "week" && this.data.range && this.data.range.start
               ? this.data.range.start
@@ -755,9 +730,7 @@ Component({
               ? selectedMonth
               : mode === "year"
                 ? referenceYear
-                : mode === "calendar"
-                  ? monthAnchor()
-                  : "",
+                : "",
       };
       if (mode === "custom") {
         nextData.customStart = this.data.customStart || customRange.start;
@@ -812,8 +785,6 @@ Component({
         const anchor = String(Number(this.data.anchor) + delta);
         if (anchor > dateAnchor().slice(0, 4)) return;
         this.setData({ anchor });
-      } else if (this.data.mode === "calendar") {
-        this.setData({ anchor: shiftMonth(this.data.anchor, delta), selectedCalendarDate: "" });
       }
       this.loadAnalysis();
     },
@@ -837,27 +808,6 @@ Component({
       this.setData({
         yearRankingType: type,
         yearRankingRows: type === "income" ? this.data.incomeCategories : this.data.categories,
-      });
-    },
-
-    selectCalendarDay(event) {
-      const selectedCalendarDate = event.currentTarget.dataset.date;
-      if (!selectedCalendarDate) return;
-      const selectedRecords = this.data.calendarRecordsByDate[selectedCalendarDate] || [];
-      const selectedSummary = summarizeCalendarRecords(selectedRecords);
-      this.setData({
-        selectedCalendarDate,
-        selectedCalendarDateLabel: formatCalendarDateLabel(selectedCalendarDate),
-        selectedCalendarRecords: selectedRecords,
-        selectedCalendarSummary: {
-          incomeText: formatDisplayMoney(selectedSummary.income),
-          expenseText: formatDisplayMoney(selectedSummary.expense),
-          count: selectedSummary.count,
-        },
-        calendarCells: this.data.calendarCells.map((item) => ({
-          ...item,
-          isActive: item.date === selectedCalendarDate,
-        })),
       });
     },
 
@@ -885,13 +835,6 @@ Component({
         },
         () => this.renderChart()
       );
-    },
-
-    openComparison() {
-      if (!this.data.ledgerId) return;
-      wx.navigateTo({
-        url: `/pages/analysis-comparison/index?ledgerId=${encodeURIComponent(this.data.ledgerId)}`,
-      });
     },
 
     openCategoryRecords(event) {

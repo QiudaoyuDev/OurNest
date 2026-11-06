@@ -19,8 +19,7 @@
     "pages/record-detail/index",
     "pages/record-edit/index",
     "pages/record-import/index",
-    "pages/record-filtered/index",
-    "pages/analysis-comparison/index"
+    "pages/record-filtered/index"
   ],
   "window": {
     "backgroundColor": "#FFF7F2",

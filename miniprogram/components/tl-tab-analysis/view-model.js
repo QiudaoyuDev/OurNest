@@ -1,12 +1,5 @@
 const { formatDisplayMoney } = require("../../utils/money");
-const {
-  monthAnchor,
-  dateAnchor,
-  isCurrentMonthAnchor,
-  isCurrentYearAnchor,
-  getCalendarSelectedDate,
-  formatCalendarDateLabel,
-} = require("./dates");
+const { isCurrentMonthAnchor, isCurrentYearAnchor } = require("./dates");
 
 function amount(value) {
   return Number(value || 0);
@@ -71,79 +64,6 @@ function getDetailRows(data, chartType) {
         ? data.incomeCategories
         : getRanking(data, chartType);
   return decorateRanking(rows || []);
-}
-
-function summarizeCalendarRecords(records = []) {
-  return records.reduce(
-    (summary, item) => {
-      summary[item.type] += amount(item.amount);
-      summary.count += 1;
-      return summary;
-    },
-    { income: 0, expense: 0, count: 0 }
-  );
-}
-
-function decorateCalendar(data = {}, selectedDate) {
-  const range = data.range || {};
-  const anchor = range.start ? range.start.slice(0, 7) : monthAnchor();
-  const selected = getCalendarSelectedDate(anchor, selectedDate);
-  const summaries = (data.calendarDays || []).reduce((result, item) => {
-    result[item.date] = item;
-    return result;
-  }, {});
-  const recordsByDate = (data.calendarRecords || []).reduce((result, item) => {
-    result[item.date] = result[item.date] || [];
-    result[item.date].push({
-      ...item,
-      amountText: formatDisplayMoney(item.amount),
-      categoryText: item.categoryName || "\u5176\u4ed6",
-      typeLabel: item.type === "income" ? "\u6536\u5165" : "\u652f\u51fa",
-      iconName: item.categoryIcon || (item.type === "income" ? "wallet-3-line" : "bill-line"),
-      metaText: item.account || "\u672a\u8bbe\u7f6e\u8d26\u6237",
-      noteText: item.note || "",
-      hasNote: Boolean(item.note),
-    });
-    return result;
-  }, {});
-  const firstDay = new Date(anchor + "-01T00:00:00").getDay();
-  const days = new Date(Number(anchor.slice(0, 4)), Number(anchor.slice(5, 7)), 0).getDate();
-  const cells = Array.from({ length: firstDay }, (_, index) => ({
-    key: "blank-" + index,
-    blank: true,
-  }));
-  for (let day = 1; day <= days; day += 1) {
-    const date = anchor + "-" + String(day).padStart(2, "0");
-    const item = summaries[date] || {};
-    cells.push({
-      key: date,
-      date,
-      day,
-      isStriped: Math.floor((firstDay + day - 1) / 7) % 2 === 1,
-      incomeText: formatDisplayMoney(item.income),
-      expenseText: formatDisplayMoney(item.expense),
-      hasIncome: Number(item.income || 0) > 0,
-      hasExpense: Number(item.expense || 0) > 0,
-      hasRecords: Number(item.recordCount || 0) > 0,
-      isActive: date === selected,
-      isToday: date === dateAnchor(),
-    });
-  }
-  const selectedRecords = recordsByDate[selected] || [];
-  const selectedSummary = summarizeCalendarRecords(selectedRecords);
-  return {
-    calendarAnchor: anchor,
-    selectedCalendarDate: selected,
-    calendarCells: cells,
-    calendarRecordsByDate: recordsByDate,
-    selectedCalendarRecords: selectedRecords,
-    selectedCalendarDateLabel: formatCalendarDateLabel(selected),
-    selectedCalendarSummary: {
-      incomeText: formatDisplayMoney(selectedSummary.income),
-      expenseText: formatDisplayMoney(selectedSummary.expense),
-      count: selectedSummary.count,
-    },
-  };
 }
 
 function decorateInsightGroups(data = {}) {
@@ -232,8 +152,6 @@ module.exports = {
   decorateTrend,
   decorateTopExpenseRecords,
   getDetailRows,
-  summarizeCalendarRecords,
-  decorateCalendar,
   decorateInsightGroups,
   decorate,
   getRanking,
