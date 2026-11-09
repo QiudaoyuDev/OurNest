@@ -1,10 +1,10 @@
 // Settings 域：快捷金额与支付账户配置。
 const {
   db,
+  _,
   ok,
   fail,
   now,
-  bumpLedgerSyncRevision,
   getLedgerForUser,
   getLedgerRole,
   assertWritable,
@@ -26,12 +26,26 @@ async function updateQuickAmounts(openid, data = {}) {
   const quickAmounts = quickAmountsEnabled ? normalizeQuickAmounts(data.quickAmounts) : [];
   if (quickAmountsEnabled && !quickAmounts)
     return fail("快捷金额需设置 1-5 个有效金额", "INVALID_QUICK_AMOUNTS");
-  await db
-    .collection("ledgers")
-    .doc(ledger._id)
-    .update({ data: { quickAmountsEnabled, quickAmounts, updatedAt: now() } });
-  await bumpLedgerSyncRevision(ledger._id);
-  return ok({ ledger: { ...ledger, quickAmountsEnabled, quickAmounts } });
+  const updatedLedger = await db.runTransaction(async (transaction) => {
+    const ledgerRef = transaction.collection("ledgers").doc(ledger._id);
+    const currentLedger = (await ledgerRef.get()).data;
+    if (getLedgerRole(openid, currentLedger) === "readonly") throw new Error("READONLY_LEDGER");
+    await ledgerRef.update({
+      data: {
+        quickAmountsEnabled,
+        quickAmounts,
+        syncRevision: _.inc(1),
+        updatedAt: now(),
+      },
+    });
+    return {
+      ...currentLedger,
+      quickAmountsEnabled,
+      quickAmounts,
+      syncRevision: Number(currentLedger.syncRevision || 0) + 1,
+    };
+  });
+  return ok({ ledger: updatedLedger });
 }
 
 function normalizePaymentAccounts(values) {
@@ -47,12 +61,26 @@ async function updateAccounts(openid, data = {}) {
   assertWritable(role);
   const accounts = normalizePaymentAccounts(data.accounts);
   if (!accounts) return fail("支付账户需设置 1-12 个有效名称", "INVALID_PAYMENT_ACCOUNTS");
-  await db
-    .collection("ledgers")
-    .doc(ledger._id)
-    .update({ data: { accounts, accountsConfigured: true, updatedAt: now() } });
-  await bumpLedgerSyncRevision(ledger._id);
-  return ok({ ledger: { ...ledger, accounts, accountsConfigured: true } });
+  const updatedLedger = await db.runTransaction(async (transaction) => {
+    const ledgerRef = transaction.collection("ledgers").doc(ledger._id);
+    const currentLedger = (await ledgerRef.get()).data;
+    assertWritable(getLedgerRole(openid, currentLedger));
+    await ledgerRef.update({
+      data: {
+        accounts,
+        accountsConfigured: true,
+        syncRevision: _.inc(1),
+        updatedAt: now(),
+      },
+    });
+    return {
+      ...currentLedger,
+      accounts,
+      accountsConfigured: true,
+      syncRevision: Number(currentLedger.syncRevision || 0) + 1,
+    };
+  });
+  return ok({ ledger: updatedLedger });
 }
 
 module.exports = {

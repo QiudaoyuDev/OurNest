@@ -104,24 +104,6 @@ async function generateUniqueLedgerCode(field, options = {}) {
   return `${prefix}${Date.now().toString(36).toUpperCase()}`;
 }
 
-// --- 集合初始化 ---
-async function ensureCollections() {
-  const { db } = getDb();
-  const names = ["users", "ledgers", "categories", "records", "ledgerInvites", "ledgerOperations"];
-  await Promise.all(
-    names.map(async (name) => {
-      try {
-        await db.createCollection(name);
-      } catch (error) {
-        const message = error && (error.errMsg || error.message || "");
-        if (!message.includes("exist") && !message.includes("already")) {
-          console.warn(`ensure collection ${name} skipped`, error);
-        }
-      }
-    })
-  );
-}
-
 // --- 读取工具 ---
 function normalizeUserAvatar(user) {
   if (!user || typeof user.avatarUrl !== "string" || !user.avatarUrl.startsWith("/images/brand/")) {
@@ -183,21 +165,62 @@ function getCurrentMonthRange() {
 }
 
 // --- 跨域读取 ---
+function assertLedgerSyncRevision(ledger) {
+  if (
+    !ledger ||
+    typeof ledger.syncRevision !== "number" ||
+    !Number.isSafeInteger(ledger.syncRevision) ||
+    ledger.syncRevision < 1
+  ) {
+    const error = new Error("INVALID_LEDGER_REVISION");
+    error.code = "INVALID_LEDGER_REVISION";
+    throw error;
+  }
+  return ledger.syncRevision;
+}
+
+// Legacy ledgers predate syncRevision. Initialize only after re-reading the
+// ledger in an authorized transaction; never overwrite a value written by a
+// concurrent mutation and never turn malformed data into a valid revision.
+async function ensureLedgerSyncRevision(openid, ledgerId) {
+  if (!ledgerId) return null;
+  const { db } = getDb();
+  return db.runTransaction(async (transaction) => {
+    const ledgerRef = transaction.collection("ledgers").doc(ledgerId);
+    const ledger = (await ledgerRef.get()).data;
+    if (!ledger) return null;
+    if (getLedgerRole(openid, ledger) === "none") throw new Error("NO_LEDGER_ACCESS");
+    if (Object.prototype.hasOwnProperty.call(ledger, "syncRevision")) {
+      assertLedgerSyncRevision(ledger);
+      return ledger;
+    }
+    await ledgerRef.update({ data: { syncRevision: 1, updatedAt: now() } });
+    return { ...ledger, syncRevision: 1 };
+  });
+}
+
 async function getLedgerForUser(openid, ledgerId) {
   const { db } = getDb();
-  if (ledgerId) {
-    const ledgerRes = await db.collection("ledgers").doc(ledgerId).get();
-    return ledgerRes.data;
+  let selectedLedgerId = ledgerId;
+  if (!selectedLedgerId) {
+    const user = await getUser(openid);
+    selectedLedgerId = user && user.currentLedgerId;
+    if (!selectedLedgerId) {
+      const list = await db.collection("ledgers").where({ memberOpenids: openid }).limit(1).get();
+      selectedLedgerId = list.data[0] && list.data[0]._id;
+    }
   }
 
-  const user = await getUser(openid);
-  if (user && user.currentLedgerId) {
-    const ledgerRes = await db.collection("ledgers").doc(user.currentLedgerId).get();
-    return ledgerRes.data;
+  // The common path is a normal read: transactions are reserved for legacy
+  // ledgers that genuinely need their first revision initialized.
+  const ledger = await getLedgerById(selectedLedgerId);
+  if (!ledger) return null;
+  if (getLedgerRole(openid, ledger) === "none") throw new Error("NO_LEDGER_ACCESS");
+  if (Object.prototype.hasOwnProperty.call(ledger, "syncRevision")) {
+    assertLedgerSyncRevision(ledger);
+    return ledger;
   }
-
-  const list = await db.collection("ledgers").where({ memberOpenids: openid }).limit(1).get();
-  return list.data[0];
+  return ensureLedgerSyncRevision(openid, selectedLedgerId);
 }
 
 async function getUsersByOpenids(openids = []) {
@@ -331,12 +354,13 @@ Object.assign(module.exports, {
   randomLength,
   generateUniqueInviteToken,
   generateUniqueLedgerCode,
-  ensureCollections,
   // queries
   getUser,
   getLedgerById,
   listLedgersForUser,
   getLedgerForUser,
+  ensureLedgerSyncRevision,
+  assertLedgerSyncRevision,
   getUsersByOpenids,
   resolveUsersAvatarUrls,
   getRecordById,

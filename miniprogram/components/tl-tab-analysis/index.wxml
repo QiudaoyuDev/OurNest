@@ -105,7 +105,8 @@
       </tl-empty-state>
       <tl-empty-state wx:elif="{{noLedger}}" title="还没有可分析的账本" description="创建账本并记下第一笔收支后，这里会生成分析">
       </tl-empty-state>
-      <block wx:else>
+      <block>
+        <view class="analysis-content {{loading || error || noLedger ? 'is-analysis-hidden' : ''}}">
         <block wx:if="{{mode === 'week' || mode === 'month' || mode === 'year'}}">
           <view class="analysis-summary-card card dashboard-hero">
             <text class="section-kicker">{{rangeLabel}} · {{dashboardView.typeLabel}}</text>
@@ -211,8 +212,8 @@
               <text class="card-title">{{dashboardView.typeLabel}}分类</text>
               <view bindtap="toggleCategoryComparison">对比上期 {{compareCategories ? '●' : '○'}}</view>
             </view>
-            <view wx:if="{{dashboardView.recordCount}}" class="analysis-chart-canvas">
-              <ec-canvas id="dashboard-category-chart" canvas-id="dashboard-category-chart" data-chart-key="dashboardCategory" ec="{{ec}}" bind:init="onSecondaryChartInit" bind:initerror="onDashboardChartError">
+            <view wx:if="{{chartHostMounted && chartFirstReadyEver && dashboardView.recordCount}}" class="analysis-chart-canvas">
+              <ec-canvas id="dashboard-category-chart" canvas-id="dashboard-category-chart" data-chart-host="secondary" data-chart-key="dashboardCategory" data-chart-generation="{{chartHostGeneration}}" ec="{{ec}}" bind:init="onSecondaryChartInit" bind:initerror="onSecondaryChartInitError">
               </ec-canvas>
             </view>
             <text wx:if="{{dashboardChartError}}" class="dashboard-meta">图表加载失败，可查看下方分类列表。</text>
@@ -273,8 +274,8 @@
             </tl-empty-state>
           </view>
         </block>
-        <block wx:elif="{{mode === 'custom' || mode === 'all'}}">
-          <view wx:if="{{mode === 'custom'}}" class="custom-range card">
+        <block wx:elif="{{mode === 'custom'}}">
+          <view class="custom-range card">
             <text class="card-title">选择日期范围</text>
             <view class="custom-range__dates">
               <picker mode="date" value="{{customStart}}" end="{{customToday}}" bindchange="changeCustomStart">
@@ -290,78 +291,37 @@
           <view class="analysis-summary-card card dashboard-hero">
             <text class="section-kicker">{{mode === 'custom' ? '区间结余' : '累计结余'}}</text>
             <text class="summary-title">¥{{overview.balanceText}}</text>
-            <text class="summary-copy">共 {{overview.recordCount}} 笔</text>
+            <text class="summary-copy">收入 ¥{{overview.incomeText}} · 支出 ¥{{overview.expenseText}} · 共 {{overview.recordCount}} 笔</text>
+            <text wx:if="{{comparisonRange}}" class="summary-copy">对比 {{comparisonRange.start}} 起至 {{comparisonRange.end}} 前 · 结余 {{balanceCompareText}}</text>
             <view class="summary-metrics">
-              <view class="summary-metric">
-                <text>收入</text>
-                <text class="is-income">¥{{overview.incomeText}}</text>
-              </view>
-              <view class="summary-metric">
-                <text>支出</text>
-                <text class="is-expense">¥{{overview.expenseText}}</text>
-              </view>
-              <view class="summary-metric">
-                <text>结余</text>
-                <text>¥{{overview.balanceText}}</text>
-              </view>
+              <view class="summary-metric"><text>收入</text><text class="is-income">¥{{overview.incomeText}}</text></view>
+              <view class="summary-metric"><text>支出</text><text class="is-expense">¥{{overview.expenseText}}</text></view>
+              <view class="summary-metric"><text>结余</text><text>¥{{overview.balanceText}}</text></view>
             </view>
-            <text wx:if="{{mode === 'custom' && comparisonRange}}" class="summary-copy">对比 {{comparisonRange.start}} 起至 {{comparisonRange.end}} 前 · 结余 {{balanceCompareText}}</text>
           </view>
-          <view class="dashboard-card card">
-            <view class="dashboard-heading">
-              <text class="card-title">{{mode === 'custom' ? '区间收支走势' : '累计收支走势'}}</text>
-              <text class="dashboard-meta">{{mode === 'custom' ? '按日' : trendMeta.granularity === 'month' ? '按月' : '按年'}}</text>
+          <view class="showcase-section fade-up"><text class="section-kicker">{{mode === 'custom' ? '区间收支走势' : '累计收支走势'}}</text></view>
+          <view wx:if="{{chartHostMounted && chartFirstReadyEver && hasChartData}}" class="chart-card card">
+            <view class="analysis-chart-canvas">
+              <ec-canvas wx:if="{{mode === 'custom'}}" id="analysis-chart" canvas-id="analysis-chart" data-chart-host="main" data-chart-generation="{{chartHostGeneration}}" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError" force-use-old-canvas="true"></ec-canvas>
+              <ec-canvas wx:elif="{{mode === 'all'}}" id="analysis-chart" canvas-id="analysis-chart" data-chart-host="main" data-chart-generation="{{chartHostGeneration}}" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError" force-use-old-canvas="true"></ec-canvas>
             </view>
-            <block wx:if="{{hasChartData}}">
-              <view wx:if="{{!trendChartError}}" class="analysis-chart-canvas">
-                <ec-canvas id="analysis-chart" canvas-id="analysis-chart" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError">
-                </ec-canvas>
-              </view>
-              <view wx:if="{{trendChartError}}" class="dashboard-insight">
-                图表加载失败，仍可查看下方趋势明细。
-                <tl-button variant="text" size="small" bind:tap="retryTrendChart">重试图表</tl-button>
-              </view>
-              <view wx:if="{{selectedTrend}}" class="dashboard-row" bindtap="openSelectedTrend">
-                <view class="dashboard-row-content">
-                  <text>{{selectedTrend.label}}</text>
-                  <text class="dashboard-meta">收入 ¥{{selectedTrend.incomeText}} · 支出 ¥{{selectedTrend.expenseText}} · 结余 ¥{{selectedTrend.balanceText}}</text>
-                </view>
-                <text>查看明细 ›</text>
-              </view>
-              <view class="dashboard-subheading">趋势明细</view>
-              <view wx:for="{{trendRows}}" wx:key="key" wx:if="{{showTrendDetails || index < 6}}" class="dashboard-row" data-index="{{index}}" bindtap="openTrendRow">
-                <view class="dashboard-row-content">
-                  <text>{{item.label}}</text>
-                  <text class="dashboard-meta">收入 ¥{{item.incomeText}} · 支出 ¥{{item.expenseText}} · 结余 ¥{{item.balanceText}}</text>
-                </view>
-                <text>›</text>
-              </view>
-              <tl-button wx:if="{{trendRows.length > 6}}" variant="text" size="small" bind:tap="toggleTrendDetails">{{showTrendDetails ? '收起趋势明细' : '展开全部趋势明细'}}</tl-button>
-            </block>
-            <tl-empty-state wx:else title="暂无收支记录" description="记下收支后即可查看趋势">
-            </tl-empty-state>
+            <view wx:if="{{selectedTrend}}" class="dashboard-row" bindtap="openSelectedTrend"><text>{{selectedTrend.label}}</text><text>查看明细 ›</text></view>
+            <view class="dashboard-subheading">趋势明细</view>
+            <view wx:for="{{trendRows}}" wx:key="key" wx:if="{{showTrendDetails || index < 6}}" class="dashboard-row" data-index="{{index}}" bindtap="openTrendRow"><text>{{item.label}}</text><text>收入 ¥{{item.incomeText}} · 支出 ¥{{item.expenseText}} · 结余 ¥{{item.balanceText}}</text></view>
+            <tl-button wx:if="{{trendRows.length > 6}}" variant="text" size="small" bind:tap="toggleTrendDetails">{{showTrendDetails ? '收起趋势明细' : '展开全部趋势明细'}}</tl-button>
           </view>
-          <view class="dashboard-card card">
-            <view class="dashboard-heading">
-              <text class="card-title">{{analysisType === 'income' ? '收入' : '支出'}}分类</text>
-              <view class="dashboard-toggle">
-                <view class="dashboard-toggle-item {{analysisType === 'expense' ? 'is-active' : ''}}" data-type="expense" bindtap="changeAnalysisType">支出</view>
-                <view class="dashboard-toggle-item {{analysisType === 'income' ? 'is-active' : ''}}" data-type="income" bindtap="changeAnalysisType">收入</view>
-              </view>
+          <view wx:if="{{mode === 'all' && chartHostMounted && chartFirstReadyEver && rangeCategories.length}}" class="chart-card card">
+            <view wx:if="{{chartHostMounted && chartFirstReadyEver && categories.length}}" class="analysis-chart-canvas">
+              <ec-canvas id="all-category-chart" canvas-id="all-category-chart" data-chart-host="secondary" data-chart-key="category" data-chart-generation="{{chartHostGeneration}}" ec="{{ec}}" bind:init="onSecondaryChartInit" bind:initerror="onSecondaryChartInitError" force-use-old-canvas="true"></ec-canvas>
             </view>
+          </view>
+          <tl-empty-state wx:if="{{!hasChartData}}" title="暂无收支记录" description="选择其他日期范围查看"></tl-empty-state>
+          <view wx:if="{{rangeCategories.length}}" class="category-ranking card fade-up">
             <view wx:for="{{rangeCategories}}" wx:key="key" class="dashboard-row dashboard-category-row" data-index="{{index}}" bindtap="openRangeCategory">
-              <view class="dashboard-category-icon {{analysisType}}">
-                <tl-icon name="{{item.displayIcon}}" size="32" colorKey="{{analysisType === 'income' ? 'income' : 'primary'}}">
-                </tl-icon>
-              </view>
-              <view class="dashboard-row-content">
-                <text class="dashboard-row-title">{{item.name}}</text>
-                <text class="dashboard-meta">占比 {{item.rate}}%</text>
-              </view>
+              <view class="dashboard-category-icon {{analysisType}}"><tl-icon name="{{item.displayIcon}}" size="32" colorKey="{{analysisType === 'income' ? 'income' : 'primary'}}"></tl-icon></view>
+              <view class="dashboard-row-content"><text class="dashboard-row-title">{{item.name}}</text><text class="dashboard-meta">占比 {{item.rate}}%</text></view>
               <text class="dashboard-amount {{analysisType}}">¥{{item.amountText}} ›</text>
             </view>
-            <tl-empty-state wx:if="{{!rangeCategories.length}}" title="暂无分类数据">
-            </tl-empty-state>
           </view>
         </block>
         <tl-empty-state wx:else title="暂无可展示的分析" description="请选择周度、月度、年度或自定义查看账本数据">
@@ -448,6 +408,7 @@
             </view>
           </view>
         </block>
+        </view>
       </block>
       <view wx:if="{{sectionEndSpace}}" style="height: {{sectionEndSpace}}px;">
       </view>

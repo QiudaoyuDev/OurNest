@@ -120,6 +120,7 @@ Component({
     monthRecordCount: 0,
     latestRecordDate: "",
     latestRecordMonthLabel: "",
+    snapshotRevision: null,
     isError: false,
     records: [],
     currentRange: null,
@@ -134,6 +135,7 @@ Component({
     attached() {
       this.isAttached = true;
       this.recordsRequestId = 0;
+      this.snapshotRecoveryUsed = false;
       this.initialMonth = this.properties.initialMonth || "";
       this.bootstrap();
       this._onRecordsChanged = (result = {}) => {
@@ -192,6 +194,7 @@ Component({
     async loadRecords(range = this.data.currentRange, append = false) {
       if (!range || (append && (this.data.loading || !this.data.hasMore || this.data.loadingMore)))
         return;
+      if (!append) this.snapshotRecoveryUsed = false;
       const requestId = ++this.recordsRequestId;
       const ledgerId = this.data.ledgerId;
       if (!ledgerId) {
@@ -235,11 +238,16 @@ Component({
           type: this.data.activeType,
           pageSize: 30,
           cursor: append ? this.data.nextCursor : null,
+          metadataMode: append ? "none" : "full",
+          ...(append && this.data.snapshotRevision !== null
+            ? { expectedRevision: this.data.snapshotRevision }
+            : {}),
         });
         const page = (await resolveAvatarUrls(data.records || [], "memberAvatar")).map(
           normalizeRecord
         );
         if (!this.isAttached || requestId !== this.recordsRequestId) return;
+        if (!append) this.snapshotRecoveryUsed = false;
         const records = append ? [...this.data.records, ...page] : page;
         const latestRecordDate = data.latestRecordDate || "";
         const latestRecordMonthLabel = /^\d{4}-\d{2}-\d{2}$/.test(latestRecordDate)
@@ -252,19 +260,45 @@ Component({
           records,
           nextCursor: data.nextCursor || null,
           hasMore: Boolean(data.hasMore),
-          historyRecordCount: Number(data.historyRecordCount || 0),
-          rangeRecordCount: Number(data.rangeRecordCount || 0),
-          monthIncome: formatDisplayMoney((data.rangeSummary || {}).income),
-          monthExpense: formatDisplayMoney((data.rangeSummary || {}).expense),
-          monthRecordCount: Number(data.rangeRecordCount || 0),
-          latestRecordDate,
-          latestRecordMonthLabel,
+          historyRecordCount: append
+            ? this.data.historyRecordCount
+            : Number(data.historyRecordCount || 0),
+          rangeRecordCount: append
+            ? this.data.rangeRecordCount
+            : Number(data.rangeRecordCount || 0),
+          monthIncome: append
+            ? this.data.monthIncome
+            : formatDisplayMoney((data.rangeSummary || {}).income),
+          monthExpense: append
+            ? this.data.monthExpense
+            : formatDisplayMoney((data.rangeSummary || {}).expense),
+          monthRecordCount: append
+            ? this.data.monthRecordCount
+            : Number(data.rangeRecordCount || 0),
+          latestRecordDate: append ? this.data.latestRecordDate : latestRecordDate,
+          latestRecordMonthLabel: append
+            ? this.data.latestRecordMonthLabel
+            : latestRecordMonthLabel,
+          snapshotRevision: append ? this.data.snapshotRevision : (data.snapshotRevision ?? null),
           readonly: Boolean(data.readonly),
           ledgerName: (data.ledger && data.ledger.name) || this.data.ledgerName,
           ...buildView(records, this.data.activeType),
         });
       } catch (error) {
         if (!this.isAttached || requestId !== this.recordsRequestId) return;
+        if (append && error && error.code === "RECORD_SNAPSHOT_CHANGED" && !this.snapshotRecoveryUsed) {
+          this.snapshotRecoveryUsed = true;
+          this.setData({
+            loading: false,
+            loadingMore: false,
+            records: [],
+            hasMore: false,
+            nextCursor: null,
+            snapshotRevision: null,
+            ...buildView([], this.data.activeType),
+          });
+          return this.loadRecords(range, false);
+        }
         console.warn("load records failed", error);
         this.setData(
           append

@@ -340,6 +340,39 @@ test("category creation checks migration state within the transaction and create
   assert.equal(ledgerWrites, 1);
 });
 
+test("category deletion rejects non-owner roles before creating an operation", async () => {
+  const module = { exports: {} };
+  const ledger = { _id: "ledger", ownerOpenid: "owner" };
+  vm.runInNewContext(
+    fs.readFileSync("cloudfunctions/ourNest/handlers/category.handler.js", "utf8"),
+    {
+      module,
+      exports: module.exports,
+      require: (name) => {
+        if (name.includes("category-tree")) return {};
+        if (name.includes("validators")) return {};
+        return {
+          db: {},
+          _: {},
+          now: () => "now",
+          assertLedgerId: () => {},
+          getLedgerForUser: async () => ledger,
+          getLedgerRole: () => "member",
+          getOperation: async () => null,
+          saveOperation: async () => {
+            throw new Error("must not create operation");
+          },
+          getCategoryById: async () => ({ _id: "category", ledgerId: "ledger" }),
+        };
+      },
+    }
+  );
+  await assert.rejects(
+    module.exports.removeCategory("member", { ledgerId: "ledger", categoryId: "category" }),
+    /ONLY_OWNER_CAN_DELETE_CATEGORY/
+  );
+});
+
 test("category deletion targets linked IDs as well as unlinked matching legacy records", async () => {
   const module = { exports: {} };
   const categories = {

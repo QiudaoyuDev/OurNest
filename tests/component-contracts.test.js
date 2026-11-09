@@ -34,6 +34,46 @@ function component(name, overrides = {}) {
   return { definition, instance, events };
 }
 
+function loadAnalysisComponentDefinition() {
+  const filename = path.resolve("miniprogram/components/tl-tab-analysis/index.js");
+  const realRequire = createRequire(filename);
+  let definition;
+  let getAnalysis = () => Promise.resolve({ noLedger: true });
+  vm.runInNewContext(fs.readFileSync(filename, "utf8").replace(/^import .*;\r?\n/, ""), {
+    getApp: () => ({ globalData: {} }),
+    require: (name) =>
+      name.includes("ledger.service")
+        ? { getAnalysis: (...args) => getAnalysis(...args) }
+        : realRequire(name),
+    Component: (value) => {
+      definition = value;
+    },
+    console,
+    setTimeout,
+  });
+  definition.__setGetAnalysis = (next) => {
+    getAnalysis = next;
+  };
+  return definition;
+}
+
+function makeAnalysisLifecycleInstance(definition, data, getAnalysis) {
+  definition.__setGetAnalysis(getAnalysis);
+  const instance = {
+    ...definition.methods,
+    data: { ...data },
+    isAttached: true,
+    clearRatioPreview() {},
+    disposeChart() {},
+    disposeSecondaryCharts() {},
+    setData(patch, callback) {
+      Object.assign(this.data, patch);
+      if (callback) callback();
+    },
+  };
+  return instance;
+}
+
 test("analysis record row preserves the record identity when opened", () => {
   const { instance, events } = component("tl-analysis-record");
   instance.data.record = { _id: "record-1", type: "income", categoryIcon: "funds-line" };
@@ -135,6 +175,87 @@ test("analysis uses the 2D-capable canvas path and record icons", () => {
   assert.doesNotMatch(chart[0], /force-use-old-canvas/);
   assert.match(template, /item\.displayIcon/);
   assert.match(template, /<tl-analysis-record/);
+});
+
+test("analysis chart hosts encode the loading and terminal-state invariant", () => {
+  const template = fs.readFileSync("miniprogram/components/tl-tab-analysis/index.wxml", "utf8");
+  const mainHosts = [...template.matchAll(/<ec-canvas\b[^>]*id="analysis-chart"[^>]*>/g)].map(
+    (match) => match[0]
+  );
+  assert.equal(mainHosts.length, 2);
+  mainHosts.forEach((host) => {
+    assert.match(
+      host,
+      /data-chart-host="main"[^>]*data-chart-generation="\{\{chartHostGeneration\}\}"/
+    );
+    assert.match(host, /bind:init="onChartInit"/);
+  });
+
+  // The host is absent on the first loading pass, but the same-context refresh
+  // may keep it mounted. The content is hidden and pointer-inert for that pass.
+  assert.match(
+    template,
+    /wx:if="\{\{chartHostMounted && chartFirstReadyEver && hasChartData\}\}" class="chart-card card"/
+  );
+  assert.match(
+    template,
+    /class="analysis-content \{\{loading \|\| error \|\| noLedger \? 'is-analysis-hidden' : ''\}\}"/
+  );
+  const style = fs.readFileSync("miniprogram/components/tl-tab-analysis/index.wxss", "utf8");
+  assert.match(style, /\.analysis-content\.is-analysis-hidden\s*\{[^}]*visibility:\s*hidden;/);
+  assert.match(style, /\.analysis-content\.is-analysis-hidden\s*\{[^}]*pointer-events:\s*none;/);
+
+  // Both cumulative and period chart hosts use the same lifecycle guard.
+  assert.match(
+    template,
+    /wx:if="\{\{chartHostMounted && chartFirstReadyEver && categories\.length\}\}" class="analysis-chart-canvas"/
+  );
+  assert.match(template, /id="all-category-chart"[^>]*bind:initerror="onSecondaryChartInitError"/);
+});
+
+test("analysis lifecycle keeps only ready same-context content and clears old hosts on failure", async () => {
+  const definition = loadAnalysisComponentDefinition();
+  const initial = definition.data;
+  const hostVisible = (state) =>
+    state.chartHostMounted && state.chartFirstReadyEver && state.hasChartData;
+  assert.equal(initial.loading, true);
+  assert.equal(hostVisible(initial), false);
+
+  const requests = [];
+  const ready = {
+    ...definition.data,
+    active: true,
+    foreground: true,
+    ledgerId: "ledger-1",
+    loading: false,
+    chartHostMounted: true,
+    chartFirstReadyEver: true,
+    hasChartData: true,
+  };
+  const instance = makeAnalysisLifecycleInstance(definition, ready, (request) => {
+    requests.push(request);
+    return Promise.resolve({ noLedger: true });
+  });
+  instance._analysisNodeContext = instance.getAnalysisRequestContext();
+  const refresh = instance.loadAnalysis();
+  assert.equal(instance.data.loading, true);
+  assert.equal(hostVisible(instance.data), true);
+  assert.equal(instance.data.error, false);
+  await refresh;
+  assert.equal(instance.data.noLedger, true);
+  assert.equal(instance.data.hasChartData, false);
+  assert.equal(instance.data.chartHostMounted, false);
+  assert.equal(hostVisible(instance.data), false);
+  assert.equal(requests.length, 1);
+
+  const failed = makeAnalysisLifecycleInstance(definition, { ...ready }, () =>
+    Promise.reject(new Error("network"))
+  );
+  await failed.loadAnalysis();
+  assert.equal(failed.data.error, true);
+  assert.equal(failed.data.hasChartData, false);
+  assert.equal(failed.data.chartHostMounted, false);
+  assert.equal(hostVisible(failed.data), false);
 });
 
 test("ledger switcher normalizes both ledger shapes and only emits selection events", () => {

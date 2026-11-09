@@ -26,6 +26,42 @@ const {
   summarizeRecords: summarizeAnalysisRecords,
 } = require("../analysis.helpers");
 
+function analysisSnapshotChangedError() {
+  const error = new Error("ANALYSIS_SNAPSHOT_CHANGED");
+  error.code = "ANALYSIS_SNAPSHOT_CHANGED";
+  return error;
+}
+
+function assertNoAnalysisCategoryMigration(ledger) {
+  if (ledger && ledger.categoryRepairState) throw new Error("CATEGORY_REPAIR_IN_PROGRESS");
+  if (ledger && ledger.categoryDeletionId) {
+    const error = new Error("分类迁移进行中，请稍后重试");
+    error.code = "CATEGORY_DELETION_IN_PROGRESS";
+    throw error;
+  }
+}
+
+function readAnalysisRevision(ledger) {
+  return ledger &&
+    typeof ledger.syncRevision === "number" &&
+    Number.isSafeInteger(ledger.syncRevision) &&
+    ledger.syncRevision >= 1
+    ? ledger.syncRevision
+    : null;
+}
+
+function assertAnalysisSnapshot(ledger, startRevision) {
+  assertNoAnalysisCategoryMigration(ledger);
+  const endRevision = readAnalysisRevision(ledger);
+  // A response is never safe to publish without both sides of the revision
+  // fence. Legacy initialization happens in getLedgerForUser; if a caller
+  // still observes a missing or malformed revision, fail closed instead of
+  // returning an unfenced result.
+  if (startRevision === null || endRevision === null || startRevision !== endRevision)
+    throw analysisSnapshotChangedError();
+  return endRevision;
+}
+
 function isAnalysisDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return false;
   const [year, month, day] = String(value).split("-").map(Number);
@@ -192,6 +228,20 @@ async function getAnalysisRecords(query, maxRecords = Infinity) {
     let queryBuilder = db
       .collection("records")
       .where(pageQuery)
+      .field({
+        _id: true,
+        date: true,
+        type: true,
+        amount: true,
+        account: true,
+        ownerOpenid: true,
+        familyAttribution: true,
+        categoryId: true,
+        categoryName: true,
+        parentCategory: true,
+        categoryIcon: true,
+        note: true,
+      })
       .orderBy("date", "asc")
       .orderBy("_id", "asc");
     if (typeof queryBuilder.skip === "function") {
@@ -211,6 +261,8 @@ async function getAnalysis(openid, data = {}) {
   if (!ledger) return ok({ noLedger: true });
   const role = getLedgerRole(openid, ledger);
   assertReadable(role);
+  assertNoAnalysisCategoryMigration(ledger);
+  const snapshotRevision = readAnalysisRevision(ledger);
   const mode = ["week", "month", "year", "calendar", "custom", "all"].includes(data.mode)
     ? data.mode
     : "month";
@@ -239,6 +291,13 @@ async function getAnalysis(openid, data = {}) {
       date: _.gte(start).and(_.lt(range.end)),
     });
   }
+  if (data.analysisView && mode === "year") {
+    const selectedYear = Number(range.start.slice(0, 4));
+    extendedRecords = await getAnalysisRecords({
+      ledgerId: ledger._id,
+      date: _.gte(`${selectedYear - 4}-01-01`).and(_.lt(range.end)),
+    });
+  }
   const records = extendedRecords
     ? extendedRecords.filter((record) => record.date >= range.start && record.date < range.end)
     : await getAnalysisRecords(query);
@@ -246,17 +305,19 @@ async function getAnalysis(openid, data = {}) {
   const isCurrentMonth = mode === "month" && range.start === currentMonthRange.start;
   let recentYearRecords = [];
   const selectedYear = mode === "year" ? Number(range.start.slice(0, 4)) : 0;
-  if (mode === "year" && selectedYear <= currentMonthRange.year && !data.analysisView) {
-    recentYearRecords = await getAnalysisRecords({
-      ledgerId: ledger._id,
-      date: _.gte(String(selectedYear - 4) + "-01-01").and(
-        _.lt(
-          selectedYear === currentMonthRange.year
-            ? addAnalysisDays(today, 1)
-            : String(selectedYear + 1) + "-01-01"
-        )
-      ),
-    });
+  if (mode === "year" && selectedYear <= currentMonthRange.year) {
+    recentYearRecords =
+      extendedRecords ||
+      (await getAnalysisRecords({
+        ledgerId: ledger._id,
+        date: _.gte(String(selectedYear - 4) + "-01-01").and(
+          _.lt(
+            selectedYear === currentMonthRange.year
+              ? addAnalysisDays(today, 1)
+              : String(selectedYear + 1) + "-01-01"
+          )
+        ),
+      }));
   }
   const previousRange = getPreviousAnalysisRange(mode, range, currentMonthRange);
   if (previousRange && extendedRecords) {
@@ -272,14 +333,23 @@ async function getAnalysis(openid, data = {}) {
   let recentMonths = [];
   if (data.analysisView && mode === "month") {
     const first = addMonth(range.year, range.month, -5);
-    recentMonths = Array.from({ length: 6 }, (_, index) => {
-      const month = addMonth(first.year, first.month, index);
-      const key = `${month.year}-${String(month.month).padStart(2, "0")}`;
-      const summary = summarizeAnalysisRecords(
-        extendedRecords.filter((record) => record.date.slice(0, 7) === key)
-      );
-      return { key, label: `${month.month}月`, income: summary.income, expense: summary.expense };
+    const buckets = new Map(
+      Array.from({ length: 6 }, (_, index) => {
+        const month = addMonth(first.year, first.month, index);
+        const key = `${month.year}-${String(month.month).padStart(2, "0")}`;
+        return [key, { key, label: `${month.month}月`, income: 0, expense: 0 }];
+      })
+    );
+    extendedRecords.forEach((record) => {
+      const bucket = buckets.get(record.date.slice(0, 7));
+      if (bucket)
+        bucket[record.type === "income" ? "income" : "expense"] += moneyCents(record.amount);
     });
+    recentMonths = Array.from(buckets.values(), (bucket) => ({
+      ...bucket,
+      income: bucket.income / 100,
+      expense: bucket.expense / 100,
+    }));
   }
   const hasDailyRange = ["week", "month", "year", "calendar", "custom"].includes(mode);
   const analysisEnd = hasDailyRange ? range.end : "";
@@ -454,14 +524,20 @@ async function getAnalysis(openid, data = {}) {
     }
     dashboard.categories = applyCategoryIcons(dashboard.categories, categoryRows);
   }
+  const finalLedger = await getLedgerForUser(openid, ledger._id);
+  const finalRole = getLedgerRole(openid, finalLedger);
+  assertReadable(finalRole);
+  const endRevision = assertAnalysisSnapshot(finalLedger, snapshotRevision);
+  const stableRevision = snapshotRevision !== null && endRevision !== null ? endRevision : null;
   return ok({
     ledger: {
-      _id: ledger._id,
-      name: ledger.name,
-      type: ledger.type || "personal",
+      _id: finalLedger._id,
+      name: finalLedger.name,
+      type: finalLedger.type || "personal",
     },
-    role,
-    readonly: role === "readonly",
+    role: finalRole,
+    readonly: finalRole === "readonly",
+    ...(stableRevision !== null ? { snapshotRevision: stableRevision } : {}),
     mode,
     range,
     ...(dashboard ? { dashboard } : {}),
@@ -635,6 +711,8 @@ async function getPeriodComparison(openid, data = {}) {
   const ledger = await getLedgerForUser(openid, data.ledgerId);
   const role = getLedgerRole(openid, ledger);
   assertReadable(role);
+  assertNoAnalysisCategoryMigration(ledger);
+  const snapshotRevision = readAnalysisRevision(ledger);
   const periods = getComparisonPeriods(data.unit, data.periods, getCurrentMonthRange());
   const start = periods.map((item) => item.start).sort()[0];
   const sortedEnds = periods.map((item) => item.end).sort();
@@ -674,9 +752,19 @@ async function getPeriodComparison(openid, data = {}) {
       item.creators = decorate(item.creators);
     });
   }
+  const finalLedger = await getLedgerForUser(openid, ledger._id);
+  const finalRole = getLedgerRole(openid, finalLedger);
+  assertReadable(finalRole);
+  const endRevision = assertAnalysisSnapshot(finalLedger, snapshotRevision);
+  const stableRevision = snapshotRevision !== null && endRevision !== null ? endRevision : null;
   return ok({
-    ledger: { _id: ledger._id, name: ledger.name, type: ledger.type || "personal" },
-    role,
+    ledger: {
+      _id: finalLedger._id,
+      name: finalLedger.name,
+      type: finalLedger.type || "personal",
+    },
+    role: finalRole,
+    ...(stableRevision !== null ? { snapshotRevision: stableRevision } : {}),
     unit: data.unit,
     periods: results,
   });
@@ -689,4 +777,6 @@ module.exports = {
   getAnalysisRange,
   getPreviousAnalysisRange,
   getTrendRange,
+  readAnalysisRevision,
+  assertAnalysisSnapshot,
 };

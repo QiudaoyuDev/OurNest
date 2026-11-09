@@ -5,13 +5,13 @@ const {
   ok,
   fail,
   now,
-  bumpLedgerSyncRevision,
   generateUniqueInviteToken,
   generateUniqueLedgerCode,
   getUser,
   getLedgerById,
   listLedgersForUser,
   getLedgerForUser,
+  ensureLedgerSyncRevision,
   getUsersByOpenids,
   resolveUsersAvatarUrls,
   getOperation,
@@ -117,40 +117,38 @@ async function updateLedger(openid, data = {}) {
 
 async function listLedgers(openid) {
   const ledgers = await listLedgersForUser(openid);
-  return ok({ ledgers });
+  const initialized = await Promise.all(
+    ledgers.map((ledger) => ensureLedgerSyncRevision(openid, ledger._id))
+  );
+  return ok({ ledgers: initialized.filter(Boolean) });
 }
 
 // --- 同步 ---
 
 function getLedgerRevisionMap(ledgers = []) {
   return ledgers.reduce((result, ledger) => {
-    result[ledger._id] = Number(ledger.syncRevision || 1);
+    result[ledger._id] = ledger.syncRevision;
     return result;
   }, {});
 }
 
 async function syncLedgers(openid, data = {}) {
-  const revisionRows =
+  const ledgerRows =
     (
       await db
         .collection("ledgers")
         .where(
           _.or([{ ownerOpenid: openid }, { memberOpenids: openid }, { viewerOpenids: openid }])
         )
-        .field({ _id: true, syncRevision: true })
+        .field({ _id: true })
         .get()
     ).data || [];
-  await Promise.all(
-    revisionRows
-      .filter((ledger) => !Number(ledger.syncRevision))
-      .map((ledger) =>
-        db
-          .collection("ledgers")
-          .doc(ledger._id)
-          .update({ data: { syncRevision: 1 } })
-      )
+  // Recheck authorization and revision in one transaction per ledger. This
+  // deliberately avoids a blind read-then-write migration race.
+  const revisionRows = await Promise.all(
+    ledgerRows.map((ledger) => ensureLedgerSyncRevision(openid, ledger._id))
   );
-  const revisions = getLedgerRevisionMap(revisionRows);
+  const revisions = getLedgerRevisionMap(revisionRows.filter(Boolean));
   const clientRevisions =
     data.revisions && typeof data.revisions === "object" && !Array.isArray(data.revisions)
       ? data.revisions
@@ -292,18 +290,23 @@ async function createLedgerInviteToken(openid, data = {}) {
   if (role !== "owner") throw new Error("ONLY_OWNER_CAN_INVITE");
   const mode = ledger.type === "shared" && data.mode === "member" ? "member" : "visitor";
   const token = await generateUniqueInviteToken();
-  await db.collection("ledgerInvites").add({
-    data: {
-      token,
-      ledgerId: ledger._id,
-      mode,
-      ownerOpenid: openid,
-      claimedOpenid: "",
-      createdAt: now(),
-      updatedAt: now(),
-    },
+  await db.runTransaction(async (transaction) => {
+    const ledgerRef = transaction.collection("ledgers").doc(ledger._id);
+    const currentLedger = (await ledgerRef.get()).data;
+    if (getLedgerRole(openid, currentLedger) !== "owner") throw new Error("ONLY_OWNER_CAN_INVITE");
+    await transaction.collection("ledgerInvites").add({
+      data: {
+        token,
+        ledgerId: ledger._id,
+        mode,
+        ownerOpenid: openid,
+        claimedOpenid: "",
+        createdAt: now(),
+        updatedAt: now(),
+      },
+    });
+    await ledgerRef.update({ data: { syncRevision: _.inc(1), updatedAt: now() } });
   });
-  await bumpLedgerSyncRevision(ledger._id);
   return ok({ token, mode });
 }
 

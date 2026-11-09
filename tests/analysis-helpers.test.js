@@ -122,6 +122,107 @@ test("dashboard keeps recent historical icon candidates for legacy categories", 
   assert.deepEqual(dashboard.categories[0].recordCategoryIcons, ["not-a-glyph", "bus-line"]);
 });
 
+test("analysis comparisons reject an interleaved ledger revision at the end fence", async () => {
+  const module = { exports: {} };
+  const ledgerReads = [
+    { _id: "ledger", name: "Ledger", syncRevision: 4, type: "personal" },
+    { _id: "ledger", name: "Ledger", syncRevision: 5, type: "personal" },
+  ];
+  const chain = {
+    where: () => chain,
+    field: () => chain,
+    orderBy: () => chain,
+    skip: () => chain,
+    limit: () => chain,
+    get: async () => ({ data: [] }),
+  };
+  vm.runInNewContext(
+    fs.readFileSync("cloudfunctions/ourNest/handlers/analysis.handler.js", "utf8"),
+    {
+      module,
+      exports: module.exports,
+      require: (modulePath) => {
+        if (modulePath.includes("shared/helpers"))
+          return {
+            db: { collection: () => chain },
+            _: {
+              gte: () => ({ and: () => ({}) }),
+              lt: () => ({}),
+            },
+            ok: (data) => ({ success: true, data }),
+            getLedgerForUser: async () => ledgerReads.shift(),
+            getLedgerRole: () => "readonly",
+            assertReadable: () => {},
+            getUsersByOpenids: async () => ({}),
+            getCurrentMonthRange: () => ({
+              year: 2026,
+              month: 3,
+              day: 13,
+              start: "2026-03-01",
+              end: "2026-04-01",
+            }),
+            makeDateText: (year, month, day) =>
+              `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+            addMonth: (year, month, delta) => {
+              const date = new Date(Date.UTC(year, month - 1 + delta, 1));
+              return { year: date.getUTCFullYear(), month: date.getUTCMonth() + 1 };
+            },
+          };
+        if (modulePath.includes("analysis.helpers"))
+          return require("../cloudfunctions/ourNest/analysis.helpers");
+        if (modulePath.includes("family.helpers"))
+          return require("../cloudfunctions/ourNest/family.helpers");
+        throw new Error(`unexpected module ${modulePath}`);
+      },
+    }
+  );
+
+  await assert.rejects(
+    module.exports.getPeriodComparison("visitor", {
+      ledgerId: "ledger",
+      unit: "month",
+      periods: ["2026-01", "2026-02"],
+    }),
+    (error) => error && error.code === "ANALYSIS_SNAPSHOT_CHANGED"
+  );
+});
+
+test("analysis fences deny category migration and preserve legacy revision uncertainty", () => {
+  const module = { exports: {} };
+  vm.runInNewContext(
+    fs.readFileSync("cloudfunctions/ourNest/handlers/analysis.handler.js", "utf8"),
+    {
+      module,
+      exports: module.exports,
+      require: (modulePath) =>
+        modulePath.includes("shared/helpers")
+          ? {
+              getCurrentMonthRange: () => ({ year: 2026, month: 3, day: 13 }),
+              makeDateText: (year, month, day) => `${year}-${month}-${day}`,
+              addMonth: () => ({ year: 2026, month: 3 }),
+            }
+          : {},
+    }
+  );
+  assert.throws(
+    () => module.exports.assertAnalysisSnapshot({ categoryDeletionId: "cat" }, 1),
+    (error) => error && error.code === "CATEGORY_DELETION_IN_PROGRESS"
+  );
+  assert.throws(
+    () => module.exports.assertAnalysisSnapshot({ categoryRepairState: { phase: "repair" } }, 1),
+    /CATEGORY_REPAIR_IN_PROGRESS/
+  );
+  assert.throws(
+    () => module.exports.assertAnalysisSnapshot({}, null),
+    (error) => error && error.code === "ANALYSIS_SNAPSHOT_CHANGED"
+  );
+  assert.throws(
+    () => module.exports.assertAnalysisSnapshot({ syncRevision: 1 }, 0),
+    (error) => error && error.code === "ANALYSIS_SNAPSHOT_CHANGED"
+  );
+  assert.equal(module.exports.readAnalysisRevision({ syncRevision: 0 }), null);
+});
+
 test("analysis handler marks current month and year trends as partial", () => {
   const module = { exports: {} };
   vm.runInNewContext(
@@ -315,6 +416,7 @@ test("empty current periods still compare with real previous records", async () 
   const module = { exports: {} };
   const rows = [{ date: "2026-02-10", type: "expense", amount: 42, ownerOpenid: "user" }];
   const categoryQueries = [];
+  const recordFields = [];
   const command = {
     gte: (start) => ({ and: (end) => ({ start, end }) }),
     lt: (end) => end,
@@ -336,25 +438,30 @@ test("empty current periods still compare with real previous records", async () 
             }
           : {
               where: (query) => ({
-                orderBy: () => ({
-                  orderBy: () => ({
-                    skip: () => ({
-                      limit: () => ({
-                        get: async () => ({
-                          data: rows.filter(
-                            (row) => row.date >= query.date.start && row.date < query.date.end
-                          ),
+                field: (fields) => {
+                  recordFields.push(fields);
+                  return {
+                    orderBy: () => ({
+                      orderBy: () => ({
+                        skip: () => ({
+                          limit: () => ({
+                            get: async () => ({
+                              data: rows.filter(
+                                (row) => row.date >= query.date.start && row.date < query.date.end
+                              ),
+                            }),
+                          }),
                         }),
                       }),
                     }),
-                  }),
-                }),
+                  };
+                },
               }),
             },
     },
     _: command,
     ok: (data) => data,
-    getLedgerForUser: async () => ({ _id: "ledger", type: "shared" }),
+    getLedgerForUser: async () => ({ _id: "ledger", type: "shared", syncRevision: 1 }),
     getLedgerRole: () => "owner",
     assertReadable: () => {},
     getUsersByOpenids: async () => ({}),
@@ -440,6 +547,13 @@ test("empty current periods still compare with real previous records", async () 
   assert.equal(dashboardMonth.recentMonths.length, 6);
   assert.equal(dashboardMonth.recentMonths[4].expense, 42);
   assert.equal(dashboardMonth.recentMonths[5].expense, 0);
+  const dashboardYear = await module.exports.getAnalysis("user", {
+    mode: "year",
+    anchor: "2026",
+    analysisView: true,
+    analysisType: "expense",
+  });
+  assert.equal(dashboardYear.recentYearTrend.at(-1).expense, 42);
   const currentYear = await module.exports.getAnalysis("user", { mode: "year", anchor: "2026" });
   assert.equal(currentYear.range.end, "2026-03-14");
   assert.equal(currentYear.overview.expense, 42);
@@ -491,6 +605,97 @@ test("empty current periods still compare with real previous records", async () 
   assert.equal(withCategory.dashboard.categories[0].recordCategoryIcon, "bus-line");
   assert.equal(categoryQueries[0].ledgerId, "ledger");
   assert.equal(categoryQueries[0]._id[0], "food");
+  assert.ok(recordFields.length >= 1);
+  assert.deepEqual(Object.keys(recordFields[0]).sort(), [
+    "_id",
+    "account",
+    "amount",
+    "categoryIcon",
+    "categoryId",
+    "categoryName",
+    "date",
+    "familyAttribution",
+    "note",
+    "ownerOpenid",
+    "parentCategory",
+    "type",
+  ]);
+});
+
+test("analysis record projection is applied independently to 100 and 101 row pages", async () => {
+  const module = { exports: {} };
+  const rows = Array.from({ length: 101 }, (_, index) => ({
+    _id: `record-${String(index).padStart(3, "0")}`,
+    date: "2026-01-01",
+    type: "expense",
+    amount: 1,
+  }));
+  const fields = [];
+  let pageReads = 0;
+  const chain = {
+    where: () => chain,
+    field: (projection) => {
+      fields.push(projection);
+      return chain;
+    },
+    orderBy: () => chain,
+    skip: () => chain,
+    limit: () => chain,
+    get: async () => ({ data: pageReads++ === 0 ? rows.slice(0, 100) : rows.slice(100) }),
+  };
+  const helpers = {
+    db: { collection: () => chain },
+    _: {
+      and: (...values) => values,
+      or: (...values) => values,
+      gte: (value) => value,
+      gt: (value) => value,
+      lt: (value) => value,
+    },
+    ok: (data) => data,
+    getLedgerForUser: async () => ({ _id: "ledger", type: "personal", syncRevision: 1 }),
+    getLedgerRole: () => "owner",
+    assertReadable: () => {},
+    getUsersByOpenids: async () => ({}),
+    getCurrentMonthRange: () => ({ year: 2026, month: 3, day: 13, start: "2026-03-01" }),
+    makeDateText: (year, month, day) =>
+      `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+    addMonth: (year, month, delta) => {
+      const date = new Date(Date.UTC(year, month - 1 + delta, 1));
+      return { year: date.getUTCFullYear(), month: date.getUTCMonth() + 1 };
+    },
+  };
+  vm.runInNewContext(
+    fs.readFileSync("cloudfunctions/ourNest/handlers/analysis.handler.js", "utf8"),
+    {
+      module,
+      exports: module.exports,
+      require: (path) =>
+        path.includes("shared/helpers")
+          ? helpers
+          : path.includes("family.helpers")
+            ? require("../cloudfunctions/ourNest/family.helpers")
+            : require("../cloudfunctions/ourNest/analysis.helpers"),
+    }
+  );
+  const result = await module.exports.getAnalysis("user", { mode: "all" });
+  assert.equal(result.overview.recordCount, 101);
+  assert.equal(pageReads, 2);
+  assert.equal(fields.length, 2);
+  assert.deepEqual(Object.keys(fields[0]).sort(), [
+    "_id",
+    "account",
+    "amount",
+    "categoryIcon",
+    "categoryId",
+    "categoryName",
+    "date",
+    "familyAttribution",
+    "note",
+    "ownerOpenid",
+    "parentCategory",
+    "type",
+  ]);
 });
 
 test("category grouping uses stable identifiers and distinguishes unlinked parents", () => {
