@@ -124,7 +124,12 @@ Page({
       });
     } catch (error) {
       if (requestId !== this.requestId) return;
-      if (append && error && error.code === "RECORD_SNAPSHOT_CHANGED" && !this.snapshotRecoveryUsed) {
+      if (
+        append &&
+        error &&
+        error.code === "RECORD_SNAPSHOT_CHANGED" &&
+        !this.snapshotRecoveryUsed
+      ) {
         this.snapshotRecoveryUsed = true;
         this.setData({
           loading: false,

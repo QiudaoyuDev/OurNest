@@ -110,3 +110,5 @@ references:
 - Owner 和成员的记录、账户等写入权限在云函数中重新校验；只读访客不能写入。
 - 邀请领取、分类迁移和账本删除的具体一致性要求见 [WRITE-SAFETY.md](./WRITE-SAFETY.md)。
 - 生产备份、迁移与恢复流程尚未落地，记录在 [`plan/PENDING.md`](../plan/PENDING.md)。
+
+- `ledger/analysis/get` 的累计模式可传 `autoTrend: true`：记录跨度不超过 24 个自然月时返回逐月趋势，否则按年；`trendMeta.granularity` 标明 `month` 或 `year`。`recordRange` 为首条记录日期至末条记录次日的前闭后开范围，空账本为 `null`。未传该参数时保留累计按年的旧行为。自定义趋势按日，范围最多 366 天。

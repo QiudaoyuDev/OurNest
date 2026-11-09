@@ -177,6 +177,27 @@ test("analysis uses the 2D-capable canvas path and record icons", () => {
   assert.match(template, /<tl-analysis-record/);
 });
 
+test("analysis cumulative branch includes all mode while custom pickers stay custom-only", () => {
+  const template = fs.readFileSync("miniprogram/components/tl-tab-analysis/index.wxml", "utf8");
+  const branch = template.match(
+    /<block\s+wx:elif="\{\{\s*(mode\s*===\s*'custom'\s*\|\|\s*mode\s*===\s*'all')\s*\}\}"\s*>([\s\S]*?)<\/block\s*>/
+  );
+  assert.ok(branch, "custom/all analysis branch is present");
+  const branchCondition = branch[1];
+  assert.equal(vm.runInNewContext(branchCondition, { mode: "custom" }), true);
+  assert.equal(vm.runInNewContext(branchCondition, { mode: "all" }), true);
+  assert.equal(vm.runInNewContext(branchCondition, { mode: "month" }), false);
+
+  const customRange = branch[2].match(
+    /<view\s+wx:if="\{\{\s*([^}]+?)\s*\}\}"\s+class="custom-range card"\s*>([\s\S]*?)<view\s+class="analysis-summary-card/
+  );
+  assert.ok(customRange, "custom date range is conditionally rendered");
+  assert.equal(vm.runInNewContext(customRange[1], { mode: "custom" }), true);
+  assert.equal(vm.runInNewContext(customRange[1], { mode: "all" }), false);
+  assert.equal([...customRange[2].matchAll(/<picker\b/g)].length, 2);
+  assert.equal([...branch[2].matchAll(/<picker\b/g)].length, 2);
+});
+
 test("analysis chart hosts encode the loading and terminal-state invariant", () => {
   const template = fs.readFileSync("miniprogram/components/tl-tab-analysis/index.wxml", "utf8");
   const mainHosts = [...template.matchAll(/<ec-canvas\b[^>]*id="analysis-chart"[^>]*>/g)].map(

@@ -113,6 +113,34 @@ function makeTrendBuckets(mode, range, records = []) {
     }));
 }
 
+function makeAllTimeTrend(records = []) {
+  if (!records.length) return { granularity: "month", buckets: [] };
+  const months = records.map((record) => String(record.date).slice(0, 7)).sort();
+  const first = months[0];
+  const last = months[months.length - 1];
+  const monthIndex = (value) => Number(value.slice(0, 4)) * 12 + Number(value.slice(5, 7)) - 1;
+  const count = monthIndex(last) - monthIndex(first) + 1;
+  if (count > 24) return { granularity: "year", buckets: makeTrendBuckets("all", {}, records) };
+  const buckets = {};
+  for (let index = monthIndex(first); index <= monthIndex(last); index += 1) {
+    const key = `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, "0")}`;
+    buckets[key] = { key, label: key, income: 0, expense: 0 };
+  }
+  records.forEach((record) => {
+    const bucket = buckets[record.date.slice(0, 7)];
+    bucket[record.type === "income" ? "income" : "expense"] += moneyCents(record.amount);
+  });
+  return {
+    granularity: "month",
+    buckets: Object.values(buckets).map((item) => ({
+      ...item,
+      income: item.income / 100,
+      expense: item.expense / 100,
+      balance: (item.income - item.expense) / 100,
+    })),
+  };
+}
+
 function makeRecentYearTrend(currentYear, records = [], yearCount = 5) {
   const safeCurrentYear = Number(currentYear);
   const safeYearCount = Math.max(1, Number(yearCount) || 5);
@@ -303,6 +331,7 @@ module.exports = {
   makeAnalysisDashboard,
   makeRecentYearTrend,
   makeTrendBuckets,
+  makeAllTimeTrend,
   moneyCents,
   roundMoney,
   summarizeRecords,

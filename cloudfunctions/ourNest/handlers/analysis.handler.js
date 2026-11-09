@@ -20,6 +20,7 @@ const {
   makeAnalysisDashboard,
   makeRecentYearTrend: makeAnalysisRecentYearTrend,
   makeTrendBuckets: makeAnalysisTrendBuckets,
+  makeAllTimeTrend,
   moneyCents,
   roundMoney: roundAnalysisMoney,
   summarizeRecords: summarizeAnalysisRecords,
@@ -367,6 +368,8 @@ async function getAnalysis(openid, data = {}) {
     (record) =>
       !trendRange.start || (record.date >= trendRange.start && record.date < trendRange.end)
   );
+  const allTimeTrend = mode === "all" && data.autoTrend ? makeAllTimeTrend(trendRecords) : null;
+  const recordDates = mode === "all" ? records.map((record) => record.date).sort() : [];
   const overview = summarizeAnalysisRecords(records);
   const previousOverview = summarizeAnalysisRecords(previousRecords);
   const expense = overview.expense;
@@ -562,8 +565,14 @@ async function getAnalysis(openid, data = {}) {
           ? Math.round((expense * 100) / Number(ledger.monthlyBudget || 0))
           : 0,
     },
-    trend: makeAnalysisTrendBuckets(mode, trendRange, trendRecords),
+    trend: allTimeTrend
+      ? allTimeTrend.buckets
+      : makeAnalysisTrendBuckets(mode, trendRange, trendRecords),
+    recordRange: recordDates.length
+      ? { start: recordDates[0], end: addAnalysisDays(recordDates[recordDates.length - 1], 1) }
+      : null,
     trendMeta: {
+      granularity: allTimeTrend ? allTimeTrend.granularity : mode === "custom" ? "day" : "",
       isPartial: trendRange.isPartial,
       asOf: trendRange.asOf,
     },
