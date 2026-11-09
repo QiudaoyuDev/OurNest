@@ -274,8 +274,8 @@
             </tl-empty-state>
           </view>
         </block>
-        <block wx:elif="{{mode === 'custom'}}">
-          <view class="custom-range card">
+        <block wx:elif="{{mode === 'custom' || mode === 'all'}}">
+          <view wx:if="{{mode === 'custom'}}" class="custom-range card">
             <text class="card-title">选择日期范围</text>
             <view class="custom-range__dates">
               <picker mode="date" value="{{customStart}}" end="{{customToday}}" bindchange="changeCustomStart">
