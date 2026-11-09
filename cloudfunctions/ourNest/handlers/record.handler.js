@@ -11,7 +11,6 @@ const {
   ok,
   fail,
   now,
-  bumpLedgerSyncRevision,
   getLedgerForUser,
   getUsersByOpenids,
   resolveUsersAvatarUrls,
@@ -72,7 +71,14 @@ async function resolveRecordCategory(ledgerId, type, categoryId, readCategory = 
 
 // --- 记录 CRUD ---
 
+function recordSnapshotChangedError() {
+  const error = new Error("RECORD_SNAPSHOT_CHANGED");
+  error.code = "RECORD_SNAPSHOT_CHANGED";
+  return error;
+}
+
 function assertNoCategoryMigration(ledger) {
+  if (ledger.categoryRepairState) throw new Error("CATEGORY_REPAIR_IN_PROGRESS");
   if (!ledger.categoryDeletionId) return;
   const error = new Error("分类迁移进行中，请稍后重试");
   error.code = "CATEGORY_DELETION_IN_PROGRESS";
@@ -223,6 +229,19 @@ async function listRecords(openid, data = {}) {
   const role = getLedgerRole(openid, ledger);
   assertReadable(role);
   const pageSize = Math.min(50, Math.max(1, Number(data.pageSize) || 30));
+  const metadataMode = ["full", "range", "none"].includes(data.metadataMode)
+    ? data.metadataMode
+    : data.metadataMode
+      ? (() => {
+          throw new Error("INVALID_METADATA_MODE");
+        })()
+      : "full";
+  assertNoCategoryMigration(ledger);
+  if (!Number.isFinite(ledger.syncRevision) || !Number.isInteger(ledger.syncRevision))
+    throw recordSnapshotChangedError();
+  const snapshotRevision = ledger.syncRevision;
+  if (data.expectedRevision !== undefined && Number(data.expectedRevision) !== snapshotRevision)
+    throw recordSnapshotChangedError();
   const baseQuery = { ledgerId: ledger._id };
   if (data.type && data.type !== "all") baseQuery.type = data.type;
   if (data.start && data.end) baseQuery.date = _.gte(data.start).and(_.lt(data.end));
@@ -271,16 +290,10 @@ async function listRecords(openid, data = {}) {
   if (data.categoryFilter) applyCategoryFilter(rangeQuery, data.categoryFilter);
   if (data.accountFilter) applyAccountFilter(rangeQuery, data.accountFilter);
   if (familyClause) rangeQuery = _.and([rangeQuery, familyClause]);
-  const [historyCountResult, rangeCountResult, rangeSummaryResult, latestRecordResult] =
-    await Promise.all([
-      db.collection("records").where(historyQuery).count(),
-      db.collection("records").where(rangeQuery).count(),
-      db
-        .collection("records")
-        .aggregate()
-        .match(rangeQuery)
-        .group({ _id: "$type", total: $.sum($.floor($.add([$.multiply(["$amount", 100]), 0.5]))) })
-        .end(),
+  const metadataRequests = [];
+  if (metadataMode === "full") {
+    metadataRequests.push(db.collection("records").where(historyQuery).count());
+    metadataRequests.push(
       db
         .collection("records")
         .where(historyQuery)
@@ -288,16 +301,35 @@ async function listRecords(openid, data = {}) {
         .orderBy("createdAt", "desc")
         .orderBy("_id", "desc")
         .limit(1)
-        .get(),
-    ]);
-  const rangeSummary = (rangeSummaryResult.list || []).reduce(
-    (summary, item) => {
-      if (item._id === "income") summary.income = Number(item.total || 0) / 100;
-      if (item._id === "expense") summary.expense = Number(item.total || 0) / 100;
-      return summary;
-    },
-    { income: 0, expense: 0 }
-  );
+        .get()
+    );
+  }
+  if (metadataMode !== "none") {
+    metadataRequests.push(db.collection("records").where(rangeQuery).count());
+    metadataRequests.push(
+      db
+        .collection("records")
+        .aggregate()
+        .match(rangeQuery)
+        .group({ _id: "$type", total: $.sum($.floor($.add([$.multiply(["$amount", 100]), 0.5]))) })
+        .end()
+    );
+  }
+  const metadata = await Promise.all(metadataRequests);
+  const historyCountResult = metadataMode === "full" ? metadata.shift() : null;
+  const latestRecordResult = metadataMode === "full" ? metadata.shift() : null;
+  const rangeCountResult = metadataMode !== "none" ? metadata.shift() : null;
+  const rangeSummaryResult = metadataMode !== "none" ? metadata.shift() : null;
+  const rangeSummary = rangeSummaryResult
+    ? (rangeSummaryResult.list || []).reduce(
+        (summary, item) => {
+          if (item._id === "income") summary.income = Number(item.total || 0) / 100;
+          if (item._id === "expense") summary.expense = Number(item.total || 0) / 100;
+          return summary;
+        },
+        { income: 0, expense: 0 }
+      )
+    : null;
   const result = await db
     .collection("records")
     .where(query)
@@ -312,15 +344,31 @@ async function listRecords(openid, data = {}) {
   const ownerMap = await resolveUsersAvatarUrls(
     await getUsersByOpenids(page.map((item) => item.ownerOpenid))
   );
+  // Re-read authorization and the ledger only after every record, metadata, and user read.
+  // A response is a stable snapshot only when the revision and migration fence are unchanged.
+  const finalLedger = await getLedgerForUser(openid, ledger._id);
+  const finalRole = getLedgerRole(openid, finalLedger);
+  assertReadable(finalRole);
+  assertNoCategoryMigration(finalLedger);
+  if (
+    !Number.isFinite(finalLedger.syncRevision) ||
+    !Number.isInteger(finalLedger.syncRevision) ||
+    finalLedger.syncRevision !== snapshotRevision
+  )
+    throw recordSnapshotChangedError();
   const last = page[page.length - 1];
   return ok({
     records: page.map((item) => attachRecordOwner(item, ownerMap, openid)),
     nextCursor: hasMore && last ? { date: last.date, id: last._id } : null,
     hasMore,
-    historyRecordCount: historyCountResult.total || 0,
-    rangeRecordCount: rangeCountResult.total || 0,
+    historyRecordCount: historyCountResult ? historyCountResult.total || 0 : null,
+    rangeRecordCount: rangeCountResult ? rangeCountResult.total || 0 : null,
     rangeSummary,
-    latestRecordDate: ((latestRecordResult.data || [])[0] || {}).date || "",
+    latestRecordDate: latestRecordResult
+      ? ((latestRecordResult.data || [])[0] || {}).date || ""
+      : null,
+    metadataMode,
+    snapshotRevision,
     ledger: {
       _id: ledger._id,
       name: ledger.name,
@@ -328,9 +376,9 @@ async function listRecords(openid, data = {}) {
       budgetEnabled: Boolean(ledger.budgetEnabled),
       monthlyBudget: Number(ledger.monthlyBudget || 0),
     },
-    role,
-    roleText: getRoleText(role),
-    readonly: role === "readonly",
+    role: finalRole,
+    roleText: getRoleText(finalRole),
+    readonly: finalRole === "readonly",
   });
 }
 
@@ -498,9 +546,31 @@ async function deleteRecord(openid, data = {}) {
     throw error;
   }
 
-  await db.collection("records").doc(data.recordId).remove();
-  await bumpLedgerSyncRevision(ledger._id);
-  return ok();
+  const result = await db.runTransaction(async (transaction) => {
+    const ledgerRef = transaction.collection("ledgers").doc(ledger._id);
+    const currentLedger = (await ledgerRef.get()).data;
+    const currentRole = getLedgerRole(openid, currentLedger);
+    assertWritable(currentRole);
+    assertNoCategoryMigration(currentLedger);
+    const recordRef = transaction.collection("records").doc(data.recordId);
+    const currentRecord = (await recordRef.get()).data;
+    if (!currentRecord || currentRecord.ledgerId !== ledger._id) {
+      const error = new Error("记录已被删除");
+      error.code = "RECORD_NOT_FOUND";
+      throw error;
+    }
+    if (currentRole !== "owner" && currentRecord.ownerOpenid !== openid)
+      throw new Error("ONLY_OWNER_CAN_DELETE_OTHERS");
+    if (clientVersion && Number(currentRecord.syncVersion || 0) !== clientVersion) {
+      const error = new Error("记录已被其他成员修改，请刷新后重试");
+      error.code = "RECORD_CONFLICT";
+      throw error;
+    }
+    await recordRef.remove();
+    await ledgerRef.update({ data: { syncRevision: _.inc(1), updatedAt: now() } });
+    return { ledgerId: ledger._id, revision: Number(currentLedger.syncRevision || 0) + 1 };
+  });
+  return ok(result);
 }
 
 // --- 导入 ---

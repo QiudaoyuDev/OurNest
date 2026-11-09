@@ -11,6 +11,7 @@ const {
 const {
   comparisonText,
   decorate,
+  toAnalysisViewData,
 } = require("../miniprogram/components/tl-tab-analysis/view-model");
 const {
   getChartOption,
@@ -21,6 +22,27 @@ const {
   calendarAmount,
   categoryDisplayIcon,
 } = require("../miniprogram/components/tl-tab-analysis/dashboard");
+
+test("analysis view bridge excludes transport-only response fields", () => {
+  const result = {
+    ledger: { _id: "ledger-1", name: "账本" },
+    role: "member",
+    readonly: false,
+    mode: "month",
+    range: { label: "2024-01" },
+    previousOverview: { expense: 1 },
+    comparisonRange: { start: "2023-12-01" },
+    topExpenseRecords: [{ _id: "record-1" }],
+    overview: { expense: 2 },
+    trend: [{ label: "1日", expense: 2 }],
+  };
+  assert.deepEqual(toAnalysisViewData(result), {
+    range: result.range,
+    comparisonRange: result.comparisonRange,
+    overview: result.overview,
+    trend: result.trend,
+  });
+});
 
 test("analysis offers supported modes without removed views", () => {
   const filename = path.resolve("miniprogram/components/tl-tab-analysis/index.js");
@@ -239,18 +261,29 @@ test("an older analysis response cannot replace a newer ledger selection", async
   assert.deepEqual(Array.from(instance.data.yearRankingRows), []);
   const first = instance.loadAnalysis();
   instance.data.ledgerId = "second";
-  const second = instance.loadAnalysis();
-  const result = (name, expense) => ({
-    ledger: { name, type: "personal" },
-    range: { label: "2026年10月" },
+  instance.loadAnalysis();
+  const result = (name, expense, ledgerId = "second") => ({
+    ledger: { _id: ledgerId, name, type: "personal" },
+    range: { start: "2026-10-01", end: "2026-11-01", label: "2026年10月" },
     trendMeta: { isPartial: true, asOf: "2026-10-13" },
-    overview: { recordCount: 1, expense },
-    dashboard: { total: expense, recordCount: 1 },
+    overview: { income: 0, expense, balance: -expense, recordCount: 1 },
+    dashboard: {
+      type: "expense",
+      total: expense,
+      recordCount: 1,
+      daily: [{ date: "2026-10-01", expense }],
+      categories: [{ amount: expense }],
+      accounts: [{ amount: expense }],
+      topRecords: [],
+    },
   });
-  pending[1](result("新账本", 20));
-  await second;
+  assert.equal(pending.length, 1);
   pending[0](result("旧账本", 10));
   await first;
+  assert.equal(pending.length, 2);
+  pending[1](result("新账本", 20));
+  const second = instance._analysisFlight;
+  await second;
   assert.equal(instance.data.ledgerName, "新账本");
   assert.equal(instance.data.overview.expense, 20);
   assert.equal(instance.data.trendCaption, "截至2026-10-13");
@@ -260,6 +293,110 @@ test("an older analysis response cannot replace a newer ledger selection", async
   pending[2](oldResponse);
   await outdated;
   assert.equal(instance.data.error, true);
+});
+
+test("analysis load retains runtime ranges for ratio preview and record drill-down", async () => {
+  const filename = path.resolve("miniprogram/components/tl-tab-analysis/index.js");
+  const realRequire = createRequire(filename);
+  let definition;
+  let resolveAnalysis;
+  const ratioRequests = [];
+  const destinations = [];
+  vm.runInNewContext(fs.readFileSync(filename, "utf8").replace(/^import .*;\r?\n/, ""), {
+    getApp: () => ({ globalData: {} }),
+    require: (name) => {
+      if (name.includes("ledger.service"))
+        return { getAnalysis: () => new Promise((resolve) => (resolveAnalysis = resolve)) };
+      if (name.includes("record.service"))
+        return {
+          listRecords: (query) =>
+            new Promise((resolve, reject) => ratioRequests.push({ query, resolve, reject })),
+        };
+      return realRequire(name);
+    },
+    wx: { navigateTo: ({ url }) => destinations.push(new URL(url, "https://ournest.test")) },
+    Component: (value) => {
+      definition = value;
+    },
+    console,
+  });
+  const category = {
+    key: '["id","food"]',
+    categoryId: "food",
+    name: "餐饮",
+    amount: 12,
+  };
+  const page = {
+    ...definition.methods,
+    data: {
+      ...definition.data,
+      ledgerId: "ledger",
+      mode: "month",
+      activeChart: "monthRatio",
+      anchor: "2026-01",
+      loading: false,
+    },
+    isAttached: true,
+    analysisRequestId: 0,
+    secondaryCharts: {},
+    selectComponent: () => null,
+    setData(patch, callback) {
+      Object.assign(this.data, patch);
+      if (callback) callback();
+    },
+    disposeChart() {},
+    disposeSecondaryCharts() {},
+    renderChart() {},
+  };
+
+  const load = page.loadAnalysis();
+  resolveAnalysis({
+    ledger: { _id: "ledger", name: "测试账本", type: "personal" },
+    range: { start: "2026-01-01", end: "2026-02-01", label: "2026年1月" },
+    comparisonRange: { start: "2025-12-01", end: "2026-01-01" },
+    overview: { income: 0, expense: 12, balance: -12, recordCount: 1 },
+    categories: [category],
+    trend: [{ key: "2026-01-15", label: "15日", expense: 12 }],
+    dashboard: {
+      type: "expense",
+      total: 12,
+      recordCount: 1,
+      daily: [{ date: "2026-01-15", expense: 12 }],
+      categories: [{ amount: 12 }],
+      accounts: [{ amount: 12 }],
+      topRecords: [],
+    },
+  });
+  await load;
+
+  assert.deepEqual(page.data.range, { start: "2026-01-01", end: "2026-02-01", label: "2026年1月" });
+  assert.deepEqual(page.data.comparisonRange, { start: "2025-12-01", end: "2026-01-01" });
+  const preview = page.selectRatioCategory({ currentTarget: { dataset: { key: category.key } } });
+  assert.equal(ratioRequests.length, 1);
+  assert.deepEqual(ratioRequests[0].query, {
+    ledgerId: "ledger",
+    start: "2026-01-01",
+    end: "2026-02-01",
+    type: "expense",
+    categoryFilter: { kind: "id", id: "food" },
+    summaryFiltered: true,
+    pageSize: 3,
+    cursor: null,
+  });
+  ratioRequests[0].resolve({
+    records: [{ _id: "record-1", amount: 12 }],
+    rangeSummary: { expense: 12 },
+    rangeRecordCount: 1,
+  });
+  await preview;
+  assert.equal(page.data.ratioPreviewStatus, "ready");
+  page.openRatioRecords();
+  assert.equal(destinations[0].searchParams.get("start"), "2026-01-01");
+  assert.equal(destinations[0].searchParams.get("end"), "2026-02-01");
+  assert.equal(
+    destinations[0].searchParams.get("filter"),
+    JSON.stringify({ kind: "id", id: "food" })
+  );
 });
 
 test("negative balance from a zero baseline is not described as returning to zero", () => {
@@ -945,16 +1082,19 @@ test("ratio category rows preview rather than navigate and refresh invalidates s
   assert.equal(h.page.data.loading, true);
 });
 
-test("record change events clear ratio selection and reject obsolete responses", async () => {
-  const bus = require("../miniprogram/utils/event-bus");
+test("record change invalidations clear ratio selection and reject obsolete responses", async () => {
+  const dataRefresh = require("../miniprogram/services/data-refresh.service");
+  dataRefresh.clear();
   for (const reject of [false, true]) {
     const h = ratioPreviewHarness();
     h.page.bootstrap = () => {};
     h.definition.lifetimes.attached.call(h.page);
     const work = h.choose(h.page.data.categories[0].key);
-    bus.emit("records:changed", { ledgerId: "unrelated" });
+    dataRefresh.invalidate({ ledgerId: "unrelated", source: "test" });
+    await Promise.resolve();
     assert.equal(h.page.data.ratioPreviewStatus, "loading");
-    bus.emit("records:changed", { ledgerId: "ledger" });
+    dataRefresh.invalidate({ ledgerId: "ledger", source: "test" });
+    await Promise.resolve();
     assert.equal(h.page.data.ratioPreviewStatus, "idle");
     if (reject) h.pending[0].reject(new Error("obsolete"));
     else h.pending[0].resolve(h.result(100));

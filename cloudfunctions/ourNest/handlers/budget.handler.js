@@ -1,12 +1,5 @@
 // Budget 域：账本月度预算设置（Owner 专属）。
-const {
-  db,
-  ok,
-  now,
-  bumpLedgerSyncRevision,
-  getLedgerForUser,
-  getLedgerRole,
-} = require("../shared/helpers");
+const { db, _, ok, now, getLedgerForUser, getLedgerRole } = require("../shared/helpers");
 const { assertBudgetInput } = require("../validators/schemas");
 
 async function updateBudget(openid, data = {}) {
@@ -19,12 +12,22 @@ async function updateBudget(openid, data = {}) {
     monthlyBudget: data.monthlyBudget,
   });
 
-  await db
-    .collection("ledgers")
-    .doc(ledger._id)
-    .update({ data: { budgetEnabled, monthlyBudget, updatedAt: now() } });
-  await bumpLedgerSyncRevision(ledger._id);
-  return ok({ ledger: { ...ledger, budgetEnabled, monthlyBudget } });
+  const updatedLedger = await db.runTransaction(async (transaction) => {
+    const ledgerRef = transaction.collection("ledgers").doc(ledger._id);
+    const currentLedger = (await ledgerRef.get()).data;
+    if (getLedgerRole(openid, currentLedger) !== "owner")
+      throw new Error("ONLY_OWNER_CAN_UPDATE_BUDGET");
+    await ledgerRef.update({
+      data: { budgetEnabled, monthlyBudget, syncRevision: _.inc(1), updatedAt: now() },
+    });
+    return {
+      ...currentLedger,
+      budgetEnabled,
+      monthlyBudget,
+      syncRevision: Number(currentLedger.syncRevision || 0) + 1,
+    };
+  });
+  return ok({ ledger: updatedLedger });
 }
 
 module.exports = { updateBudget };

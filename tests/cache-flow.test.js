@@ -117,6 +117,43 @@ test("partial record pages preserve server totals, cursor and records beyond 50"
   assert.equal(component.data.monthRecordCount, 71);
 });
 
+test("record pagination conflict discards stale rows and reloads one first page", async () => {
+  const calls = [];
+  let request = 0;
+  const component = recordsComponent({
+    listRecords: async (payload) => {
+      calls.push(payload);
+      request += 1;
+      if (request === 2) {
+        const error = new Error("changed");
+        error.code = "RECORD_SNAPSHOT_CHANGED";
+        throw error;
+      }
+      const start = request === 1 ? "old" : "fresh";
+      return {
+        records: [{ _id: start, type: "expense", amount: 1, date: "2026-10-24" }],
+        rangeSummary: { income: 0, expense: 1 },
+        rangeRecordCount: 1,
+        hasMore: request === 1,
+        nextCursor: request === 1 ? { date: "2026-10-24", id: "old" } : null,
+        snapshotRevision: request === 1 ? 4 : 5,
+      };
+    },
+  });
+  component.data.ledgerId = "shared";
+  component.data.currentRange = { start: "2026-10-01", end: "2026-11-01" };
+  await component.loadRecords();
+  await component.loadRecords(component.data.currentRange, true);
+  assert.deepEqual(
+    component.data.records.map((record) => record.id),
+    ["fresh"]
+  );
+  assert.equal(calls.length, 3);
+  assert.equal(calls[1].expectedRevision, 4);
+  assert.equal(calls[2].cursor, null);
+  assert.equal(calls[2].expectedRevision, undefined);
+});
+
 test("record type filter queries the server and ignores stale pages", async () => {
   const calls = [];
   const pending = [deferred(), deferred()];
@@ -836,6 +873,51 @@ test("category detail sends exact range and identity for every page", async () =
   assert.equal(page.data.records.length, 2);
   assert.equal(page.data.expenseText, "10");
   assert.equal(page.data.readonly, true);
+});
+
+test("record-filtered pagination conflict clears stale rows and reloads once", async () => {
+  const calls = [];
+  let request = 0;
+  const definition = load("miniprogram/pages/record-filtered/index.js", {
+    "../../services/record.service": {
+      listRecords: async (payload) => {
+        calls.push(payload);
+        request += 1;
+        if (request === 2) {
+          const error = new Error("changed");
+          error.code = "RECORD_SNAPSHOT_CHANGED";
+          throw error;
+        }
+        return {
+          records: [{ _id: request === 1 ? "old" : "fresh", amount: 1, date: "2026-03-01" }],
+          rangeSummary: { expense: 1 },
+          rangeRecordCount: 1,
+          hasMore: request === 1,
+          nextCursor: request === 1 ? { date: "2026-03-01", id: "old" } : null,
+          snapshotRevision: request === 1 ? 2 : 3,
+        };
+      },
+    },
+    "../../utils/event-bus": { on() {}, off() {} },
+  });
+  const page = instance(definition);
+  page.onLoad({
+    ledgerId: "shared",
+    start: "2026-03-01",
+    end: "2026-04-01",
+    type: "expense",
+    filter: encodeURIComponent(JSON.stringify({ kind: "id", id: "food" })),
+    name: "餐饮",
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await page.loadMore();
+  assert.deepEqual(
+    page.data.records.map((record) => record.id),
+    ["fresh"]
+  );
+  assert.equal(calls.length, 3);
+  assert.equal(calls[1].expectedRevision, 2);
+  assert.equal(calls[2].cursor, null);
 });
 
 test("record-filtered automatically reloads when records change in the viewed ledger", async () => {

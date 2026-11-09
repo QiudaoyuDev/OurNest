@@ -15,7 +15,7 @@
     "visual:analysis:check": "node scripts/visual-analysis.mjs",
     "visual:analysis:update": "node scripts/visual-analysis.mjs --update",
     "check": "npm run format:check && npm run lint && npm run ui:check",
-    "test": "node --test tests/brand-contract.test.js tests/api.test.js tests/money.test.js tests/amount-expression.test.js tests/fast-entry.test.js tests/mapper.test.js tests/tl-button.test.js tests/category-operation.test.js tests/feedback-ui.test.js tests/cloud-route.test.js tests/cloud-env.test.js tests/ledger-store.test.js tests/analysis-helpers.test.js tests/dashboard-helpers.test.js tests/shared-helpers.test.js tests/component-contracts.test.js tests/analysis-view.test.js tests/home-summary.test.js tests/cache-flow.test.js tests/visitor-records.test.js",
+    "test": "node --test tests/amount-expression.test.js tests/analysis-contract.test.js tests/analysis-fixtures.test.js tests/analysis-helpers.test.js tests/analysis-refresh.test.js tests/analysis-view.test.js tests/api.test.js tests/brand-contract.test.js tests/cache-flow.test.js tests/category-operation.test.js tests/chart-lifecycle.test.js tests/cloud-env.test.js tests/cloud-route.test.js tests/component-contracts.test.js tests/dashboard-helpers.test.js tests/data-refresh.test.js tests/fast-entry.test.js tests/feedback-ui.test.js tests/home-summary.test.js tests/ledger-revision.test.js tests/ledger-store.test.js tests/mapper.test.js tests/money.test.js tests/shared-helpers.test.js tests/tl-button.test.js tests/visitor-records.test.js",
     "cloud:check": "node scripts/check-cloud.mjs",
     "verify": "npm run check && npm run test && npm run cloud:check"
   },

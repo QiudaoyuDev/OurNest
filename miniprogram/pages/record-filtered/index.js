@@ -24,6 +24,7 @@ Page({
     expenseText: "0",
     count: 0,
     readonly: true,
+    snapshotRevision: null,
   },
   onLoad(options = {}) {
     try {
@@ -55,6 +56,7 @@ Page({
         ...(accountFilter ? { accountFilter } : {}),
       };
       this.requestId = 0;
+      this.snapshotRecoveryUsed = false;
       this.setData({
         title: decode(options.name || "分类明细"),
         rangeLabel: `${options.start} 起至 ${options.end} 前`,
@@ -83,6 +85,7 @@ Page({
       (append && (this.data.loading || this.data.loadingMore || !this.data.hasMore))
     )
       return;
+    if (!append) this.snapshotRecoveryUsed = false;
     const requestId = ++this.requestId;
     this.setData(append ? { loadingMore: true } : { loading: true, error: false });
     try {
@@ -90,8 +93,13 @@ Page({
         ...this.query,
         cursor: append ? this.data.nextCursor : null,
         pageSize: 30,
+        metadataMode: append ? "none" : "range",
+        ...(append && this.data.snapshotRevision !== null
+          ? { expectedRevision: this.data.snapshotRevision }
+          : {}),
       });
       if (requestId !== this.requestId) return;
+      if (!append) this.snapshotRecoveryUsed = false;
       const rows = (result.records || []).map((record) => ({
         ...record,
         id: record._id || record.id,
@@ -105,12 +113,34 @@ Page({
         readonly: Boolean(result.readonly),
         hasMore: Boolean(result.hasMore),
         nextCursor: result.nextCursor || null,
-        incomeText: formatDisplayMoney((result.rangeSummary || {}).income),
-        expenseText: formatDisplayMoney((result.rangeSummary || {}).expense),
-        count: Number(result.rangeRecordCount || 0),
+        incomeText: append
+          ? this.data.incomeText
+          : formatDisplayMoney((result.rangeSummary || {}).income),
+        expenseText: append
+          ? this.data.expenseText
+          : formatDisplayMoney((result.rangeSummary || {}).expense),
+        count: append ? this.data.count : Number(result.rangeRecordCount || 0),
+        snapshotRevision: append ? this.data.snapshotRevision : (result.snapshotRevision ?? null),
       });
-    } catch (_error) {
+    } catch (error) {
       if (requestId !== this.requestId) return;
+      if (
+        append &&
+        error &&
+        error.code === "RECORD_SNAPSHOT_CHANGED" &&
+        !this.snapshotRecoveryUsed
+      ) {
+        this.snapshotRecoveryUsed = true;
+        this.setData({
+          loading: false,
+          loadingMore: false,
+          records: [],
+          hasMore: false,
+          nextCursor: null,
+          snapshotRevision: null,
+        });
+        return this.loadRecords(false);
+      }
       this.setData({ loading: false, loadingMore: false, error: true });
     }
   },

@@ -135,6 +135,14 @@ function decorate(data = {}) {
   };
 }
 
+function toAnalysisViewData(result = {}) {
+  const viewData = { ...result };
+  ["ledger", "role", "readonly", "mode", "previousOverview", "topExpenseRecords"].forEach(
+    (key) => delete viewData[key]
+  );
+  return viewData;
+}
+
 function getRanking(data, chartType) {
   if (chartType === "category") return data.categoryChart || [];
   if (chartType === "income") return data.incomeCategoryChart || [];
@@ -154,5 +162,6 @@ module.exports = {
   getDetailRows,
   decorateInsightGroups,
   decorate,
+  toAnalysisViewData,
   getRanking,
 };

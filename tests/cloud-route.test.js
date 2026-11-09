@@ -17,12 +17,22 @@ test("cloud entrypoint exposes required route protocol", () => {
     assert.match(source, new RegExp('"' + route + '"'));
   assert.doesNotMatch(source, /"auth\/database\/reset"/);
   assert.doesNotMatch(source, /event\.action|event\.type/);
+  assert.doesNotMatch(source, /ensureCollections/);
 });
 
 test("cloud entrypoint preserves handler success and failure results", async () => {
   const source = fs.readFileSync("cloudfunctions/ourNest/index.js", "utf8");
   let handlerResult = { success: true, data: { loggedIn: true } };
-  const handler = new Proxy({}, { get: () => async () => handlerResult });
+  let handlerError;
+  const handler = new Proxy(
+    {},
+    {
+      get: () => async () => {
+        if (handlerError) throw handlerError;
+        return handlerResult;
+      },
+    }
+  );
   const cloud = {
     DYNAMIC_CURRENT_ENV: "test",
     init() {},
@@ -35,9 +45,14 @@ test("cloud entrypoint preserves handler success and failure results", async () 
       success: (data) => ({ ok: true, data }),
       failure: (code, message) => ({ ok: false, error: { code, message } }),
     },
-    "./shared/errors": { toFailure: (error) => ({ code: error.code, message: error.message }) },
+    "./shared/errors": {
+      toFailure: (error) => ({
+        code: error.code || "INTERNAL_ERROR",
+        message: error.message,
+      }),
+    },
     "./validators/schemas": { assertObject() {} },
-    "./shared/helpers": { ensureCollections: async () => {} },
+    "./shared/helpers": {},
     "./actions/feedback": { create: handler.login, list: handler.login },
   };
   for (const name of [
@@ -70,4 +85,15 @@ test("cloud entrypoint preserves handler success and failure results", async () 
   assert.equal(failure.ok, false);
   assert.equal(failure.error.code, "LOGIN_DENIED");
   assert.equal(failure.error.message, "登录失败");
+
+  handlerError = Object.assign(new Error("RECORD_SNAPSHOT_CHANGED"), {
+    code: "RECORD_SNAPSHOT_CHANGED",
+  });
+  const snapshotFailure = await context.exports.main({
+    route: "record/list",
+    payload: { ledgerId: "ledger" },
+  });
+  assert.equal(snapshotFailure.ok, false);
+  assert.equal(snapshotFailure.error.code, "RECORD_SNAPSHOT_CHANGED");
+  assert.equal(snapshotFailure.error.message, "RECORD_SNAPSHOT_CHANGED");
 });

@@ -980,7 +980,7 @@ test("category detail totals and pages use the same server filter", async () => 
           multiply: (value) => value,
         },
         ok: (data) => data,
-        getLedgerForUser: async () => ({ _id: "ledger" }),
+        getLedgerForUser: async () => ({ _id: "ledger", syncRevision: 1 }),
         getLedgerRole: () => "readonly",
         assertReadable: () => {},
         getRoleText: () => "访客",
@@ -1004,6 +1004,108 @@ test("category detail totals and pages use the same server filter", async () => 
   assert.equal(aggregateExpression[0][1], 100);
   assert.equal(aggregateExpression[1], 0.5);
   assert.equal(result.readonly, true);
+});
+
+test("record list rejects an active category repair at the start and end fence", async () => {
+  const ledger = { _id: "ledger", syncRevision: 1, categoryRepairState: { phase: "repair" } };
+  const chain = {
+    orderBy: () => chain,
+    limit: () => chain,
+    get: async () => ({ data: [] }),
+  };
+  const handler = load(
+    "cloudfunctions/ourNest/handlers/record.handler.js",
+    {},
+    {},
+    {
+      "wx-server-sdk": {},
+      "../shared/helpers": {
+        db: { collection: () => ({ where: () => chain }) },
+        _: {},
+        ok: (data) => data,
+        getLedgerForUser: async () => ledger,
+        getLedgerRole: () => "readonly",
+        assertReadable: () => {},
+        getRoleText: () => "访客",
+        getUsersByOpenids: async () => ({}),
+        resolveUsersAvatarUrls: async (users) => users,
+      },
+    }
+  );
+  await assert.rejects(
+    handler.listRecords("visitor", { ledgerId: "ledger", metadataMode: "none" }),
+    /CATEGORY_REPAIR_IN_PROGRESS/
+  );
+
+  ledger.categoryRepairState = null;
+  let reads = 0;
+  const originalGet = chain.get;
+  chain.get = async () => {
+    reads += 1;
+    ledger.categoryRepairState = { phase: "repair" };
+    return originalGet();
+  };
+  await assert.rejects(
+    handler.listRecords("visitor", { ledgerId: "ledger", metadataMode: "none" }),
+    /CATEGORY_REPAIR_IN_PROGRESS/
+  );
+  assert.equal(reads, 1);
+});
+
+test("record list rejects a revision change before publishing a stable page", async () => {
+  const ledger = { _id: "ledger", syncRevision: 1 };
+  let ledgerReads = 0;
+  const chain = {
+    orderBy: () => chain,
+    limit: () => chain,
+    get: async () => {
+      ledger.syncRevision = 2;
+      return {
+        data: [
+          {
+            _id: "record",
+            ledgerId: "ledger",
+            ownerOpenid: "visitor",
+            type: "expense",
+            amount: 1,
+            date: "2026-01-01",
+            createdAt: new Date(0),
+          },
+        ],
+      };
+    },
+  };
+  const handler = load(
+    "cloudfunctions/ourNest/handlers/record.handler.js",
+    {},
+    {},
+    {
+      "wx-server-sdk": {},
+      "../shared/helpers": {
+        db: { collection: () => ({ where: () => chain }) },
+        _: {},
+        ok: (data) => data,
+        getLedgerForUser: async () => {
+          ledgerReads += 1;
+          return ledger;
+        },
+        getLedgerRole: () => "readonly",
+        assertReadable: () => {},
+        getRoleText: () => "访客",
+        getUsersByOpenids: async () => ({}),
+        resolveUsersAvatarUrls: async (users) => users,
+      },
+    }
+  );
+  await assert.rejects(
+    handler.listRecords("visitor", { ledgerId: "ledger", metadataMode: "none" }),
+    (error) => {
+      assert.equal(error.message, "RECORD_SNAPSHOT_CHANGED");
+      assert.equal(error.code, "RECORD_SNAPSHOT_CHANGED");
+      return true;
+    }
+  );
+  assert.equal(ledgerReads, 2);
 });
 
 test("source bill parser separates successful spending from special and closed transactions", () => {
@@ -1285,6 +1387,7 @@ test("record creation validates category identity and uses server category metad
   let deletionBegins = false;
   let ledgerWrites = 0;
   let migrationActive = false;
+  let repairActive = false;
   const categories = {
     child: {
       _id: "child",
@@ -1326,7 +1429,11 @@ test("record creation validates category identity and uses server category metad
                   get: async () => ({
                     data:
                       name === "ledgers"
-                        ? { _id: "ledger", categoryDeletionId: migrationActive ? "child" : "" }
+                        ? {
+                            _id: "ledger",
+                            categoryDeletionId: migrationActive ? "child" : "",
+                            categoryRepairState: repairActive ? { phase: "repair" } : null,
+                          }
                         : deletionBegins && id === "parent"
                           ? { ...categories[id], deletionState: "deleting" }
                           : categories[id],
@@ -1388,6 +1495,12 @@ test("record creation validates category identity and uses server category metad
   await assert.rejects(
     handler.createRecord("owner", { ...base, categoryId: "" }),
     /分类迁移进行中/
+  );
+  assert.equal(stored.length, 1);
+  repairActive = true;
+  await assert.rejects(
+    handler.createRecord("owner", { ...base, categoryId: "" }),
+    /CATEGORY_REPAIR_IN_PROGRESS/
   );
   assert.equal(stored.length, 1);
 });
@@ -1520,7 +1633,7 @@ test("family and category drill-down use matching totals and cursor pages", asyn
           multiply: (value) => value,
         },
         ok: (data) => data,
-        getLedgerForUser: async () => ({ _id: "ledger", type: "shared" }),
+        getLedgerForUser: async () => ({ _id: "ledger", type: "shared", syncRevision: 1 }),
         getLedgerRole: () => "readonly",
         assertReadable: () => {},
         getRoleText: () => "访客",
@@ -1850,7 +1963,7 @@ test("import rechecks category state inside the write transaction", async () => 
     fileId: "cloud://env/imports/owner/bill.csv",
   });
   state.beforeTransaction = () => {
-    state.categories.parent.deletionState = "deleting";
+    state.ledger.categoryRepairState = { phase: "repair" };
   };
   await assert.rejects(
     handler.importRecords("owner", {
@@ -1858,7 +1971,7 @@ test("import rechecks category state inside the write transaction", async () => 
       selectedRows: [2],
       categoryChoices: { 2: "child" },
     }),
-    /INVALID_RECORD_CATEGORY/
+    /CATEGORY_REPAIR_IN_PROGRESS/
   );
   assert.equal(state.records.length, 0);
 });

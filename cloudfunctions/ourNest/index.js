@@ -2,7 +2,6 @@ const cloud = require("wx-server-sdk");
 const { success, failure } = require("./shared/response");
 const { toFailure } = require("./shared/errors");
 const { assertObject } = require("./validators/schemas");
-const { ensureCollections } = require("./shared/helpers");
 const authHandler = require("./handlers/auth.handler");
 const ledgerHandler = require("./handlers/ledger.handler");
 const recordHandler = require("./handlers/record.handler");
@@ -19,7 +18,6 @@ const db = cloud.database();
 // 包装：handler 统一接收 (openid, payload)，返回 { ok, data } 或抛错
 function wrap(handler) {
   return async (context, payload) => {
-    await ensureCollections();
     try {
       const result = await handler(context.openid, payload);
       if (result && result.success) return { success: true, data: result.data || {} };

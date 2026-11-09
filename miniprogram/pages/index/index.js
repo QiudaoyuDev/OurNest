@@ -1,4 +1,5 @@
 const ledgerStore = require("../../services/ledger.store");
+const dataRefresh = require("../../services/data-refresh.service");
 const { on, off } = require("../../utils/event-bus");
 
 const TAB_TITLES = {
@@ -15,6 +16,7 @@ Page({
     recordsMonth: "",
     recordDisabledReason: "noLedger",
     visitedTabs: { index: true },
+    foreground: true,
   },
 
   onLoad(options = {}) {
@@ -30,7 +32,14 @@ Page({
     });
     this.unsubscribeLedgerSync = ledgerStore.subscribeSync((result) => {
       this.syncRecordAccess();
-      if (result.changed) this.refreshActiveTab(result);
+      if (result.changed) {
+        dataRefresh.invalidate({
+          ledgerIds: result.changedLedgerIds,
+          removedLedgerIds: result.removedLedgerIds,
+          mutationId: result.mutationId,
+          source: "ledger-sync",
+        });
+      }
     });
   },
 
@@ -42,7 +51,12 @@ Page({
 
   onShow() {
     this.syncRecordAccess();
+    this.setData({ foreground: true });
     ledgerStore.syncLedgers().catch((error) => console.warn("page ledger sync failed", error));
+  },
+
+  onHide() {
+    this.setData({ foreground: false });
   },
 
   syncRecordAccess() {

@@ -20,6 +20,8 @@
       wx:if="{{visitedTabs.analysis}}"
       id="tab-analysis"
       class="{{activeTab === 'analysis' ? '' : 'tab-pane-hidden'}}"
+      active="{{activeTab === 'analysis'}}"
+      foreground="{{foreground}}"
     >
     </tl-tab-analysis>
     <tl-tab-profile
