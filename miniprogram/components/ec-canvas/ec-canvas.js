@@ -105,7 +105,12 @@ Component({
       // before querying its node. Otherwise lazy initialization can silently
       // query the old node and leave the chart blank.
       this.setData({ isUseNewCanvas }, () => {
-        if (this.isDetached) return;
+        if (this.isDetached) {
+          // setData callbacks can outlive the host. Do not leave a detached
+          // ec-canvas permanently locked in the initializing state.
+          this.isInitializing = false;
+          return;
+        }
         if (forceUseOldCanvas && canUseNewCanvas) {
           console.warn('开发者强制使用旧canvas,建议关闭');
         }
@@ -142,32 +147,44 @@ Component({
       const canvasDpr = 1
       var query = wx.createSelectorQuery().in(this);
       query.select('.ec-canvas').boundingClientRect(res => {
-        if (this.isDetached) return;
+        if (this.isDetached) {
+          this.isInitializing = false;
+          return;
+        }
         if (!res || !res.width || !res.height) {
           if (attempt < 2) {
-            setTimeout(() => this.initByOldWay(callback, attempt + 1), 32);
+            setTimeout(() => {
+              if (this.isDetached) {
+                this.isInitializing = false;
+                return;
+              }
+              this.initByOldWay(callback, attempt + 1);
+            }, 32);
           } else {
             this.isInitializing = false;
             this.triggerEvent('initerror');
           }
           return;
         }
-        if (typeof callback === 'function') {
-          const chart = callback(canvas, res.width, res.height, canvasDpr);
-          if (chart) this.chart = chart;
+        try {
+          if (typeof callback === 'function') {
+            const chart = callback(canvas, res.width, res.height, canvasDpr);
+            if (chart) this.chart = chart;
+          }
+          else if (this.data.ec && typeof this.data.ec.onInit === 'function') {
+            this.chart = this.data.ec.onInit(canvas, res.width, res.height, canvasDpr);
+          }
+          else {
+            this.triggerEvent('init', {
+              canvas: canvas,
+              width: res.width,
+              height: res.height,
+              canvasDpr: canvasDpr // 增加了dpr，可方便外面echarts.init
+            });
+          }
+        } finally {
+          this.isInitializing = false;
         }
-        else if (this.data.ec && typeof this.data.ec.onInit === 'function') {
-          this.chart = this.data.ec.onInit(canvas, res.width, res.height, canvasDpr);
-        }
-        else {
-          this.triggerEvent('init', {
-            canvas: canvas,
-            width: res.width,
-            height: res.height,
-            canvasDpr: canvasDpr // 增加了dpr，可方便外面echarts.init
-          });
-        }
-        this.isInitializing = false;
       }).exec();
     },
 
@@ -178,10 +195,19 @@ Component({
         .select('.ec-canvas')
         .fields({ node: true, size: true })
         .exec(res => {
-          if (this.isDetached) return;
+          if (this.isDetached) {
+            this.isInitializing = false;
+            return;
+          }
           if (!res || !res[0] || !res[0].node || !res[0].width || !res[0].height) {
             if (attempt < 2) {
-              setTimeout(() => this.initByNewWay(callback, attempt + 1), 32);
+              setTimeout(() => {
+                if (this.isDetached) {
+                  this.isInitializing = false;
+                  return;
+                }
+                this.initByNewWay(callback, attempt + 1);
+              }, 32);
             } else {
               this.isInitializing = false;
               this.triggerEvent('initerror');
@@ -202,20 +228,23 @@ Component({
             return canvas
           })
 
-          if (typeof callback === 'function') {
-            const chart = callback(canvas, canvasWidth, canvasHeight, canvasDpr)
-            if (chart) this.chart = chart
-          } else if (this.data.ec && typeof this.data.ec.onInit === 'function') {
-            this.chart = this.data.ec.onInit(canvas, canvasWidth, canvasHeight, canvasDpr)
-          } else {
-            this.triggerEvent('init', {
-              canvas: canvas,
-              width: canvasWidth,
-              height: canvasHeight,
-              dpr: canvasDpr
-            })
-          }
-          this.isInitializing = false;
+          try {
+            if (typeof callback === 'function') {
+              const chart = callback(canvas, canvasWidth, canvasHeight, canvasDpr)
+              if (chart) this.chart = chart
+            } else if (this.data.ec && typeof this.data.ec.onInit === 'function') {
+              this.chart = this.data.ec.onInit(canvas, canvasWidth, canvasHeight, canvasDpr)
+            } else {
+              this.triggerEvent('init', {
+                canvas: canvas,
+                width: canvasWidth,
+                height: canvasHeight,
+                dpr: canvasDpr
+              })
+            }
+          } finally {
+            this.isInitializing = false
+          };
         })
     },
     canvasToTempFilePath(opt) {

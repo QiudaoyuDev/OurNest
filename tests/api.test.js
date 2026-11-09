@@ -41,6 +41,22 @@ test("API preserves business errors from ourNest", async () => {
   });
 });
 
+test("API preserves RECORD_SNAPSHOT_CHANGED for pagination recovery", async () => {
+  const callApi = loadApi(async () => ({
+    result: {
+      ok: false,
+      error: { code: "RECORD_SNAPSHOT_CHANGED", message: "RECORD_SNAPSHOT_CHANGED" },
+    },
+  }));
+
+  await assert.rejects(callApi("record/list", { cursor: { id: "stale" } }), (error) => {
+    assert.equal(error.code, "RECORD_SNAPSHOT_CHANGED");
+    assert.equal(error.message, "RECORD_SNAPSHOT_CHANGED");
+    assert.equal(error.route, "record/list");
+    return true;
+  });
+});
+
 test("API does not retry writes on transport failure", async () => {
   const requests = [];
   const failure = new Error("transport failed");

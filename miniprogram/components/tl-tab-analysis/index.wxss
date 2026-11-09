@@ -29,6 +29,12 @@
   padding-bottom: 24px;
 }
 
+/* Keep same-context chart hosts mounted during refresh, without exposing the old view. */
+.analysis-content.is-analysis-hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .analysis-header {
   padding: 12rpx var(--tl-page-inline) 0;
   background: var(--tl-color-page);

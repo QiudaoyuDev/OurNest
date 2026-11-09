@@ -105,7 +105,8 @@
       </tl-empty-state>
       <tl-empty-state wx:elif="{{noLedger}}" title="还没有可分析的账本" description="创建账本并记下第一笔收支后，这里会生成分析">
       </tl-empty-state>
-      <block wx:else>
+      <block>
+        <view class="analysis-content {{loading || error || noLedger ? 'is-analysis-hidden' : ''}}">
         <block wx:if="{{mode === 'week' || mode === 'month' || mode === 'year'}}">
           <view class="analysis-summary-card card dashboard-hero">
             <text class="section-kicker">{{rangeLabel}} · {{dashboardView.typeLabel}}</text>
@@ -211,8 +212,8 @@
               <text class="card-title">{{dashboardView.typeLabel}}分类</text>
               <view bindtap="toggleCategoryComparison">对比上期 {{compareCategories ? '●' : '○'}}</view>
             </view>
-            <view wx:if="{{dashboardView.recordCount}}" class="analysis-chart-canvas">
-              <ec-canvas id="dashboard-category-chart" canvas-id="dashboard-category-chart" data-chart-key="dashboardCategory" ec="{{ec}}" bind:init="onSecondaryChartInit" bind:initerror="onDashboardChartError">
+            <view wx:if="{{chartHostMounted && chartFirstReadyEver && dashboardView.recordCount}}" class="analysis-chart-canvas">
+              <ec-canvas id="dashboard-category-chart" canvas-id="dashboard-category-chart" data-chart-host="secondary" data-chart-key="dashboardCategory" data-chart-generation="{{chartHostGeneration}}" ec="{{ec}}" bind:init="onSecondaryChartInit" bind:initerror="onSecondaryChartInitError">
               </ec-canvas>
             </view>
             <text wx:if="{{dashboardChartError}}" class="dashboard-meta">图表加载失败，可查看下方分类列表。</text>
@@ -296,9 +297,9 @@
           <view class="showcase-section fade-up">
             <text class="section-kicker">区间收支走势</text>
           </view>
-          <view wx:if="{{hasChartData}}" class="chart-card card">
+          <view wx:if="{{chartHostMounted && chartFirstReadyEver && hasChartData}}" class="chart-card card">
             <view class="analysis-chart-canvas">
-              <ec-canvas id="analysis-chart" canvas-id="analysis-chart" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError" force-use-old-canvas="true">
+              <ec-canvas id="analysis-chart" canvas-id="analysis-chart" data-chart-host="main" data-chart-generation="{{chartHostGeneration}}" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError" force-use-old-canvas="true">
               </ec-canvas>
             </view>
           </view>
@@ -343,8 +344,8 @@
             <view class="chart-heading">
               <text class="card-title">{{chartTitle}}</text>
             </view>
-            <view class="analysis-chart-canvas">
-              <ec-canvas id="analysis-chart" canvas-id="analysis-chart" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError" force-use-old-canvas="true">
+            <view wx:if="{{chartHostMounted && chartFirstReadyEver && hasChartData}}" class="analysis-chart-canvas">
+              <ec-canvas id="analysis-chart" canvas-id="analysis-chart" data-chart-host="main" data-chart-generation="{{chartHostGeneration}}" ec="{{ec}}" bind:init="onChartInit" bind:initerror="onChartInitError" force-use-old-canvas="true">
               </ec-canvas>
             </view>
           </view>
@@ -352,8 +353,8 @@
             <text class="section-kicker">累计支出构成</text>
           </view>
           <view class="chart-card card">
-            <view class="analysis-chart-canvas">
-              <ec-canvas id="all-category-chart" canvas-id="all-category-chart" data-chart-key="category" ec="{{ec}}" bind:init="onSecondaryChartInit" force-use-old-canvas="true">
+            <view wx:if="{{chartHostMounted && chartFirstReadyEver && categories.length}}" class="analysis-chart-canvas">
+              <ec-canvas id="all-category-chart" canvas-id="all-category-chart" data-chart-host="secondary" data-chart-key="category" data-chart-generation="{{chartHostGeneration}}" ec="{{ec}}" bind:init="onSecondaryChartInit" bind:initerror="onSecondaryChartInitError" force-use-old-canvas="true">
               </ec-canvas>
             </view>
           </view>
@@ -448,6 +449,7 @@
             </view>
           </view>
         </block>
+        </view>
       </block>
       <view wx:if="{{sectionEndSpace}}" style="height: {{sectionEndSpace}}px;">
       </view>
