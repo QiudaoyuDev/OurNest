@@ -139,8 +139,14 @@ test("chart controller updates every mounted chart with the new option data", ()
   controller.update("category", { data: [2] });
   controller.update("main", { data: [3] });
   controller.update("category", { data: [4] });
-  assert.deepEqual(charts[0].options.map(({ option }) => option.data), [[1], [3]]);
-  assert.deepEqual(charts[1].options.map(({ option }) => option.data), [[2], [4]]);
+  assert.deepEqual(
+    charts[0].options.map(({ option }) => option.data),
+    [[1], [3]]
+  );
+  assert.deepEqual(
+    charts[1].options.map(({ option }) => option.data),
+    [[2], [4]]
+  );
 });
 
 test("chart controller does not initialize zero-size or hidden nodes", () => {

@@ -144,7 +144,10 @@ test("record pagination conflict discards stale rows and reloads one first page"
   component.data.currentRange = { start: "2026-10-01", end: "2026-11-01" };
   await component.loadRecords();
   await component.loadRecords(component.data.currentRange, true);
-  assert.deepEqual(component.data.records.map((record) => record.id), ["fresh"]);
+  assert.deepEqual(
+    component.data.records.map((record) => record.id),
+    ["fresh"]
+  );
   assert.equal(calls.length, 3);
   assert.equal(calls[1].expectedRevision, 4);
   assert.equal(calls[2].cursor, null);
@@ -908,7 +911,10 @@ test("record-filtered pagination conflict clears stale rows and reloads once", a
   });
   await new Promise((resolve) => setTimeout(resolve, 0));
   await page.loadMore();
-  assert.deepEqual(page.data.records.map((record) => record.id), ["fresh"]);
+  assert.deepEqual(
+    page.data.records.map((record) => record.id),
+    ["fresh"]
+  );
   assert.equal(calls.length, 3);
   assert.equal(calls[1].expectedRevision, 2);
   assert.equal(calls[2].cursor, null);

@@ -811,7 +811,13 @@ Component({
                 : "",
             activeDetailRows,
             trendRows: getDetailRows(result, "trend"),
-            rangeCategories: (request.analysisType === "income" ? result.incomeCategories : result.categories).map((item) => ({ ...item, displayIcon: categoryDisplayIcon(item, request.analysisType || "expense") })),
+            rangeCategories: (request.analysisType === "income"
+              ? result.incomeCategories
+              : result.categories
+            ).map((item) => ({
+              ...item,
+              displayIcon: categoryDisplayIcon(item, request.analysisType || "expense"),
+            })),
             hasDetailRows: activeDetailRows.length > 0,
             hasInsights:
               Object.values(result.insightGroups || {}).some((items) => items.length) ||
@@ -1249,7 +1255,10 @@ Component({
 
     openCategoryRecords(event) {
       const source = event.currentTarget.dataset.source;
-      if (["monthRatio", "yearRatio"].includes(this.data.activeChart) && !["year", "custom"].includes(source)) {
+      if (
+        ["monthRatio", "yearRatio"].includes(this.data.activeChart) &&
+        !["year", "custom"].includes(source)
+      ) {
         const row = (this.data.activeRanking || [])[Number(event.currentTarget.dataset.index)];
         return this.loadRatioPreview(row && row.key);
       }
@@ -1257,18 +1266,44 @@ Component({
       const item = rows[Number(event.currentTarget.dataset.index)];
       const range = this.data.range || {};
       if (!item || !range.start || !range.end || !this.data.ledgerId) return;
-      const filter = item.categoryId ? { kind: "id", id: item.categoryId } : { kind: "legacy", name: item.categoryName || "", parent: item.parentCategory || "" };
-      const query = { ledgerId: this.data.ledgerId, start: range.start, end: range.end, type: "expense", filter: JSON.stringify(filter), name: item.name || "其他" };
-      wx.navigateTo({ url: `/pages/record-filtered/index?${Object.keys(query).map((key) => `${key}=${encodeURIComponent(query[key])}`).join("&")}` });
+      const filter = item.categoryId
+        ? { kind: "id", id: item.categoryId }
+        : { kind: "legacy", name: item.categoryName || "", parent: item.parentCategory || "" };
+      const query = {
+        ledgerId: this.data.ledgerId,
+        start: range.start,
+        end: range.end,
+        type: "expense",
+        filter: JSON.stringify(filter),
+        name: item.name || "其他",
+      };
+      wx.navigateTo({
+        url: `/pages/record-filtered/index?${Object.keys(query)
+          .map((key) => `${key}=${encodeURIComponent(query[key])}`)
+          .join("&")}`,
+      });
     },
 
     openRangeCategory(event) {
       const item = this.data.rangeCategories[Number(event.currentTarget.dataset.index)];
       const range = this.data.mode === "all" ? this.data.recordRange : this.data.range;
       if (!item || !range || !range.start || !range.end || !this.data.ledgerId) return;
-      const filter = item.categoryId ? { kind: "id", id: item.categoryId } : { kind: "legacy", name: item.categoryName || "", parent: item.parentCategory || "" };
-      const query = { ledgerId: this.data.ledgerId, start: range.start, end: range.end, type: this.data.analysisType, filter: JSON.stringify(filter), name: item.name || "其他" };
-      wx.navigateTo({ url: `/pages/record-filtered/index?${Object.keys(query).map((key) => `${key}=${encodeURIComponent(query[key])}`).join("&")}` });
+      const filter = item.categoryId
+        ? { kind: "id", id: item.categoryId }
+        : { kind: "legacy", name: item.categoryName || "", parent: item.parentCategory || "" };
+      const query = {
+        ledgerId: this.data.ledgerId,
+        start: range.start,
+        end: range.end,
+        type: this.data.analysisType,
+        filter: JSON.stringify(filter),
+        name: item.name || "其他",
+      };
+      wx.navigateTo({
+        url: `/pages/record-filtered/index?${Object.keys(query)
+          .map((key) => `${key}=${encodeURIComponent(query[key])}`)
+          .join("&")}`,
+      });
     },
 
     selectTrendPoint(params = {}) {
@@ -1283,7 +1318,9 @@ Component({
     },
 
     openSelectedTrend() {
-      const index = (this.data.trend || []).findIndex((row) => this.data.selectedTrend && row.key === this.data.selectedTrend.key);
+      const index = (this.data.trend || []).findIndex(
+        (row) => this.data.selectedTrend && row.key === this.data.selectedTrend.key
+      );
       if (index >= 0) this.openTrendRecords({ componentType: "series", dataIndex: index });
     },
 
@@ -1295,7 +1332,12 @@ Component({
     openTrendRecordsMerged(params = {}) {
       const chart = this.data.activeChart;
       const rows = chart === "yearBalance" ? this.data.recentYearTrend : this.data.trend;
-      if (!["yearCashflow", "yearBalance", "monthTrend", "trend"].includes(chart) || !Array.isArray(rows) || !params) return;
+      if (
+        !["yearCashflow", "yearBalance", "monthTrend", "trend"].includes(chart) ||
+        !Array.isArray(rows) ||
+        !params
+      )
+        return;
       let row;
       if (params.componentType === "markPoint") {
         const bucketKey = params.data && params.data.bucketKey;
@@ -1318,8 +1360,18 @@ Component({
       const range = this.data.mode === "all" ? this.data.recordRange || {} : this.data.range || {};
       if (!range.end) return;
       if (range.end && start < range.end && end > range.end) end = range.end;
-      const query = { ledgerId: this.data.ledgerId, start, end, type: this.data.activeChart === "monthTrend" ? "expense" : "all", name: `${row.label}明细` };
-      wx.navigateTo({ url: `/pages/record-filtered/index?${Object.keys(query).map((name) => `${name}=${encodeURIComponent(query[name])}`).join("&")}` });
+      const query = {
+        ledgerId: this.data.ledgerId,
+        start,
+        end,
+        type: this.data.activeChart === "monthTrend" ? "expense" : "all",
+        name: `${row.label}明细`,
+      };
+      wx.navigateTo({
+        url: `/pages/record-filtered/index?${Object.keys(query)
+          .map((name) => `${name}=${encodeURIComponent(query[name])}`)
+          .join("&")}`,
+      });
     },
 
     renderChart() {
