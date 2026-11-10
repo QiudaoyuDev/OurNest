@@ -70,6 +70,9 @@ function setup(mode = "member", type = "shared") {
           : ledger.viewerOpenids.includes(openid)
             ? "readonly"
             : "none",
+    assertReadable: (role) => {
+      if (role === "none") throw new Error("NO_LEDGER_ACCESS");
+    },
   };
   const mod = { exports: {} };
   vm.runInNewContext(fs.readFileSync("cloudfunctions/ourNest/handlers/ledger.handler.js", "utf8"), {
@@ -134,6 +137,107 @@ test("邀请码请求按用户限频", async () => {
     handler.previewLedgerInvite("user", { inviteCode: "K7M92P4X" }),
     /尝试次数过多/
   );
+});
+
+test("撤销邀请后不能预览或领取，所有权转移后的旧邀请码不能恢复使用", async () => {
+  const revoked = setup();
+  revoked.rows.ledgerInvites.invite.ownerOpenid = "owner";
+  await revoked.handler.revokeLedgerInvite("owner", { ledgerId: "ledger", inviteId: "invite" });
+  await assert.rejects(
+    revoked.handler.previewLedgerInvite("new-user", { inviteCode: "K7M92P4X" }),
+    /已撤销/
+  );
+  await assert.rejects(
+    revoked.handler.joinLedgerByInviteToken("new-user", { inviteToken: "K7M92P4X" }),
+    /已撤销/
+  );
+  const transferred = setup();
+  transferred.rows.ledgerInvites.invite.ownerOpenid = "owner";
+  transferred.rows.ledgers.ledger.ownerEpoch = 2;
+  await assert.rejects(
+    transferred.handler.joinLedgerByInviteToken("new-user", { inviteToken: "K7M92P4X" }),
+    /已失效/
+  );
+});
+
+test("分享链接预览后必须确认才能加入", async () => {
+  let page;
+  let joined = 0;
+  const app = { globalData: { loggedIn: true } };
+  vm.runInNewContext(fs.readFileSync("miniprogram/pages/ledger-join-result/index.js", "utf8"), {
+    Page: (value) => {
+      page = value;
+    },
+    getApp: () => app,
+    wx: {},
+    console,
+    require: (name) => {
+      if (name.includes("ledger.service"))
+        return { previewLedgerInvite: async () => ({ ledgerName: "家", mode: "member" }) };
+      if (name.includes("ledger.store"))
+        return {
+          joinLedgerByInviteToken: async () => {
+            joined += 1;
+            throw new Error("test");
+          },
+        };
+      return {};
+    },
+  });
+  const context = {
+    ...page,
+    data: { ...page.data, inviteToken: "K7M92P4X" },
+    setData(value) {
+      Object.assign(this.data, value);
+    },
+  };
+  await context.previewInvite();
+  assert.equal(context.data.status, "preview");
+  assert.equal(joined, 0);
+  await context.joinLedger();
+  assert.equal(joined, 1);
+});
+
+test("成员退出、角色变更及所有权转移保留历史成员身份并验证权限", async () => {
+  const { handler, rows } = setup();
+  const ledger = rows.ledgers.ledger;
+  ledger.memberOpenids.push("member");
+  ledger.members.push({ openid: "owner", role: "owner" }, { openid: "member", role: "member" });
+  ledger.viewerOpenids.push("guest");
+  ledger.viewers.push({ openid: "guest" });
+  await assert.rejects(
+    handler.changeLedgerMemberRole("guest", {
+      ledgerId: "ledger",
+      targetOpenid: "member",
+      role: "visitor",
+    }),
+    /OWNER/
+  );
+  await handler.changeLedgerMemberRole("owner", {
+    ledgerId: "ledger",
+    targetOpenid: "guest",
+    role: "member",
+  });
+  assert.equal(ledger.memberOpenids.includes("guest"), true);
+  await handler.changeLedgerMemberRole("owner", {
+    ledgerId: "ledger",
+    targetOpenid: "guest",
+    role: "visitor",
+  });
+  assert.equal(ledger.viewerOpenids.includes("guest"), true);
+  assert.equal(ledger.memberOpenids.includes("guest"), false);
+  await assert.rejects(
+    handler.requestOwnerTransfer("owner", { ledgerId: "ledger", targetOpenid: "guest" }),
+    /TRANSFER/
+  );
+  await handler.requestOwnerTransfer("owner", { ledgerId: "ledger", targetOpenid: "member" });
+  await assert.rejects(handler.acceptOwnerTransfer("guest", { ledgerId: "ledger" }), /TRANSFER/);
+  await handler.acceptOwnerTransfer("member", { ledgerId: "ledger" });
+  assert.equal(ledger.ownerOpenid, "member");
+  assert.equal(ledger.members.find((row) => row.openid === "owner").role, "member");
+  await handler.leaveLedger("owner", { ledgerId: "ledger" });
+  assert.equal(ledger.memberOpenids.includes("owner"), false);
+  await assert.rejects(handler.leaveLedger("member", { ledgerId: "ledger" }), /OWNER/);
 });
 
 test("无账本用户加入后进入账本，已有账本用户自主选择切换", async () => {

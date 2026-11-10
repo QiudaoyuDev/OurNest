@@ -15,6 +15,7 @@ function normalizeInviteCode(value) {
 
 function getInviteStatus(invite, openid, currentTime = Date.now()) {
   if (!invite) return "invalid";
+  if (invite.revokedAt) return "revoked";
   if (invite.claimedOpenid === openid && openid) return "claimed-by-self";
   if (invite.claimedOpenid) return "claimed";
   return Number(invite.expiresAt) > currentTime ? "available" : "expired";

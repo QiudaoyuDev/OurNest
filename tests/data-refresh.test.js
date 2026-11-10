@@ -1,6 +1,37 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const dataRefresh = require("../miniprogram/services/data-refresh.service");
+const fs = require("node:fs");
+const vm = require("node:vm");
+
+test("returning to the profile tab reads the updated user state", () => {
+  let page;
+  let refreshed = 0;
+  const app = { globalData: { currentLedger: null } };
+  vm.runInNewContext(fs.readFileSync("miniprogram/pages/index/index.js", "utf8"), {
+    Page: (value) => {
+      page = value;
+    },
+    getApp: () => app,
+    require: (name) => (name.includes("ledger.store") ? { syncLedgers: async () => ({}) } : {}),
+    console,
+  });
+  const context = {
+    data: { activeTab: "profile", recordDisabledReason: "noLedger" },
+    setData() {},
+    syncRecordAccess() {},
+    selectComponent: (id) =>
+      id === "#tab-profile"
+        ? {
+            syncAuthState: () => {
+              refreshed += 1;
+            },
+          }
+        : null,
+  };
+  page.onShow.call(context);
+  assert.equal(refreshed, 1);
+});
 
 async function flush() {
   await Promise.resolve();

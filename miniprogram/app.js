@@ -60,12 +60,18 @@ App({
   startLedgerAutoSync() {
     this.stopLedgerAutoSync();
     this.ledgerSyncActive = true;
+    this.ledgerSyncFailureNotified = false;
     const run = async () => {
       if (this.globalData.loggedIn) {
         try {
           await ledgerStore.syncLedgers();
+          this.ledgerSyncFailureNotified = false;
         } catch (error) {
           console.warn("automatic ledger sync failed", error);
+          if (!this.ledgerSyncFailureNotified) {
+            this.ledgerSyncFailureNotified = true;
+            emit("ledger:sync-failed");
+          }
         }
       }
       if (this.ledgerSyncActive) {

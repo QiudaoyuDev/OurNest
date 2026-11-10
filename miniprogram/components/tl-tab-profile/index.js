@@ -1,5 +1,6 @@
 const app = getApp();
 const { syncData } = require("../../services/data-sync.service");
+const ledgerStore = require("../../services/ledger.store");
 const feedback = require("../../services/feedback-ui");
 const { getId } = require("../../utils/mapper");
 
@@ -51,7 +52,7 @@ Component({
     attached() {
       this.syncAuthState();
       this.setData({
-        lastSyncedText: this.formatSyncedAt(app.globalData.dataSyncedAt),
+        lastSyncedText: this.formatSyncedAt(ledgerStore.getLastSyncedAt()),
         version: (app.globalData && app.globalData.version) || APP_VERSION,
       });
       this.refreshHeroData();
@@ -62,7 +63,11 @@ Component({
     formatSyncedAt(value) {
       if (!value) return "尚未同步";
       const date = new Date(value);
-      return `上次同步 ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+      return `账本上次检查 ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    },
+
+    refreshSyncTime() {
+      this.setData({ lastSyncedText: this.formatSyncedAt(ledgerStore.getLastSyncedAt()) });
     },
 
     syncAuthState() {

@@ -32,6 +32,7 @@
             </view>
           </view>
           <view class="invite-tip">{{preview.currentRole === 'owner' ? '你是这个账本的拥有者' : preview.mode === 'member' ? '可记账、查看账目，并编辑或删除自己录入的记录' : '可查看账本数据，不能记账或修改'}}</view>
+          <view wx:if="{{preview.already}}" class="invite-tip">你已加入该账本，此操作不会改变现有角色；未使用的新邀请码不会被消耗。需要调整权限请联系拥有者。</view>
           <view class="invite-actions">
             <tl-button block="{{true}}" loading="{{busy}}" loading-text="正在加入" bind:tap="join">{{preview.already ? '查看账本' : '确认加入'}}</tl-button>
             <tl-button variant="secondary" block="{{true}}" disabled="{{busy}}" bind:tap="editCode">修改邀请码</tl-button>

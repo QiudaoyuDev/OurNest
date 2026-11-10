@@ -5,6 +5,7 @@ const {
   now,
   getUser,
   getLedgerById,
+  getLedgerRole,
   listLedgersForUser,
   defaultAvatarUrl,
 } = require("../shared/helpers");
@@ -93,7 +94,7 @@ async function login(openid) {
     let currentLedger = await getLedgerById(user.currentLedgerId);
     let currentLedgerId = user.currentLedgerId || "";
 
-    if (!currentLedger) {
+    if (!currentLedger || getLedgerRole(openid, currentLedger) === "none") {
       const ledgers = await listLedgersForUser(openid);
       currentLedger = ledgers[0] || null;
       currentLedgerId = currentLedger ? currentLedger._id : "";

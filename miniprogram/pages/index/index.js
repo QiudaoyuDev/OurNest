@@ -1,5 +1,6 @@
 const ledgerStore = require("../../services/ledger.store");
 const dataRefresh = require("../../services/data-refresh.service");
+const feedback = require("../../services/feedback-ui");
 const { on, off } = require("../../utils/event-bus");
 
 const TAB_TITLES = {
@@ -23,6 +24,9 @@ Page({
     this.syncRecordAccess();
     this.onCurrentLedgerChanged = () => this.syncRecordAccess();
     on("ledger:current-changed", this.onCurrentLedgerChanged);
+    this.onLedgerSyncFailed = () =>
+      feedback.showToast({ type: "warning", message: "账本同步失败，请稍后手动同步" });
+    on("ledger:sync-failed", this.onLedgerSyncFailed);
     const activeTab = TAB_TITLES.hasOwnProperty(options.tab) ? options.tab : "index";
     this.setData({
       activeTab,
@@ -32,6 +36,11 @@ Page({
     });
     this.unsubscribeLedgerSync = ledgerStore.subscribeSync((result) => {
       this.syncRecordAccess();
+      const profile = this.selectComponent("#tab-profile");
+      if (profile && typeof profile.refreshSyncTime === "function") profile.refreshSyncTime();
+      if ((result.removedLedgerIds || []).length) {
+        feedback.showToast({ type: "info", message: "账本访问权限已变化" });
+      }
       if (result.changed) {
         dataRefresh.invalidate({
           ledgerIds: result.changedLedgerIds,
@@ -45,6 +54,7 @@ Page({
 
   onUnload() {
     if (this.onCurrentLedgerChanged) off("ledger:current-changed", this.onCurrentLedgerChanged);
+    if (this.onLedgerSyncFailed) off("ledger:sync-failed", this.onLedgerSyncFailed);
     if (this.unsubscribeLedgerSync) this.unsubscribeLedgerSync();
     this.unsubscribeLedgerSync = null;
   },
@@ -52,6 +62,9 @@ Page({
   onShow() {
     this.syncRecordAccess();
     this.setData({ foreground: true });
+    const profile =
+      typeof this.selectComponent === "function" && this.selectComponent("#tab-profile");
+    if (profile && typeof profile.syncAuthState === "function") profile.syncAuthState();
     const home = typeof this.selectComponent === "function" && this.selectComponent("#tab-home");
     const currentLedgerId = (getApp().globalData.currentLedger || {})._id || "";
     if (

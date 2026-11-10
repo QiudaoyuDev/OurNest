@@ -68,14 +68,15 @@
             </view>
             <view class="tool-title">快捷金额</view>
           </view>
-          <view class="tool-tile" bindtap="importBill">
+          <!-- 暂时隐藏账单文件导入和导出入口，恢复时移除显示条件。 -->
+          <view wx:if="{{false}}" class="tool-tile" bindtap="importBill">
             <view class="tool-icon">
               <tl-icon name="upload-2-line" size="32" colorKey="primary">
               </tl-icon>
             </view>
             <view class="tool-title">导入账单</view>
           </view>
-          <view class="tool-tile" bindtap="exportBill">
+          <view wx:if="{{false}}" class="tool-tile" bindtap="exportBill">
             <view class="tool-icon">
               <tl-icon name="download-2-line" size="32" colorKey="primary">
               </tl-icon>
@@ -111,7 +112,8 @@
               </tl-icon>
             </view>
           </view>
-          <view class="function-row" bindtap="feedback">
+          <!-- 暂时隐藏意见反馈和更新日志入口。 -->
+          <view wx:if="{{false}}" class="function-row" bindtap="feedback">
             <view class="function-icon">
               <tl-icon name="message-3-line" size="30" colorKey="primary">
               </tl-icon>
@@ -125,7 +127,7 @@
               </tl-icon>
             </view>
           </view>
-          <view class="function-row" bindtap="viewChangelog">
+          <view wx:if="{{false}}" class="function-row" bindtap="viewChangelog">
             <view class="function-icon">
               <tl-icon name="history-line" size="30" colorKey="primary">
               </tl-icon>

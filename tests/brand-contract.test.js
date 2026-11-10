@@ -87,7 +87,12 @@ test("OurNest user reads normalize bundled avatars without changing stored profi
     module: { exports: {} },
     require: (name) =>
       name === "../shared/helpers"
-        ? { ...helpers, db, _: db.command, getLedgerById: async () => ({ _id: "ledger-1" }) }
+        ? {
+            ...helpers,
+            db,
+            _: db.command,
+            getLedgerById: async () => ({ _id: "ledger-1", ownerOpenid: "member-1" }),
+          }
         : { assertOpenid() {} },
   };
   vm.runInNewContext(

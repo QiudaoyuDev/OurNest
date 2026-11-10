@@ -23,6 +23,8 @@
                 <view class="member-role {{item.roleClass}}">{{item.roleText}}</view>
               </view>
               <view wx:if="{{canManage && !item.isOwner}}" class="member-remove" data-openid="{{item.openid}}" data-name="{{item.nickName}}" bindtap="removeMember">移除</view>
+              <view wx:if="{{canManage && !item.isOwner && ledger.type === 'shared'}}" class="member-remove" data-openid="{{item.openid}}" data-name="{{item.nickName}}" data-role="{{item.role}}" bindtap="changeRole">调整权限</view>
+              <view wx:if="{{canManage && item.role === 'member' && ledger.type === 'shared'}}" class="member-remove" data-openid="{{item.openid}}" data-name="{{item.nickName}}" bindtap="transferOwner">转移</view>
             </view>
           </view>
           <tl-button wx:if="{{canManage}}" class="page-submit" block="{{true}}" bind:tap="inviteLedger">
@@ -31,6 +33,19 @@
             <text>邀请成员</text>
           </tl-button>
           <view wx:else class="readonly-tip">仅账本拥有者可以邀请或移除成员</view>
+          <tl-button wx:if="{{!canManage}}" variant="secondary" block="{{true}}" bind:tap="leaveLedger">退出账本</tl-button>
+          <view wx:if="{{ownerTransfer}}" class="card">
+            <view>账本所有权转移待确认</view>
+            <tl-button wx:if="{{!canManage}}" block="{{true}}" data-accept="{{true}}" bind:tap="respondTransfer">确认接收</tl-button>
+            <tl-button variant="secondary" block="{{true}}" data-accept="{{false}}" bind:tap="respondTransfer">{{canManage ? '取消转移' : '拒绝接收'}}</tl-button>
+          </view>
+          <view wx:if="{{canManage && invites.length}}" class="card">
+            <view>有效邀请</view>
+            <view wx:for="{{invites}}" wx:key="id" class="member-row">
+              <view class="member-info">{{item.mode === 'member' ? '成员' : '访客'}} · 创建于 {{item.createdText}} · {{item.expiresText}} 到期</view>
+              <view class="member-remove" data-id="{{item.id}}" bindtap="revokeInvite">撤销</view>
+            </view>
+          </view>
         </block>
       </view>
     </scroll-view>
@@ -49,9 +64,10 @@
             </tl-icon>
           </view>
         </view>
-        <view class="invite-code-display">{{displayCode}}</view>
-        <view class="invite-code-hint">有效期至 {{inviteExpiresAt}}，仅可使用一次，请只发送给信任的人。</view>
-        <view class="invite-actions">
+        <tl-button wx:if="{{!inviteCode}}" block="{{true}}" loading="{{generating}}" bind:tap="generateInvite">生成邀请码</tl-button>
+        <view wx:if="{{inviteCode}}" class="invite-code-display">{{displayCode}}</view>
+        <view wx:if="{{inviteCode}}" class="invite-code-hint">有效期至 {{inviteExpiresAt}}，仅可使用一次，请只发送给信任的人。</view>
+        <view wx:if="{{inviteCode}}" class="invite-actions">
           <tl-button block="{{true}}" bind:tap="copyInviteCode">复制邀请码</tl-button>
           <tl-button variant="secondary" block="{{true}}" open-type="share">发送分享卡片</tl-button>
         </view>

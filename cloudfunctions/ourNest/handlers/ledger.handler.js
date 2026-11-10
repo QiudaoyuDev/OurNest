@@ -229,37 +229,148 @@ async function getLedgerMembers(openid, data = {}) {
     ledger: { id: ledger._id, name: ledger.name, type: ledger.type || "personal" },
     role,
     canManage: role === "owner",
+    ownerTransfer:
+      ledger.ownerTransfer && (role === "owner" || ledger.ownerTransfer.targetOpenid === openid)
+        ? ledger.ownerTransfer
+        : null,
     members: [...memberRows, ...visitorRows],
   });
 }
 
 async function removeLedgerMember(openid, data = {}) {
   const ledger = await getLedgerForUser(openid, data.ledgerId);
-  const role = getLedgerRole(openid, ledger);
-  if (role !== "owner") throw new Error("ONLY_OWNER_CAN_MANAGE_MEMBERS");
   const targetOpenid = String(data.targetOpenid || "");
-  if (!targetOpenid || targetOpenid === ledger.ownerOpenid)
-    throw new Error("OWNER_CANNOT_BE_REMOVED");
+  await updateMembership(ledger._id, openid, targetOpenid, "remove");
+  return ok();
+}
 
-  const memberOpenids = toUniqueOpenids(ledger.memberOpenids || []).filter(
-    (item) => item !== targetOpenid
-  );
-  const viewerOpenids = toUniqueOpenids(ledger.viewerOpenids || []).filter(
-    (item) => item !== targetOpenid
-  );
-  await db
-    .collection("ledgers")
-    .doc(ledger._id)
-    .update({
+async function updateMembership(ledgerId, openid, targetOpenid, action) {
+  await db.runTransaction(async (transaction) => {
+    const ref = transaction.collection("ledgers").doc(ledgerId);
+    const ledger = (await ref.get()).data;
+    const callerRole = getLedgerRole(openid, ledger);
+    if (action === "leave") {
+      if (callerRole === "owner") throw new Error("OWNER_CANNOT_LEAVE");
+      assertReadable(callerRole);
+      targetOpenid = openid;
+    } else if (callerRole !== "owner") throw new Error("ONLY_OWNER_CAN_MANAGE_MEMBERS");
+    if (!targetOpenid || targetOpenid === ledger.ownerOpenid)
+      throw new Error("OWNER_CANNOT_BE_REMOVED");
+    const previousRole = getLedgerRole(targetOpenid, ledger);
+    if (previousRole === "none") throw new Error("MEMBER_NOT_FOUND");
+    if (action === "member" && ledger.type !== "shared") throw new Error("SHARED_LEDGER_REQUIRED");
+    const members = (ledger.members || []).filter((item) => item.openid !== targetOpenid);
+    const viewers = (ledger.viewers || []).filter((item) => item.openid !== targetOpenid);
+    const memberOpenids = toUniqueOpenids(ledger.memberOpenids || []).filter(
+      (id) => id !== targetOpenid
+    );
+    const viewerOpenids = toUniqueOpenids(ledger.viewerOpenids || []).filter(
+      (id) => id !== targetOpenid
+    );
+    if (action === "member") {
+      members.push({ openid: targetOpenid, role: "member", joinedAt: now() });
+      memberOpenids.push(targetOpenid);
+    } else if (action === "visitor") {
+      viewers.push({ openid: targetOpenid, joinedAt: now() });
+      viewerOpenids.push(targetOpenid);
+    }
+    const pending = ledger.ownerTransfer;
+    await ref.update({
       data: {
-        members: (ledger.members || []).filter((item) => item.openid !== targetOpenid),
+        members,
         memberOpenids,
-        viewers: (ledger.viewers || []).filter((item) => item.openid !== targetOpenid),
+        viewers,
         viewerOpenids,
+        ownerTransfer: pending && pending.targetOpenid === targetOpenid ? null : pending || null,
         syncRevision: _.inc(1),
         updatedAt: now(),
       },
     });
+  });
+}
+
+async function leaveLedger(openid, data = {}) {
+  const ledger = await getLedgerForUser(openid, data.ledgerId);
+  await updateMembership(ledger._id, openid, openid, "leave");
+  return ok();
+}
+
+async function changeLedgerMemberRole(openid, data = {}) {
+  if (!["member", "visitor"].includes(data.role)) throw new Error("INVALID_ROLE");
+  const ledger = await getLedgerForUser(openid, data.ledgerId);
+  await updateMembership(ledger._id, openid, String(data.targetOpenid || ""), data.role);
+  return ok();
+}
+
+async function requestOwnerTransfer(openid, data = {}) {
+  const ledger = await getLedgerForUser(openid, data.ledgerId);
+  await db.runTransaction(async (transaction) => {
+    const ref = transaction.collection("ledgers").doc(ledger._id);
+    const current = (await ref.get()).data;
+    if (getLedgerRole(openid, current) !== "owner") throw new Error("ONLY_OWNER_CAN_TRANSFER");
+    if (current.type !== "shared" || getLedgerRole(data.targetOpenid, current) !== "member")
+      throw new Error("TRANSFER_TARGET_MUST_BE_MEMBER");
+    await ref.update({
+      data: {
+        ownerTransfer: { fromOpenid: openid, targetOpenid: data.targetOpenid },
+        syncRevision: _.inc(1),
+        updatedAt: now(),
+      },
+    });
+  });
+  return ok();
+}
+
+async function acceptOwnerTransfer(openid, data = {}) {
+  const ledger = await getLedgerForUser(openid, data.ledgerId);
+  await db.runTransaction(async (transaction) => {
+    const ref = transaction.collection("ledgers").doc(ledger._id);
+    const current = (await ref.get()).data;
+    const pending = current.ownerTransfer;
+    if (
+      !pending ||
+      pending.targetOpenid !== openid ||
+      pending.fromOpenid !== current.ownerOpenid ||
+      getLedgerRole(openid, current) !== "member" ||
+      current.type !== "shared"
+    )
+      throw new Error("TRANSFER_NOT_AVAILABLE");
+    const members = (current.members || []).filter(
+      (item) => item.openid !== openid && item.openid !== current.ownerOpenid
+    );
+    members.push(
+      { openid: current.ownerOpenid, role: "member", joinedAt: now() },
+      { openid, role: "owner", joinedAt: now() }
+    );
+    await ref.update({
+      data: {
+        ownerOpenid: openid,
+        ownerEpoch: Number(current.ownerEpoch || 0) + 1,
+        members,
+        memberOpenids: toUniqueOpenids([
+          ...(current.memberOpenids || []),
+          current.ownerOpenid,
+          openid,
+        ]),
+        ownerTransfer: null,
+        syncRevision: _.inc(1),
+        updatedAt: now(),
+      },
+    });
+  });
+  return ok();
+}
+
+async function cancelOwnerTransfer(openid, data = {}) {
+  const ledger = await getLedgerForUser(openid, data.ledgerId);
+  await db.runTransaction(async (transaction) => {
+    const ref = transaction.collection("ledgers").doc(ledger._id);
+    const current = (await ref.get()).data;
+    const pending = current.ownerTransfer;
+    if (!pending || (current.ownerOpenid !== openid && pending.targetOpenid !== openid))
+      throw new Error("TRANSFER_NOT_AVAILABLE");
+    await ref.update({ data: { ownerTransfer: null, syncRevision: _.inc(1), updatedAt: now() } });
+  });
   return ok();
 }
 
@@ -296,6 +407,7 @@ async function createLedgerInviteToken(openid, data = {}) {
         ledgerId: ledger._id,
         mode,
         ownerOpenid: openid,
+        ownerEpoch: Number(currentLedger.ownerEpoch || 0),
         claimedOpenid: "",
         expiresAt,
         createdAt: now(),
@@ -305,6 +417,57 @@ async function createLedgerInviteToken(openid, data = {}) {
     await ledgerRef.update({ data: { syncRevision: _.inc(1), updatedAt: now() } });
   });
   return ok({ token, mode, expiresAt });
+}
+
+async function listLedgerInvites(openid, data = {}) {
+  const ledger = await getLedgerForUser(openid, data.ledgerId);
+  if (getLedgerRole(openid, ledger) !== "owner") throw new Error("ONLY_OWNER_CAN_INVITE");
+  const rows = [];
+  let offset = 0;
+  let page;
+  do {
+    const result = await db
+      .collection("ledgerInvites")
+      .where({ ledgerId: ledger._id, ownerOpenid: openid, expiresAt: _.gt(Date.now()) })
+      .orderBy("_id", "asc")
+      .skip(offset)
+      .limit(100)
+      .get();
+    page = result.data || [];
+    rows.push(...page);
+    offset += page.length;
+  } while (page.length === 100);
+  return ok({
+    invites: rows
+      .filter(
+        (item) =>
+          !item.claimedOpenid &&
+          !item.revokedAt &&
+          Number(item.expiresAt) > Date.now() &&
+          Number(item.ownerEpoch || 0) === Number(ledger.ownerEpoch || 0)
+      )
+      .map((item) => ({
+        id: item._id,
+        mode: item.mode,
+        createdAt: item.createdAt,
+        expiresAt: item.expiresAt,
+      })),
+  });
+}
+
+async function revokeLedgerInvite(openid, data = {}) {
+  const ledger = await getLedgerForUser(openid, data.ledgerId);
+  await db.runTransaction(async (transaction) => {
+    const current = (await transaction.collection("ledgers").doc(ledger._id).get()).data;
+    if (getLedgerRole(openid, current) !== "owner") throw new Error("ONLY_OWNER_CAN_INVITE");
+    const ref = transaction.collection("ledgerInvites").doc(String(data.inviteId || ""));
+    const invite = (await ref.get()).data;
+    if (!invite || invite.ledgerId !== ledger._id || invite.ownerOpenid !== openid)
+      throw new Error("INVITE_NOT_FOUND");
+    if (invite.claimedOpenid) throw new Error("INVITE_ALREADY_CLAIMED");
+    if (!invite.revokedAt) await ref.update({ data: { revokedAt: now(), updatedAt: now() } });
+  });
+  return ok();
 }
 
 async function limitInviteAttempts(openid) {
@@ -338,6 +501,7 @@ function assertInviteAvailable(invite, openid) {
   if (status === "invalid") throw new Error("邀请码无效");
   if (status === "expired") throw new Error("邀请码已过期，请重新获取");
   if (status === "claimed") throw new Error("邀请码已被使用，请重新获取");
+  if (status === "revoked") throw new Error("邀请码已撤销，请重新获取");
   return status;
 }
 
@@ -349,6 +513,11 @@ async function previewLedgerInvite(openid, data = {}) {
   const status = assertInviteAvailable(invite, openid);
   const ledger = await getLedgerById(invite.ledgerId);
   if (!ledger) throw new Error("账本不存在");
+  if (
+    (invite.ownerOpenid && invite.ownerOpenid !== ledger.ownerOpenid) ||
+    Number(invite.ownerEpoch || 0) !== Number(ledger.ownerEpoch || 0)
+  )
+    throw new Error("邀请已失效，请重新获取");
   const owner = await getUser(ledger.ownerOpenid);
   const role = getLedgerRole(openid, ledger);
   return ok({
@@ -382,6 +551,11 @@ async function joinLedgerByInviteToken(openid, data = {}) {
     assertInviteAvailable(currentInvite, openid);
     const ledger = (await transaction.collection("ledgers").doc(currentInvite.ledgerId).get()).data;
     if (!ledger) throw new Error("LEDGER_NOT_FOUND");
+    if (
+      (currentInvite.ownerOpenid && currentInvite.ownerOpenid !== ledger.ownerOpenid) ||
+      Number(currentInvite.ownerEpoch || 0) !== Number(ledger.ownerEpoch || 0)
+    )
+      throw new Error("邀请已失效，请重新获取");
 
     const currentRole = getLedgerRole(openid, ledger);
     if (currentInvite.claimedOpenid === openid && currentRole === "none")
@@ -527,8 +701,15 @@ module.exports = {
   syncLedgers,
   getLedgerMembers,
   removeLedgerMember,
+  leaveLedger,
+  changeLedgerMemberRole,
+  requestOwnerTransfer,
+  acceptOwnerTransfer,
+  cancelOwnerTransfer,
   setCurrentLedger,
   createLedgerInviteToken,
+  listLedgerInvites,
+  revokeLedgerInvite,
   previewLedgerInvite,
   joinLedgerByInviteToken,
   deleteLedger,

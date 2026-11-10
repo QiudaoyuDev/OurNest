@@ -17,6 +17,15 @@ const updateAccounts = (data) => callApi("ledger/accounts/update", data);
 const createLedgerInviteToken = (data) => callApi("invite/create", data);
 const previewLedgerInvite = (inviteCode) => callApi("invite/preview", { inviteCode });
 const joinLedgerByInviteToken = (inviteToken) => callApi("invite/join-token", { inviteToken });
+const listLedgerInvites = (ledgerId) => callApi("invite/list", { ledgerId });
+const revokeLedgerInvite = (ledgerId, inviteId) => callApi("invite/revoke", { ledgerId, inviteId });
+const leaveLedger = (ledgerId) => callApi("ledger/members/leave", { ledgerId });
+const changeLedgerMemberRole = (ledgerId, targetOpenid, role) =>
+  callApi("ledger/members/role", { ledgerId, targetOpenid, role });
+const requestOwnerTransfer = (ledgerId, targetOpenid) =>
+  callApi("ledger/owner-transfer/request", { ledgerId, targetOpenid });
+const acceptOwnerTransfer = (ledgerId) => callApi("ledger/owner-transfer/accept", { ledgerId });
+const cancelOwnerTransfer = (ledgerId) => callApi("ledger/owner-transfer/cancel", { ledgerId });
 
 module.exports = {
   createLedger,
@@ -35,4 +44,11 @@ module.exports = {
   createLedgerInviteToken,
   previewLedgerInvite,
   joinLedgerByInviteToken,
+  listLedgerInvites,
+  revokeLedgerInvite,
+  leaveLedger,
+  changeLedgerMemberRole,
+  requestOwnerTransfer,
+  acceptOwnerTransfer,
+  cancelOwnerTransfer,
 };

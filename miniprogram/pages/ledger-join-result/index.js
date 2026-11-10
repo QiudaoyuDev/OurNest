@@ -28,7 +28,7 @@ Page({
   },
 
   onShow() {
-    if (this.data.status === "success" || this.data.busy) return;
+    if (["success", "preview", "notice"].includes(this.data.status) || this.data.busy) return;
     this.bootstrap();
   },
 
@@ -58,7 +58,7 @@ Page({
       return;
     }
 
-    this.joinLedger();
+    this.previewInvite();
   },
 
   async loginAndJoin() {
@@ -66,7 +66,7 @@ Page({
     this.setData({ busy: true, status: "checking", message: "正在登录..." });
     try {
       await app.loginWithWechat();
-      await this.joinLedger();
+      await this.previewInvite();
     } catch (error) {
       this.setData({
         status: "login",
@@ -74,6 +74,16 @@ Page({
         message: error.message || "登录失败，请重试。",
         actionText: "重新登录",
       });
+    }
+  },
+
+  async previewInvite() {
+    this.setData({ busy: true, status: "checking", message: "正在查看邀请..." });
+    try {
+      const preview = await ledgerService.previewLedgerInvite(this.data.inviteToken);
+      this.setData({ busy: false, status: "preview", preview, message: "邀请你加入账本" });
+    } catch (error) {
+      this.setData({ busy: false, status: "error", message: error.message || "无法查看邀请" });
     }
   },
 
@@ -156,6 +166,6 @@ Page({
       this.loginAndJoin();
       return;
     }
-    this.joinLedger();
+    this.previewInvite();
   },
 });

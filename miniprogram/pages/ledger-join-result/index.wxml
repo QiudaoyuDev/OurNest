@@ -15,16 +15,18 @@
         <view wx:if="{{status !== 'notice'}}" class="result-desc">
           <block wx:if="{{status === 'success'}}">你已成为{{roleText}}，现在开始记录你的账单吧</block>
           <block wx:elif="{{status === 'login'}}">为了保护账本数据，需要先登录后再加入邀请。</block>
+          <block wx:elif="{{status === 'preview'}}">账本：{{preview.ledgerName}}&#10;邀请人：{{preview.ownerName}}&#10;权限：{{preview.currentRole === 'owner' ? '拥有者' : preview.mode === 'member' ? '成员' : '只读访客'}}&#10;{{preview.already ? '你已加入该账本，本次不会改变角色；未使用的新邀请码不会被消耗。' : '请确认账本和权限后加入。'}}</block>
           <block wx:elif="{{status === 'joining' || status === 'checking'}}">正在为你处理邀请，请稍候。</block>
           <block wx:else>邀请暂时无法完成，可以重试或返回首页。</block>
         </view>
       </view>
       <view class="join-actions">
         <tl-button wx:if="{{status === 'login'}}" block="{{true}}" loading="{{busy}}" loading-text="{{actionText}}" bind:tap="loginAndJoin">{{actionText}}</tl-button>
+        <tl-button wx:elif="{{status === 'preview'}}" block="{{true}}" loading="{{busy}}" bind:tap="joinLedger">{{preview.already ? '查看账本' : '确认加入'}}</tl-button>
         <tl-button wx:elif="{{status === 'success' || (status === 'notice' && ledgerId)}}" block="{{true}}" loading="{{activating}}" loading-text="正在打开" bind:tap="viewLedger">查看账本</tl-button>
         <tl-button wx:elif="{{status === 'error'}}" block="{{true}}" loading="{{busy}}" loading-text="重试中..." bind:tap="retry">重试</tl-button>
         <tl-button wx:elif="{{status !== 'notice'}}" block="{{true}}" disabled="{{true}}">处理中</tl-button>
-        <tl-button wx:if="{{status === 'success' || status === 'error' || status === 'notice'}}" variant="secondary" block="{{true}}" bind:tap="goHome">返回首页</tl-button>
+        <tl-button wx:if="{{status === 'success' || status === 'error' || status === 'notice' || status === 'preview'}}" variant="secondary" block="{{true}}" bind:tap="goHome">返回首页</tl-button>
       </view>
     </view>
   </tl-container>
