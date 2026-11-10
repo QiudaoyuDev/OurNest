@@ -138,3 +138,19 @@ test("OurNest import template uses the application storage namespace", () => {
   const source = fs.readFileSync("cloudfunctions/ourNest/handlers/record.handler.js", "utf8");
   assert.ok(source.includes('cloudPath: "templates/our-nest-import-template.xlsx"'));
 });
+
+test("OurNest application version is defined as V0.0.1 and displayed below changelog", () => {
+  const appSource = fs.readFileSync("miniprogram/app.js", "utf8");
+  assert.match(appSource, /const\s+APP_VERSION\s*=\s*["']V0\.0\.1["']/);
+  assert.match(appSource, /version:\s*APP_VERSION/);
+
+  const profileWxml = fs.readFileSync("miniprogram/components/tl-tab-profile/index.wxml", "utf8");
+  assert.match(profileWxml, /viewChangelog[\s\S]*?viewVersion/);
+  assert.match(profileWxml, /class="function-title">版本号<\/view>/);
+  assert.match(profileWxml, /class="function-value">\{\{version\}\}<\/view>/);
+
+  const profileJs = fs.readFileSync("miniprogram/components/tl-tab-profile/index.js", "utf8");
+  assert.match(profileJs, /const\s+APP_VERSION\s*=\s*["']V0\.0\.1["']/);
+  assert.match(profileJs, /version:\s*APP_VERSION/);
+  assert.match(profileJs, /viewVersion\(\)\s*\{/);
+});

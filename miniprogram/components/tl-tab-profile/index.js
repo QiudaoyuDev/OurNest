@@ -3,6 +3,8 @@ const { syncData } = require("../../services/data-sync.service");
 const feedback = require("../../services/feedback-ui");
 const { getId } = require("../../utils/mapper");
 
+const APP_VERSION = "V0.0.1";
+
 function normalizeCreatedAt(value) {
   if (!value) return null;
   if (value instanceof Date) return value;
@@ -36,6 +38,7 @@ Component({
     readonly: false,
     syncing: false,
     lastSyncedText: "尚未同步",
+    version: APP_VERSION,
     currentLedger: {
       id: "",
       name: "我家账本",
@@ -47,7 +50,10 @@ Component({
   lifetimes: {
     attached() {
       this.syncAuthState();
-      this.setData({ lastSyncedText: this.formatSyncedAt(app.globalData.dataSyncedAt) });
+      this.setData({
+        lastSyncedText: this.formatSyncedAt(app.globalData.dataSyncedAt),
+        version: (app.globalData && app.globalData.version) || APP_VERSION,
+      });
       this.refreshHeroData();
     },
   },
@@ -206,6 +212,10 @@ Component({
 
     viewChangelog() {
       feedback.showToast({ type: "info", message: "更新日志入口已预留" });
+    },
+
+    viewVersion() {
+      feedback.showToast({ type: "info", message: `当前版本 ${this.data.version}` });
     },
   },
 });

@@ -4,6 +4,8 @@ const categoryStore = require("./services/category.store");
 const { emit } = require("./utils/event-bus");
 const { resolveEnvironment } = require("./config/cloud-env");
 
+const APP_VERSION = "V0.0.1";
+
 App({
   globalData: {
     environment: null,
@@ -15,6 +17,7 @@ App({
     dataSyncedAt: 0,
     readonly: false,
     loggedIn: false,
+    version: APP_VERSION,
   },
 
   authRequest: null,

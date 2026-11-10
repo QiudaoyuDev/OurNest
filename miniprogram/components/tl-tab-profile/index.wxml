@@ -135,6 +135,17 @@
               </tl-icon>
             </view>
           </view>
+          <view class="function-row" bindtap="viewVersion">
+            <view class="function-icon">
+              <tl-icon name="information-line" size="30" colorKey="primary">
+              </tl-icon>
+            </view>
+            <view class="function-main">
+              <view class="function-title">版本号</view>
+              <view class="function-tip">已是最新版本</view>
+            </view>
+            <view class="function-value">{{version}}</view>
+          </view>
         </view>
       </view>
       <tl-button class="logout-button" variant="danger" block="{{true}}" bind:tap="logout">退出账号</tl-button>

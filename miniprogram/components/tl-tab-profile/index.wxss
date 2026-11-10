@@ -257,6 +257,13 @@
   justify-content: center;
 }
 
+.function-value {
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-body-sm);
+  font-weight: var(--tl-font-weight-bold);
+  line-height: 1.25;
+}
+
 .tool-icon tl-icon,
 .function-icon tl-icon,
 .function-arrow tl-icon,
