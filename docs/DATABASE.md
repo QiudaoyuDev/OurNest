@@ -14,15 +14,15 @@ references:
 
 ## 业务集合
 
-| 集合               | 用途                             | 关键约束                                 |
-| ------------------ | -------------------------------- | ---------------------------------------- |
-| `users`            | 用户资料与当前账本               | `openid` 唯一                            |
-| `ledgers`          | 账本、成员、访客、预算、账户配置 | 邀请码字段唯一；账户名称去重且为 1–12 个 |
-| `records`          | 收支记录                         | 必须包含有效金额、日期、类型及账本归属   |
-| `categories`       | 账本分类树                       | 按账本、类型、层级和父分类组织           |
-| `ledgerInvites`    | 单次领取邀请令牌                 | `token` 唯一且至多绑定一个 OpenID        |
-| `ledgerOperations` | 可恢复的账本批处理进度           | 用于删除等分阶段、可重试操作             |
-| `feedbacks`        | 用户反馈及处理状态               | 仅当前 OpenID 可查询自己的反馈           |
+| 集合               | 用途                             | 关键约束                               |
+| ------------------ | -------------------------------- | -------------------------------------- |
+| `users`            | 用户资料与当前账本               | `openid` 唯一                          |
+| `ledgers`          | 账本、成员、访客、预算、账户配置 | 账户名称去重且为 1–12 个               |
+| `records`          | 收支记录                         | 必须包含有效金额、日期、类型及账本归属 |
+| `categories`       | 账本分类树                       | 按账本、类型、层级和父分类组织         |
+| `ledgerInvites`    | 单次领取邀请码及邀请令牌         | `token` 唯一且至多绑定一个 OpenID      |
+| `ledgerOperations` | 可恢复的账本批处理进度           | 用于删除等分阶段、可重试操作           |
+| `feedbacks`        | 用户反馈及处理状态               | 仅当前 OpenID 可查询自己的反馈         |
 
 业务集合由部署前的显式准备脚本 `npm run cloud:prepare:test` 创建；业务请求不执行集合创建。集合存在不等于索引和生产安全规则已经配置完成。
 
@@ -96,8 +96,6 @@ references:
 - `records`：`ledgerId ASC, date DESC, createdAt DESC, _id DESC`，用于记录游标分页。
 - `records`：`ledgerId ASC, createdAt DESC`，用于最近记录查询。
 - `ledgerInvites`：`token ASC`，唯一。
-- `ledgers`：`inviteCode ASC`，唯一。
-- `ledgers`：`readonlyShareCode ASC`，唯一。
 - `users`：`openid ASC`，唯一。
 - `feedbacks`：`ownerOpenid ASC, createdAt DESC`，用于反馈历史。
 - `ledgerOperations`：`type ASC, fileId ASC, _id ASC`，用于核查同一文件的历史批次；`type ASC, ownerOpenid ASC, status ASC, references ASC, updatedAt ASC` 用于待删除文件扫描；`type ASC, ledgerId ASC, ownerOpenid ASC, status ASC, createdAt ASC` 用于未确认预览列表。具体排序与索引可用性须在目标测试环境核验。
@@ -112,3 +110,7 @@ references:
 - 生产备份、迁移与恢复流程尚未落地，记录在 [`plan/PENDING.md`](../plan/PENDING.md)。
 
 - `ledger/analysis/get` 的累计模式可传 `autoTrend: true`：记录跨度不超过 24 个自然月时返回逐月趋势，否则按年；`trendMeta.granularity` 标明 `month` 或 `year`。`recordRange` 为首条记录日期至末条记录次日的前闭后开范围，空账本为 `null`。未传该参数时保留累计按年的旧行为。自定义趋势按日，范围最多 366 天。
+
+- 邀请码保存在 `ledgerInvites.token`，以安全随机数生成，`expiresAt` 为毫秒时间戳，24 小时有效。共享账本可邀请成员或访客，个人账本仅可邀请只读访客；领取与成员关系更新在同一事务内完成。邀请码预览和领取按 OpenID 在 `ledgerOperations` 中限制频率。固定账本邀请码接口已移除。`ledgerInvites.token` 唯一索引是创建邀请的必要条件，部署前在测试环境确认。
+
+- 新版不再给账本写入 `inviteCode` 和 `readonlyShareCode`。若测试环境保留了这两个字段的旧唯一索引，应在清空测试数据后的部署准备中核对并移除旧索引，避免缺失字段影响创建账本；索引调整需在测试环境验证，不能仅凭本地代码推断已生效。

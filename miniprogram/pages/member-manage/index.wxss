@@ -92,6 +92,25 @@
 .share-sheet {
   width: 100%;
 }
+.invite-code-display {
+  margin: 24rpx 0 12rpx;
+  color: var(--tl-color-primary);
+  font-size: var(--tl-font-heading);
+  font-weight: var(--tl-font-weight-bold);
+  letter-spacing: 6rpx;
+  text-align: center;
+}
+.invite-code-hint {
+  margin-bottom: 24rpx;
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-caption);
+  text-align: center;
+}
+.invite-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
 .sheet-title {
   margin-bottom: 22rpx;
   color: var(--tl-color-text);
@@ -117,6 +136,29 @@
 }
 .share-option::after {
   border: 0;
+}
+.share-option.is-selected {
+  border-color: var(--tl-color-primary);
+  background: var(--tl-color-primary-soft);
+}
+.share-option-content {
+  min-width: 0;
+  flex: 1;
+}
+.share-option-indicator {
+  display: flex;
+  width: 36rpx;
+  height: 36rpx;
+  flex: 0 0 36rpx;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 2rpx solid var(--tl-color-text-tertiary);
+  border-radius: 50%;
+}
+.share-option-indicator.is-selected {
+  border-color: var(--tl-color-primary);
+  background: var(--tl-color-primary);
 }
 .share-option text {
   display: block;

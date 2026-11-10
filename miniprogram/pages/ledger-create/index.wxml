@@ -25,6 +25,16 @@
               </view>
             </view>
           </view>
+          <view class="type-option join-option" bindtap="joinByCode">
+            <view class="type-icon">
+              <tl-icon name="coupon-3-line" size="38" colorKey="primary">
+              </tl-icon>
+            </view>
+            <view class="type-main">
+              <view class="type-title">输入邀请码加入</view>
+              <view class="type-subtitle">加入已有账本</view>
+            </view>
+          </view>
         </view>
         <view wx:else class="detail-stage fade-up">
           <view class="step-line">
@@ -103,6 +113,7 @@
           <view wx:if="{{createdLedger.quickAmountsEnabled}}" class="quick-amount-guide">快捷金额已开启，可在「我的 - 快捷金额」修改常用金额</view>
         </view>
         <view class="sheet-actions">
+          <tl-button wx:if="{{createdLedger.type === 'shared'}}" variant="secondary" block="{{true}}" bind:tap="inviteMembers">邀请成员</tl-button>
           <tl-button block="{{true}}" bind:tap="goRecord">记一笔</tl-button>
           <tl-button variant="secondary" block="{{true}}" bind:tap="closeResult">关闭</tl-button>
         </view>

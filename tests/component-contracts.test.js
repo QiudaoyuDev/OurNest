@@ -392,57 +392,46 @@ test("index shell page lazily mounts and preserves visited tabs across switches"
   assert.equal(page.data.foreground, true);
 });
 
-test("joinLedger rejects personal ledgers with PERSONAL_LEDGER_NOT_SHARED", async () => {
-  const filename = path.resolve("cloudfunctions/ourNest/handlers/ledger.handler.js");
-  const mod = { exports: {} };
-  let queriedCode = "";
-  const mockDb = {
-    collection: () => ({
-      where: (query) => {
-        queriedCode = query.inviteCode;
-        return {
-          limit: () => ({
-            get: async () => ({
-              data: [
-                {
-                  _id: "ledger-personal-1",
-                  name: "个人账本",
-                  type: "personal",
-                  inviteCode: query.inviteCode,
-                },
-              ],
-            }),
-          }),
-        };
-      },
-    }),
-  };
-  const mockHelpers = {
-    db: mockDb,
-    _: {},
-    ok: (data) => ({ success: true, data }),
-    fail: (message, code) => ({ success: false, code, message }),
-    now: () => new Date(),
+test("returning to the index refreshes the home dashboard when the current ledger changed", () => {
+  const filename = path.resolve("miniprogram/pages/index/index.js");
+  const requireFromIndex = createRequire(filename);
+  let definition;
+  const app = { globalData: { currentLedger: { _id: "new-ledger" } } };
+  let refreshes = 0;
+  const home = {
+    data: { ledgerId: "" },
+    refreshDashboard: () => {
+      refreshes += 1;
+    },
   };
   vm.runInNewContext(fs.readFileSync(filename, "utf8"), {
-    require: (dep) => {
-      if (dep.includes("shared/helpers")) return mockHelpers;
-      if (dep.includes("category-tree")) return {};
-      if (dep.includes("validators/schemas"))
-        return {
-          assertOpenid: () => {},
-          assertLedgerInput: () => {},
-          assertInviteInput: () => {},
-        };
-      return {};
+    require: (name) =>
+      name.includes("ledger.store")
+        ? { subscribeSync: () => () => {}, syncLedgers: () => Promise.resolve({}) }
+        : requireFromIndex(name),
+    Page: (value) => {
+      definition = value;
     },
-    module: mod,
-    exports: mod.exports,
+    getApp: () => app,
     console,
   });
-  const res = await mod.exports.joinLedger("user-joiner", { inviteCode: "123456" });
-  assert.equal(queriedCode, "123456");
-  assert.equal(res.success, false);
-  assert.equal(res.code, "PERSONAL_LEDGER_NOT_SHARED");
-  assert.equal(res.message, "个人账本不能添加成员");
+  const page = {
+    ...definition,
+    data: structuredClone(definition.data),
+    setData(patch) {
+      Object.assign(this.data, patch);
+    },
+    selectComponent: () => home,
+  };
+  page.onShow();
+  assert.equal(refreshes, 1);
+  home.data.ledgerId = "new-ledger";
+  page.onShow();
+  assert.equal(refreshes, 1);
+  app.globalData.currentLedger = null;
+  page.onShow();
+  assert.equal(refreshes, 2);
+  page.selectComponent = () => null;
+  page.onShow();
+  assert.equal(refreshes, 2);
 });

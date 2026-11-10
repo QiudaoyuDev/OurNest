@@ -52,6 +52,16 @@ Page({
   onShow() {
     this.syncRecordAccess();
     this.setData({ foreground: true });
+    const home = typeof this.selectComponent === "function" && this.selectComponent("#tab-home");
+    const currentLedgerId = (getApp().globalData.currentLedger || {})._id || "";
+    if (
+      home &&
+      home.data &&
+      (home.data.ledgerId || "") !== currentLedgerId &&
+      typeof home.refreshDashboard === "function"
+    ) {
+      home.refreshDashboard();
+    }
     ledgerStore.syncLedgers().catch((error) => console.warn("page ledger sync failed", error));
   },
 

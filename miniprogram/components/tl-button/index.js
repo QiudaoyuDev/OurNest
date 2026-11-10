@@ -24,6 +24,10 @@ Component({
       type: String,
       value: "处理中...",
     },
+    openType: {
+      type: String,
+      value: "",
+    },
   },
 
   methods: {

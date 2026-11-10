@@ -260,9 +260,6 @@ const updateAccounts = (data) => mutateLedger("updateAccounts", data);
 const createLedgerInviteToken = (data) => mutateLedger("createLedgerInviteToken", data);
 const joinLedgerByInviteToken = (inviteToken) =>
   mutateLedger("joinLedgerByInviteToken", inviteToken);
-const joinLedger = (inviteCode) => mutateLedger("joinLedger", inviteCode);
-const joinReadonlyLedger = (readonlyShareCode) =>
-  mutateLedger("joinReadonlyLedger", readonlyShareCode);
 
 function clearLedgers() {
   generation += 1;
@@ -292,7 +289,5 @@ module.exports = {
   updateAccounts,
   createLedgerInviteToken,
   joinLedgerByInviteToken,
-  joinLedger,
-  joinReadonlyLedger,
   clearLedgers,
 };

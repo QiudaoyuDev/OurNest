@@ -199,10 +199,6 @@ Page({
     wx.navigateTo({ url: "/pages/ledger-create/index" });
   },
   joinLedger() {
-    wx.showModal({
-      title: "邀请码加入",
-      content: "当前可通过好友分享的账本链接加入账本。",
-      showCancel: false,
-    });
+    wx.navigateTo({ url: "/pages/ledger-invite-code/index" });
   },
 });

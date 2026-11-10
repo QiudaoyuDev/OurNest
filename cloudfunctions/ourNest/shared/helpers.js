@@ -79,16 +79,6 @@ function randomLength(min = 6, max = 12) {
   return Math.floor(min + Math.random() * (max - min + 1));
 }
 
-async function generateUniqueInviteToken() {
-  const { db } = getDb();
-  for (let index = 0; index < 40; index += 1) {
-    const token = makeCode("I", 18);
-    const found = await db.collection("ledgerInvites").where({ token }).limit(1).get();
-    if (!found.data.length) return token;
-  }
-  return `I${Date.now().toString(36).toUpperCase()}${makeCode("", 8)}`;
-}
-
 async function generateUniqueLedgerCode(field, options = {}) {
   const { db } = getDb();
   const { prefix = "", min = 6, max = 12, attempts = 40 } = options;
@@ -352,7 +342,6 @@ Object.assign(module.exports, {
   bumpLedgerSyncRevision,
   makeCode,
   randomLength,
-  generateUniqueInviteToken,
   generateUniqueLedgerCode,
   // queries
   getUser,

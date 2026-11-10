@@ -1,0 +1,87 @@
+.invite-content {
+  box-sizing: border-box;
+  padding-top: var(--tl-space-xl);
+}
+.invite-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--tl-space-md);
+  padding: var(--tl-space-lg);
+}
+.invite-title {
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-heading);
+  font-weight: var(--tl-font-weight-bold);
+}
+.invite-tip,
+.invite-field-tip {
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-body-sm);
+  line-height: 1.6;
+  overflow-wrap: break-word;
+}
+.invite-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--tl-space-sm);
+  margin: var(--tl-space-sm) 0;
+}
+.invite-label {
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-body);
+  font-weight: var(--tl-font-weight-bold);
+}
+.invite-input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--tl-control-height-md);
+  padding: 0 var(--tl-space-md);
+  border: 1rpx solid var(--tl-color-border-warm);
+  border-radius: var(--tl-radius-control);
+  background: var(--tl-color-page);
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-body);
+  font-weight: var(--tl-font-weight-bold);
+  line-height: normal;
+}
+.invite-placeholder {
+  color: var(--tl-color-text-tertiary);
+  font-weight: normal;
+}
+.invite-details {
+  padding: 0 var(--tl-space-md);
+  border-radius: var(--tl-radius-control);
+  background: var(--tl-color-page);
+}
+.invite-row {
+  display: flex;
+  min-width: 0;
+  min-height: var(--tl-control-height-md);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--tl-space-md);
+  border-bottom: 1rpx solid var(--tl-color-divider);
+  font-size: var(--tl-font-body);
+}
+.invite-row:last-child {
+  border-bottom: 0;
+}
+.invite-row-label {
+  flex-shrink: 0;
+  color: var(--tl-color-text-tertiary);
+}
+.invite-row-value {
+  min-width: 0;
+  color: var(--tl-color-text);
+  font-weight: var(--tl-font-weight-bold);
+  text-align: right;
+  overflow-wrap: break-word;
+}
+.invite-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tl-space-sm);
+}

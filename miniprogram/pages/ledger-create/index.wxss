@@ -64,6 +64,11 @@
   transform: scale(0.985);
 }
 
+.join-option {
+  margin-top: 22rpx;
+  border-color: var(--tl-color-divider);
+}
+
 .type-icon {
   width: 82rpx;
   height: 82rpx;

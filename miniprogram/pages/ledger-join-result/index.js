@@ -10,8 +10,6 @@ function decodeOption(value) {
 Page({
   data: {
     status: "checking",
-    inviteCode: "",
-    readonlyShareCode: "",
     inviteToken: "",
     ledgerId: "",
     ledgerName: "共享账本",
@@ -24,16 +22,8 @@ Page({
   },
 
   onLoad(options = {}) {
-    const inviteCode = decodeOption(options.inviteCode);
-    const readonlyShareCode = decodeOption(options.readonlyShareCode);
     const inviteToken = decodeOption(options.inviteToken);
-    this.setData({
-      inviteCode,
-      readonlyShareCode,
-      inviteToken,
-      isReadonly: Boolean(readonlyShareCode),
-      roleText: readonlyShareCode ? "访客" : "成员",
-    });
+    this.setData({ inviteToken });
     this.bootstrap();
   },
 
@@ -51,7 +41,7 @@ Page({
   bootstrap() {
     this.restoreCachedAuth();
 
-    if (!this.data.inviteToken && !this.data.inviteCode && !this.data.readonlyShareCode) {
+    if (!this.data.inviteToken) {
       this.setData({
         status: "error",
         message: "邀请信息不完整，请让账本拥有者重新分享。",
@@ -90,26 +80,14 @@ Page({
   async joinLedger() {
     if (this.data.busy && this.data.status === "joining") return;
 
-    const hasInviteToken = Boolean(this.data.inviteToken);
-    const isReadonly = Boolean(this.data.readonlyShareCode);
-    const payload = hasInviteToken
-      ? { inviteToken: this.data.inviteToken }
-      : isReadonly
-        ? { readonlyShareCode: this.data.readonlyShareCode }
-        : { inviteCode: this.data.inviteCode };
-
     this.setData({ busy: true, status: "joining", message: "正在加入账本..." });
 
     try {
-      const data = hasInviteToken
-        ? await ledgerStore.joinLedgerByInviteToken(payload.inviteToken)
-        : isReadonly
-          ? await ledgerStore.joinReadonlyLedger(payload.readonlyShareCode)
-          : await ledgerStore.joinLedger(payload.inviteCode);
+      const data = await ledgerStore.joinLedgerByInviteToken(this.data.inviteToken);
 
       const ledgerId = data.ledgerId;
       const ledger = data.ledger;
-      const role = data.role || (isReadonly ? "readonly" : "member");
+      const role = data.role || "member";
       await app.loginWithWechat({ force: true });
 
       if (data.already) {

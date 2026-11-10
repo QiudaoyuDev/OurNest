@@ -163,11 +163,7 @@ Component({
     },
 
     joinLedger() {
-      wx.showModal({
-        title: "邀请码加入",
-        content: "第一版优先支持输入邀请码加入账本，同时保留微信分享卡片入口。",
-        showCancel: false,
-      });
+      wx.navigateTo({ url: "/pages/ledger-invite-code/index" });
     },
 
     ledgerSettings() {

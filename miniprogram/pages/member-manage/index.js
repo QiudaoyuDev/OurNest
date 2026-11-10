@@ -41,6 +41,8 @@ Page({
     shareSheetVisible: false,
     shareOptions: [],
     shareMode: "visitor",
+    inviteCode: "",
+    inviteExpiresAt: "",
   },
   onShow() {
     this.loadMembers();
@@ -93,17 +95,28 @@ Page({
     if (!this.data.canManage) return;
     const loadingId = feedback.showLoading({ message: "准备分享" });
     try {
-      const options = await Promise.all(
-        getShareOptions(this.data.ledger).map(async (item) => {
-          const data = await ledgerStore.createLedgerInviteToken({
-            ledgerId: this.data.ledgerId,
-            mode: item.mode,
-          });
-          if (!data.token) throw new Error("分享准备失败");
-          return { ...item, inviteToken: data.token };
-        })
-      );
-      this.setData({ shareSheetVisible: true, shareOptions: options, shareMode: options[0].mode });
+      const options = [];
+      for (const item of getShareOptions(this.data.ledger)) {
+        const data = await ledgerStore.createLedgerInviteToken({
+          ledgerId: this.data.ledgerId,
+          mode: item.mode,
+        });
+        if (!data.token) throw new Error("分享准备失败");
+        options.push({
+          ...item,
+          inviteToken: data.token,
+          expiresText: new Date(data.expiresAt).toLocaleString(),
+        });
+      }
+      const first = options[0];
+      this.setData({
+        shareSheetVisible: true,
+        shareOptions: options,
+        shareMode: first.mode,
+        inviteCode: first.inviteToken,
+        displayCode: `${first.inviteToken.slice(0, 4)} - ${first.inviteToken.slice(4)}`,
+        inviteExpiresAt: first.expiresText,
+      });
     } catch (error) {
       feedback.showToast({ type: "error", message: error.message || "分享准备失败" });
     } finally {
@@ -115,7 +128,18 @@ Page({
   },
   stopSheetTap() {},
   selectShareMode(event) {
-    this.setData({ shareMode: event.currentTarget.dataset.mode || "visitor" });
+    const shareMode = event.currentTarget.dataset.mode || "visitor";
+    const option = this.data.shareOptions.find((item) => item.mode === shareMode);
+    this.setData({
+      shareMode,
+      inviteCode: option.inviteToken,
+      displayCode: `${option.inviteToken.slice(0, 4)} - ${option.inviteToken.slice(4)}`,
+      inviteExpiresAt: option.expiresText,
+    });
+  },
+  copyInviteCode() {
+    if (!this.data.inviteCode) return;
+    wx.setClipboardData({ data: this.data.inviteCode });
   },
   onShareAppMessage(options = {}) {
     const mode = (options.target && options.target.dataset.mode) || this.data.shareMode;

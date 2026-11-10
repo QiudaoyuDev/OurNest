@@ -49,6 +49,12 @@ Page({
   backToType() {
     if (!this.data.saving) this.setData({ stage: "type" });
   },
+  joinByCode() {
+    wx.navigateTo({ url: "/pages/ledger-invite-code/index" });
+  },
+  inviteMembers() {
+    wx.redirectTo({ url: "/pages/member-manage/index" });
+  },
   onNameInput(event) {
     this.setData({ name: event.detail.value });
   },
@@ -113,12 +119,5 @@ Page({
     wx.redirectTo({
       url: `/pages/record-edit/index?ledgerId=${encodeURIComponent(this.data.createdLedgerId)}`,
     });
-  },
-  onShareAppMessage() {
-    const ledger = this.data.createdLedger || {};
-    return {
-      title: `邀请你加入家庭账本「${ledger.name || "咱家小账"}」`,
-      path: `/pages/login/index?inviteCode=${encodeURIComponent(ledger.inviteCode || "")}`,
-    };
   },
 });

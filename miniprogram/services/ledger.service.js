@@ -15,10 +15,8 @@ const updateBudget = (data) => callApi("ledger/budget/update", data);
 const updateQuickAmounts = (data) => callApi("ledger/quick-amounts/update", data);
 const updateAccounts = (data) => callApi("ledger/accounts/update", data);
 const createLedgerInviteToken = (data) => callApi("invite/create", data);
+const previewLedgerInvite = (inviteCode) => callApi("invite/preview", { inviteCode });
 const joinLedgerByInviteToken = (inviteToken) => callApi("invite/join-token", { inviteToken });
-const joinLedger = (inviteCode) => callApi("invite/join", { inviteCode });
-const joinReadonlyLedger = (readonlyShareCode) =>
-  callApi("invite/join-readonly", { readonlyShareCode });
 
 module.exports = {
   createLedger,
@@ -35,7 +33,6 @@ module.exports = {
   updateQuickAmounts,
   updateAccounts,
   createLedgerInviteToken,
+  previewLedgerInvite,
   joinLedgerByInviteToken,
-  joinLedger,
-  joinReadonlyLedger,
 };

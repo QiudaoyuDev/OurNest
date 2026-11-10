@@ -37,14 +37,24 @@
     <tl-bottom-sheet visible="{{shareSheetVisible}}" bind:close="closeShareSheet">
       <view class="share-sheet">
         <view class="sheet-title">选择邀请方式</view>
-        <button wx:for="{{shareOptions}}" wx:key="mode" class="share-option" open-type="share" data-mode="{{item.mode}}" bindtap="selectShareMode">
+        <view wx:for="{{shareOptions}}" wx:key="mode" class="share-option {{shareMode === item.mode ? 'is-selected' : ''}}" data-mode="{{item.mode}}" bindtap="selectShareMode" role="radio" aria-checked="{{shareMode === item.mode}}" aria-label="{{item.title}}，{{item.desc}}">
           <tl-icon name="{{item.icon}}" size="34" colorKey="primaryDark">
           </tl-icon>
-          <view>
+          <view class="share-option-content">
             <view>{{item.title}}</view>
             <text>{{item.desc}}</text>
           </view>
-        </button>
+          <view class="share-option-indicator {{shareMode === item.mode ? 'is-selected' : ''}}">
+            <tl-icon wx:if="{{shareMode === item.mode}}" name="check-line" size="24" colorKey="white">
+            </tl-icon>
+          </view>
+        </view>
+        <view class="invite-code-display">{{displayCode}}</view>
+        <view class="invite-code-hint">有效期至 {{inviteExpiresAt}}，仅可使用一次，请只发送给信任的人。</view>
+        <view class="invite-actions">
+          <tl-button block="{{true}}" bind:tap="copyInviteCode">复制邀请码</tl-button>
+          <tl-button variant="secondary" block="{{true}}" open-type="share">发送分享卡片</tl-button>
+        </view>
       </view>
     </tl-bottom-sheet>
   </tl-container>

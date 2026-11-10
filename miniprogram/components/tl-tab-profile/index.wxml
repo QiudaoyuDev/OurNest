@@ -83,6 +83,13 @@
             <view class="tool-title">导出账单</view>
             <text class="tool-badge">规划中</text>
           </view>
+          <view class="tool-tile" bindtap="joinLedger">
+            <view class="tool-icon">
+              <tl-icon name="coupon-3-line" size="32" colorKey="primary">
+              </tl-icon>
+            </view>
+            <view class="tool-title">邀请码</view>
+          </view>
         </view>
       </view>
       <view class="more-panel card fade-up">

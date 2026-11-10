@@ -12,6 +12,7 @@
     "pages/ledger-settings/index",
     "pages/member-manage/index",
     "pages/ledger-join-result/index",
+    "pages/ledger-invite-code/index",
     "pages/record-category/index",
     "pages/category-manage/index",
     "pages/category-operation/index",

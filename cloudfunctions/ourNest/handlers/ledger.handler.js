@@ -5,7 +5,6 @@ const {
   ok,
   fail,
   now,
-  generateUniqueInviteToken,
   generateUniqueLedgerCode,
   getUser,
   getLedgerById,
@@ -27,6 +26,8 @@ const {
 } = require("../shared/helpers");
 const { createDefaultCategories } = require("./category-tree");
 const { assertOpenid, assertLedgerInput, assertInviteInput } = require("../validators/schemas");
+const crypto = require("crypto");
+const { createInviteCode, normalizeInviteCode, getInviteStatus } = require("../invite-code");
 
 // --- 账本 CRUD ---
 
@@ -48,11 +49,7 @@ async function createLedger(openid, data = {}) {
     budgetEnabled && Number.isFinite(requestedBudget)
       ? Math.min(999999, Math.max(1, Math.round(requestedBudget * 100) / 100))
       : 0;
-  const [ledgerNo, inviteCode, readonlyShareCode] = await Promise.all([
-    generateUniqueLedgerCode("ledgerNo", { prefix: "L", min: 7, max: 11 }),
-    generateUniqueLedgerCode("inviteCode", { min: 6, max: 12 }),
-    generateUniqueLedgerCode("readonlyShareCode", { prefix: "R", min: 6, max: 10 }),
-  ]);
+  const ledgerNo = await generateUniqueLedgerCode("ledgerNo", { prefix: "L", min: 7, max: 11 });
 
   const ledger = {
     ledgerNo,
@@ -64,8 +61,6 @@ async function createLedger(openid, data = {}) {
     memberOpenids: [openid],
     viewers: [],
     viewerOpenids: [],
-    inviteCode,
-    readonlyShareCode,
     budgetEnabled,
     monthlyBudget,
     quickAmountsEnabled,
@@ -289,7 +284,8 @@ async function createLedgerInviteToken(openid, data = {}) {
   const role = getLedgerRole(openid, ledger);
   if (role !== "owner") throw new Error("ONLY_OWNER_CAN_INVITE");
   const mode = ledger.type === "shared" && data.mode === "member" ? "member" : "visitor";
-  const token = await generateUniqueInviteToken();
+  const token = createInviteCode();
+  const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
   await db.runTransaction(async (transaction) => {
     const ledgerRef = transaction.collection("ledgers").doc(ledger._id);
     const currentLedger = (await ledgerRef.get()).data;
@@ -301,17 +297,80 @@ async function createLedgerInviteToken(openid, data = {}) {
         mode,
         ownerOpenid: openid,
         claimedOpenid: "",
+        expiresAt,
         createdAt: now(),
         updatedAt: now(),
       },
     });
     await ledgerRef.update({ data: { syncRevision: _.inc(1), updatedAt: now() } });
   });
-  return ok({ token, mode });
+  return ok({ token, mode, expiresAt });
+}
+
+async function limitInviteAttempts(openid) {
+  assertOpenid(openid);
+  const id = `invite-rate-${crypto.createHash("sha256").update(openid).digest("hex")}`;
+  const timestamp = Date.now();
+  await db.runTransaction(async (transaction) => {
+    const ref = transaction.collection("ledgerOperations").doc(id);
+    let current = null;
+    try {
+      current = (await ref.get()).data;
+    } catch (error) {
+      const message = String(error.errMsg || error.message || "");
+      if (!message.includes(`document with _id ${id} does not exist`)) throw error;
+    }
+    const active = current && timestamp - Number(current.windowStart) < 60000;
+    if (active && current.count >= 10) throw new Error("邀请码尝试次数过多，请稍后再试");
+    await ref.set({
+      data: {
+        type: "invite-rate-limit",
+        windowStart: active ? current.windowStart : timestamp,
+        count: active ? current.count + 1 : 1,
+        updatedAt: now(),
+      },
+    });
+  });
+}
+
+function assertInviteAvailable(invite, openid) {
+  const status = getInviteStatus(invite, openid);
+  if (status === "invalid") throw new Error("邀请码无效");
+  if (status === "expired") throw new Error("邀请码已过期，请重新获取");
+  if (status === "claimed") throw new Error("邀请码已被使用，请重新获取");
+  return status;
+}
+
+async function previewLedgerInvite(openid, data = {}) {
+  await limitInviteAttempts(openid);
+  const token = normalizeInviteCode(data.inviteCode);
+  if (!token) throw new Error("邀请码格式不正确");
+  const invite = await getLedgerInviteByToken(token);
+  const status = assertInviteAvailable(invite, openid);
+  const ledger = await getLedgerById(invite.ledgerId);
+  if (!ledger) throw new Error("账本不存在");
+  const owner = await getUser(ledger.ownerOpenid);
+  const role = getLedgerRole(openid, ledger);
+  return ok({
+    ledgerName: ledger.name,
+    ownerName: (owner && owner.nickName) || "账本拥有者",
+    currentRole: role,
+    mode:
+      role === "readonly"
+        ? "visitor"
+        : role === "member" || role === "owner"
+          ? "member"
+          : ledger.type === "shared" && invite.mode === "member"
+            ? "member"
+            : "visitor",
+    already: role !== "none",
+    claimedBySelf: status === "claimed-by-self",
+  });
 }
 
 async function joinLedgerByInviteToken(openid, data = {}) {
-  const token = String(data.inviteToken || "").trim();
+  await limitInviteAttempts(openid);
+  const token = normalizeInviteCode(data.inviteToken);
   assertInviteInput({ token });
   const invite = await getLedgerInviteByToken(token);
   if (!invite) return fail("邀请链接无效", "INVALID_INVITE_TOKEN");
@@ -320,12 +379,13 @@ async function joinLedgerByInviteToken(openid, data = {}) {
     const currentInvite = (await transaction.collection("ledgerInvites").doc(invite._id).get())
       .data;
     if (!currentInvite) throw new Error("INVITE_NOT_FOUND");
-    if (currentInvite.claimedOpenid && currentInvite.claimedOpenid !== openid)
-      throw new Error("INVITE_ALREADY_CLAIMED");
+    assertInviteAvailable(currentInvite, openid);
     const ledger = (await transaction.collection("ledgers").doc(currentInvite.ledgerId).get()).data;
     if (!ledger) throw new Error("LEDGER_NOT_FOUND");
 
     const currentRole = getLedgerRole(openid, ledger);
+    if (currentInvite.claimedOpenid === openid && currentRole === "none")
+      throw new Error("邀请已使用，请重新获取");
     if (currentRole === "none") {
       const nextRole =
         currentInvite.mode === "member" && ledger.type === "shared" ? "member" : "readonly";
@@ -355,7 +415,7 @@ async function joinLedgerByInviteToken(openid, data = {}) {
           });
       }
     }
-    if (!currentInvite.claimedOpenid) {
+    if (!currentInvite.claimedOpenid && currentRole === "none") {
       await transaction
         .collection("ledgerInvites")
         .doc(currentInvite._id)
@@ -363,59 +423,18 @@ async function joinLedgerByInviteToken(openid, data = {}) {
           data: { claimedOpenid: openid, updatedAt: now() },
         });
     }
-    return ledger;
+    return {
+      ledger,
+      already: currentRole !== "none",
+      role:
+        currentRole === "none"
+          ? currentInvite.mode === "member" && ledger.type === "shared"
+            ? "member"
+            : "readonly"
+          : currentRole,
+    };
   });
-  return ok({ ledgerId: joined._id, ledger: joined });
-}
-
-async function joinLedger(openid, data = {}) {
-  assertInviteInput({ code: data.inviteCode });
-  const found = await db
-    .collection("ledgers")
-    .where({ inviteCode: data.inviteCode })
-    .limit(1)
-    .get();
-  const ledger = found.data[0];
-  if (!ledger) return fail("邀请码无效", "INVALID_INVITE_CODE");
-  if ((ledger.type || "personal") !== "shared")
-    return fail("个人账本不能添加成员", "PERSONAL_LEDGER_NOT_SHARED");
-  if ((ledger.memberOpenids || []).includes(openid)) return ok({ ledgerId: ledger._id, ledger });
-  await db
-    .collection("ledgers")
-    .doc(ledger._id)
-    .update({
-      data: {
-        members: _.push([{ openid, role: "member", joinedAt: new Date() }]),
-        memberOpenids: _.push([openid]),
-        syncRevision: _.inc(1),
-        updatedAt: now(),
-      },
-    });
-  return ok({ ledgerId: ledger._id, ledger });
-}
-
-async function joinReadonlyLedger(openid, data = {}) {
-  assertInviteInput({ code: data.readonlyShareCode });
-  const found = await db
-    .collection("ledgers")
-    .where({ readonlyShareCode: data.readonlyShareCode })
-    .limit(1)
-    .get();
-  const ledger = found.data[0];
-  if (!ledger) return fail("访客分享码无效", "INVALID_READONLY_CODE");
-  if ((ledger.viewerOpenids || []).includes(openid)) return ok({ ledgerId: ledger._id, ledger });
-  await db
-    .collection("ledgers")
-    .doc(ledger._id)
-    .update({
-      data: {
-        viewers: _.push([{ openid, joinedAt: new Date() }]),
-        viewerOpenids: _.push([openid]),
-        syncRevision: _.inc(1),
-        updatedAt: now(),
-      },
-    });
-  return ok({ ledgerId: ledger._id, ledger });
+  return ok({ ledgerId: joined.ledger._id, ...joined });
 }
 
 // --- 可恢复删除 ---
@@ -510,8 +529,7 @@ module.exports = {
   removeLedgerMember,
   setCurrentLedger,
   createLedgerInviteToken,
+  previewLedgerInvite,
   joinLedgerByInviteToken,
-  joinLedger,
-  joinReadonlyLedger,
   deleteLedger,
 };

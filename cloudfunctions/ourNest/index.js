@@ -67,9 +67,8 @@ const routes = {
   "category/save": wrap(categoryHandler.saveCategory),
   "category/delete": wrap(categoryHandler.removeCategory),
   "invite/create": wrap(ledgerHandler.createLedgerInviteToken),
+  "invite/preview": wrap(ledgerHandler.previewLedgerInvite),
   "invite/join-token": wrap(ledgerHandler.joinLedgerByInviteToken),
-  "invite/join": wrap(ledgerHandler.joinLedger),
-  "invite/join-readonly": wrap(ledgerHandler.joinReadonlyLedger),
   "feedback/create": feedback.create,
   "feedback/list": feedback.list,
 };
