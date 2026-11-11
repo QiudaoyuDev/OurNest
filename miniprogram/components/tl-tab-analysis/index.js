@@ -35,6 +35,7 @@ const {
   defaultChartForMode,
   getChartOption,
   hasChartData,
+  categoryChartColor,
 } = require("./chart-options");
 
 function computeTrendBars(trendList = [], selectedKey = "") {
@@ -254,7 +255,14 @@ Component({
     ...createRatioMethods(recordService, (options) => wx.navigateTo(options)),
     getChartOptionForKey(key) {
       if (key !== "dashboardCategory")
-        return getChartOption(this.data, key === "main" ? undefined : key);
+        return getChartOption(
+          this.data,
+          key === "main"
+            ? undefined
+            : key === "category" && this.data.analysisType === "income"
+              ? "income"
+              : key
+        );
       const rows = (this.data.dashboardView.categories || []).filter((item) => item.amount > 0);
       const visible = rows.slice(0, 5);
       const remainder = rows.slice(5).reduce((sum, item) => sum + Math.round(item.amount * 100), 0);
@@ -265,6 +273,15 @@ Component({
     },
 
     handleChartEvent(key, params) {
+      if (key === "category") {
+        const rows = this.data.rangeCategories || [];
+        const visible = rows.filter((item) => item.amount > 0).slice(0, 5);
+        if (!Number.isInteger(params.dataIndex)) return;
+        if (params.dataIndex >= visible.length) return this.setData({ showAllCategories: true });
+        const index = rows.findIndex((item) => item.key === visible[params.dataIndex].key);
+        if (index >= 0) this.selectDashboardCategory({ currentTarget: { dataset: { index } } });
+        return;
+      }
       if (key === "dashboardCategory") {
         const visible = (this.data.dashboardView.categories || [])
           .filter((item) => item.amount > 0)
@@ -276,8 +293,9 @@ Component({
         if (index >= 0) this.selectDashboardCategory({ currentTarget: { dataset: { index } } });
         return;
       }
-      if (key === "category" || ["monthRatio", "yearRatio"].includes(this.data.activeChart))
+      if (["monthRatio", "yearRatio"].includes(this.data.activeChart))
         return this.openRatioChartSelection(params);
+      if (["custom", "all"].includes(this.data.mode)) return this.selectTrendPoint(params);
       this.openTrendRecords(params);
     },
 
@@ -431,7 +449,15 @@ Component({
     },
 
     toggleCalendar() {
-      this.setData({ calendarExpanded: !this.data.calendarExpanded });
+      const cells = this.data.dashboardView.cells || [];
+      const target = this.data.selectedDay || dateAnchor();
+      const index = cells.findIndex((item) => item.key === target);
+      const row = index < 0 ? 0 : Math.floor(index / 7);
+      const last = Math.max(0, Math.ceil(cells.length / 7) - 2);
+      this.setData({
+        calendarExpanded: !this.data.calendarExpanded,
+        calendarStart: Math.min(last, Math.max(0, row - 1)) * 7,
+      });
     },
 
     toggleTrendDetails() {
@@ -439,7 +465,7 @@ Component({
     },
 
     openFiltered(query) {
-      const range = this.data.range || {};
+      const range = this.data.mode === "all" ? this.data.recordRange || {} : this.data.range || {};
       if (!this.data.ledgerId || !range.start || !range.end) return;
       const params = {
         ledgerId: this.data.ledgerId,
@@ -465,7 +491,7 @@ Component({
 
     openDashboardRecord(event) {
       const id = (event.detail && event.detail.id) || event.currentTarget.dataset.id;
-      if (id) wx.navigateTo({ url: `/pages/record-detail/index?id=${encodeURIComponent(id)}` });
+      if (id) wx.navigateTo({ url: `/pages/record-edit/index?id=${encodeURIComponent(id)}` });
     },
 
     openDashboardRecords() {
@@ -475,39 +501,26 @@ Component({
     selectDashboardBar(event) {
       const item = (this.data.dashboardView.bars || [])[Number(event.currentTarget.dataset.index)];
       if (!item || item.future) return;
-      if (this.data.mode === "month") {
-        this.setData({ anchor: item.key });
-        return this.loadAnalysis();
-      }
-      if (this.data.mode === "week") {
-        return this.openFiltered({
-          start: item.key,
-          end: dayAdd(item.key, 1),
-          name: `${item.key}明细`,
-        });
-      }
-      this.setData({ selectedBar: item });
+      this.setData({ selectedBar: this.data.selectedBar?.key === item.key ? null : item });
     },
 
     openSelectedMonth() {
       const item = this.data.selectedBar;
-      if (!item || !/^\d{4}-\d{2}$/.test(item.key)) return;
-      this.setData({
-        mode: "month",
-        modeLabel: "月度",
-        modeIndex: 1,
-        anchor: item.key,
-        activeChart: "monthTrend",
-        selectedBar: null,
-      });
-      this.loadAnalysis();
+      if (!item || !/^\d{4}-\d{2}(?:-\d{2})?$/.test(item.key)) return;
+      const start = item.key.length === 7 ? `${item.key}-01` : item.key;
+      const date = new Date(`${start}T00:00:00Z`);
+      if (item.key.length === 7) date.setUTCMonth(date.getUTCMonth() + 1);
+      else date.setUTCDate(date.getUTCDate() + 1);
+      const end = [date.toISOString().slice(0, 10), dayAdd(dateAnchor(), 1)].sort()[0];
+      this.openFiltered({ start, end, name: `${item.key}明细` });
     },
 
     async selectDashboardCategory(event) {
-      const item = (this.data.dashboardView.categories || [])[
-        Number(event.currentTarget.dataset.index)
-      ];
-      if (!item || !item.recordCount) return;
+      const rows = ["custom", "all"].includes(this.data.mode)
+        ? this.data.rangeCategories || []
+        : this.data.dashboardView.categories || [];
+      const item = rows[Number(event.currentTarget.dataset.index)];
+      if (!item || item.recordCount === 0) return;
       if (this.data.selectedCategory && this.data.selectedCategory.key === item.key) {
         this.categoryRequestId += 1;
         this.setData({
@@ -522,7 +535,8 @@ Component({
         : { kind: "legacy", parent: item.parentCategory || "", name: item.categoryName || "" };
       const id = ++this.categoryRequestId;
       const type = this.data.analysisType;
-      const range = this.data.range;
+      const range = this.data.mode === "all" ? this.data.recordRange : this.data.range;
+      if (!range || !range.start || !range.end) return;
       this.setData({
         selectedCategory: { ...item, categoryFilter },
         categoryPreviewStatus: "loading",
@@ -542,13 +556,14 @@ Component({
         if (
           Math.round(Number((result.rangeSummary || {})[type]) * 100) !==
             Math.round(Number(item.amount) * 100) ||
-          result.rangeRecordCount !== item.recordCount
+          (Number.isInteger(item.recordCount) && result.rangeRecordCount !== item.recordCount)
         ) {
           this.setData({ categoryPreviewStatus: "stale" });
           return;
         }
         this.setData({
           categoryPreviewStatus: "ready",
+          categoryPreviewCount: result.rangeRecordCount,
           categoryPreview: (result.records || []).map((record) => ({
             ...record,
             categoryIcon: item.displayIcon,
@@ -790,8 +805,11 @@ Component({
         selectedDay: "",
         dayStatus: "idle",
         selectedBar: null,
+        selectedTrend: null,
+        selectedTrendKey: "",
         sectionEndSpace: 0,
         dashboardChartError: false,
+        trendChartError: false,
         categoryChartActivated: false,
         categoryChartHidden: false,
         activeSection: "summary",
@@ -846,6 +864,11 @@ Component({
           delete analysisViewData.snapshotRevision;
           const nextData = {
             ...analysisViewData,
+            directionRecordCount: Number.isInteger(result.overview.expenseCount)
+              ? request.analysisType === "income"
+                ? result.overview.recordCount - result.overview.expenseCount
+                : result.overview.expenseCount
+              : null,
             dashboardView: makeDashboardView(
               result,
               request.mode,
@@ -909,6 +932,7 @@ Component({
                 displayIcon: icon,
                 chipClass: scheme.chipClass,
                 iconColor: scheme.iconColor,
+                chartColor: categoryChartColor(item.key),
               };
             }),
             hasDetailRows: activeDetailRows.length > 0,
@@ -1439,12 +1463,18 @@ Component({
     selectTrendPoint(params = {}) {
       if (params.componentType !== "series" || !Number.isInteger(params.dataIndex)) return;
       const row = (this.data.trendRows || [])[params.dataIndex];
-      if (row) this.setData({ selectedTrend: row });
+      if (row) {
+        const selected = this.data.selectedTrend && this.data.selectedTrend.key === row.key;
+        this.setData({
+          selectedTrend: selected ? null : row,
+          selectedTrendKey: selected ? "" : row.key,
+        });
+      }
     },
 
     openTrendRow(event) {
       const index = Number(event.currentTarget.dataset.index);
-      this.openTrendRecords({ componentType: "series", dataIndex: index });
+      this.selectTrendPoint({ componentType: "series", dataIndex: index });
     },
 
     openSelectedTrend() {
@@ -1456,7 +1486,19 @@ Component({
 
     retryTrendChart() {
       this._chartInitRetries = {};
-      this.setData({ trendChartError: false });
+      this.setData({ trendChartError: false }, () => {
+        this.ensureChartHostInitialized("main", "#analysis-chart");
+      });
+    },
+    retryCategoryChart() {
+      this._chartInitRetries = {};
+      this.setData({ dashboardChartError: false }, () => {
+        const key = this.data.mode === "all" ? "category" : "dashboardCategory";
+        this.ensureChartHostInitialized(
+          key,
+          key === "category" ? "#all-category-chart" : "#dashboard-category-chart"
+        );
+      });
     },
 
     openTrendRecordsMerged(params = {}) {
@@ -1531,7 +1573,12 @@ Component({
           dashboardCategory: Boolean(
             this.data.dashboardView && this.data.dashboardView.recordCount
           ),
-          category: Array.isArray(this.data.categories) && this.data.categories.length > 0,
+          category: Boolean(
+            (this.data.analysisType === "income"
+              ? this.data.incomeCategories
+              : this.data.categories
+            )?.length
+          ),
         };
         Object.keys(this.secondaryCharts || {}).forEach((key) => {
           if (!secondaryValidity[key]) {
@@ -1742,7 +1789,10 @@ Component({
       this._chartInitTimers = this._chartInitTimers || {};
       if (this._chartInitTimers[key]) return;
       const attempts = this._chartInitRetries[key] || 0;
-      if (attempts >= 3) return;
+      if (attempts >= 3) {
+        this.setData(key === "main" ? { trendChartError: true } : { dashboardChartError: true });
+        return;
+      }
       this._chartInitRetries[key] = attempts + 1;
       const generation = this.analysisNodeGeneration;
       this._chartInitTimers[key] = setTimeout(
@@ -1799,6 +1849,9 @@ Component({
 
     reload() {
       this.loadAnalysis();
+    },
+    createLedger() {
+      wx.navigateTo({ url: "/pages/ledger-create/index" });
     },
   },
 });

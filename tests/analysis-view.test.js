@@ -16,12 +16,57 @@ const {
 const {
   getChartOption,
   hasChartData,
+  categoryChartColor,
 } = require("../miniprogram/components/tl-tab-analysis/chart-options");
 const {
   makeDashboardView,
   calendarAmount,
   categoryDisplayIcon,
 } = require("../miniprogram/components/tl-tab-analysis/dashboard");
+
+test("dashboard bars preserve small amounts and distinguish zero", () => {
+  const result = makeDashboardView(
+    {
+      recentMonths: [
+        { key: "2026-01", expense: 0 },
+        { key: "2026-02", expense: 1 },
+        { key: "2026-03", expense: 1000 },
+      ],
+    },
+    "month",
+    "expense",
+    "2026-03-15"
+  );
+  assert.deepEqual(
+    result.bars.map((bar) => bar.height),
+    [0, 0.1, 100]
+  );
+  assert.equal(result.bars[2].partial, true);
+});
+
+test("category chart colors follow category identity across ordering", () => {
+  const first = { key: '["id","food"]', name: "餐饮", amount: 20 };
+  const second = { key: '["id","salary"]', name: "工资", amount: 100 };
+  const a = getChartOption({ categoryChart: [first, second] }, "category").series[0].data;
+  const b = getChartOption({ categoryChart: [second, first] }, "category").series[0].data;
+  assert.equal(a[0].itemStyle.color, b[1].itemStyle.color);
+  assert.equal(a[0].itemStyle.color, categoryChartColor(first.key));
+  assert.equal(categoryChartColor(null), "#c8bcb5");
+});
+
+test("analysis visual fixture conserves category, account and daily totals", async () => {
+  const { validateAnalysisResponse } = require("../miniprogram/services/analysis-contract");
+  const fixture = require("./visual-fixtures/analysis-data");
+  const result = await fixture.getAnalysis();
+  assert.doesNotThrow(() =>
+    validateAnalysisResponse(result, {
+      ledgerId: "fixture",
+      mode: "month",
+      analysisView: true,
+      analysisType: "expense",
+    })
+  );
+});
 
 test("analysis view bridge excludes transport-only response fields", () => {
   const result = {
@@ -661,6 +706,43 @@ function ratioPreviewHarness(overrides = {}) {
   });
   return { page, pending, destinations, actions, choose, result, definition, category };
 }
+
+test("all-time income chart and selection use income records and actual record range", async () => {
+  const salary = { key: '["id","salary"]', categoryId: "salary", name: "工资", amount: 6000 };
+  const h = ratioPreviewHarness({
+    mode: "all",
+    analysisType: "income",
+    range: { start: "", end: "" },
+    recordRange: { start: "2026-01-01", end: "2026-02-01" },
+    rangeCategories: [salary],
+    incomeCategoryChart: [salary],
+  });
+  h.page.categoryRequestId = 0;
+  assert.equal(h.page.getChartOptionForKey("category").series[0].data[0].displayName, "工资");
+  h.page.handleChartEvent("category", { dataIndex: 0 });
+  assert.equal(h.pending[0].query.type, "income");
+  assert.equal(h.pending[0].query.start, "2026-01-01");
+  h.pending[0].resolve({ records: [], rangeSummary: { income: 6000 }, rangeRecordCount: 2 });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(h.page.data.categoryPreviewCount, 2);
+  h.page.openDashboardCategoryRecords();
+  assert.equal(h.destinations[0].searchParams.get("type"), "income");
+});
+
+test("monthly bar selection leaves the current context intact and opens the selected month", () => {
+  const h = ratioPreviewHarness({
+    mode: "month",
+    anchor: "2026-03",
+    analysisType: "expense",
+    dashboardView: { bars: [{ key: "2026-02", label: "2月", amountText: "100" }] },
+  });
+  h.page.selectDashboardBar({ currentTarget: { dataset: { index: 0 } } });
+  assert.equal(h.page.data.anchor, "2026-03");
+  assert.equal(h.page.data.selectedBar.key, "2026-02");
+  h.page.openSelectedMonth();
+  assert.equal(h.destinations[0].searchParams.get("start"), "2026-02-01");
+  assert.equal(h.destinations[0].searchParams.get("end"), "2026-03-01");
+});
 
 test("dashboard income category preview ignores stale results and opens the matching filter", async () => {
   const category = {

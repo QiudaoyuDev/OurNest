@@ -267,6 +267,9 @@ test("chart init retries remain bounded when a host stays unusable", async () =>
     analysisNodeGeneration: 5,
     isAttached: true,
     chartController: { mount: () => null, get: () => null, update() {} },
+    setData(patch) {
+      Object.assign(this.data, patch);
+    },
     selectComponent() {
       return {
         init: () => {
@@ -285,6 +288,7 @@ test("chart init retries remain bounded when a host stays unusable", async () =>
   });
   await new Promise((resolve) => setTimeout(resolve, 600));
   assert.equal(attempts, 3);
+  assert.equal(instance.data.trendChartError, true);
 });
 
 test("chart init rejects delayed callbacks from a replaced node", () => {

@@ -12,6 +12,7 @@ const { PNG } = require("pngjs");
 const pixelmatch = require("pixelmatch");
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const update = process.argv.includes("--update");
+const capture = process.argv.includes("--capture");
 const cliPath =
   process.argv.find((argument) => argument.startsWith("--cli="))?.slice(6) ||
   process.env.TL_WECHAT_CLI;
@@ -148,7 +149,9 @@ try {
     const actual = path.join(actualDir, `${item.name}.png`);
     const baseline = path.join(baselineDir, `${item.name}.png`);
     await miniProgram.screenshot({ path: actual });
-    if (update) {
+    if (capture) {
+      console.log(`Captured ${item.name}: ${actual}`);
+    } else if (update) {
       pendingBaselines.push({ actual, baseline, name: item.name });
     } else {
       if (!fs.existsSync(baseline)) throw new Error(`Missing baseline: ${item.name}`);
@@ -171,6 +174,10 @@ try {
     cliChild.kill();
     console.warn(`CLI process did not finish; temporary fixture preserved at ${fixture}`);
   } else {
-    fs.rmSync(fixture, { recursive: true, force: true });
+    try {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    } catch (error) {
+      console.warn(`Unable to remove temporary fixture: ${error.message}`);
+    }
   }
 }

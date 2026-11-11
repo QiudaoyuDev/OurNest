@@ -1,0 +1,493 @@
+{
+  "date": "2026-11-11",
+  "commit": "8da100c",
+  "coverage": {
+    "pages": 21,
+    "businessComponents": 20,
+    "wxss": 42,
+    "wxml": 41
+  },
+  "limitations": [
+    "未启动微信开发者工具，未获得本轮微信渲染截图或真机性能证据",
+    "HTML 结构示意与交互建议使用合成数据，不是用户账本数据",
+    "本轮只生成报告，未修改小程序业务代码"
+  ],
+  "checks": {
+    "ui": "通过，0 allowlisted violations",
+    "focusedTests": "8 个相关测试文件通过（100 个测试）",
+    "additionalPermissionImportTests": "已尝试；部分导入相关测试因缺少 xlsx 依赖失败，未宣称全量验证通过"
+  },
+  "contrasts": [
+    {
+      "name": "品牌红 / 白字",
+      "foreground": "#f0442f",
+      "background": "#ffffff",
+      "ratio": 3.77
+    },
+    {
+      "name": "绿色金额 / 暖白",
+      "foreground": "#25a66a",
+      "background": "#fffdfc",
+      "ratio": 3.07
+    },
+    {
+      "name": "三级文字 / 页面",
+      "foreground": "#9a8278",
+      "background": "#fff7f2",
+      "ratio": 3.4
+    },
+    {
+      "name": "正文 / 页面",
+      "foreground": "#312522",
+      "background": "#fff7f2",
+      "ratio": 13.99
+    },
+    {
+      "name": "次级文字 / 页面",
+      "foreground": "#6f625d",
+      "background": "#fff7f2",
+      "ratio": 5.54
+    }
+  ],
+  "evidenceResult": {
+    "smallBar": {
+      "amount": 1,
+      "maxAmount": 1000,
+      "correctHeightPercent": 0.1,
+      "actualHeightPercent": 4,
+      "factor": 40
+    },
+    "cumulativeIncomePie": {
+      "analysisType": "income",
+      "expected": "工资",
+      "actual": "餐饮"
+    }
+  },
+  "issues": [
+    {
+      "id": "F01",
+      "p": "P1",
+      "area": "图表",
+      "title": "累计切到收入，环图仍画支出",
+      "status": "已确认",
+      "problem": "收入排行读取 incomeCategories，但累计环图固定请求 category，仍读取 categoryChart；挂载条件又依赖支出 categories.length。收入排行与环图可能相互矛盾，纯收入账本还可能没有环图。",
+      "effect": "用户可能把支出结构当成收入来源，属于数据解释错误。",
+      "fix": "环图、列表、标题和点击明细统一从 analysisType 选择数据。收入为空 / 支出为空分别判断，不用另一方向决定是否挂载。",
+      "accept": "合成“收入仅工资 6000、支出仅餐饮 1200”与纯收入两组数据；切换后环图和列表金额、分类、总额完全一致。",
+      "refs": [
+        "E01",
+        "E02",
+        "E03"
+      ]
+    },
+    {
+      "id": "F02",
+      "p": "P1",
+      "area": "交互",
+      "title": "第二次加载缺少可见反馈，可能出现空白",
+      "status": "已确认",
+      "problem": "骨架只在 loading && !chartFirstReadyEver 时出现；第一次成功后再次请求，内容仍被 visibility:hidden 隐藏，没有同级刷新提示。网络等待期间会出现“控制栏还在、内容不见了”的状态。",
+      "effect": "用户难以区分加载、内容丢失和渲染失败，容易反复点击。",
+      "fix": "保持旧图表实例的生命周期策略；显示明确的刷新占位或加载层，禁止旧内容交互。切换新日期时显示新上下文的加载状态。",
+      "accept": "首次加载、切换月份、切换收入、保存返回、请求失败都能看到唯一明确状态；不出现可交互的过期数据。",
+      "refs": [
+        "E04"
+      ]
+    },
+    {
+      "id": "F03",
+      "p": "P1",
+      "area": "图表",
+      "title": "小额支出被最低柱高放大",
+      "status": "已复现",
+      "problem": "dashboard.js 给所有非零柱设置至少 4% 高度，并四舍五入为整数百分比。最大 1000 元时，1 元应为 0.1%，实现却为 4%，图形比例放大 40 倍。",
+      "effect": "小额和大额消费的视觉差距失真，影响趋势判断。",
+      "fix": "数据柱保持真实比例和小数精度；单独为整列设置触摸区域。极小值用数值提示或细线表达，不改变柱高。",
+      "accept": "用 0、1、20、1000 元验证比例；1 元柱保持 0.1%，整列触摸区仍充足，0 不绘制假柱。",
+      "refs": [
+        "E05"
+      ]
+    },
+    {
+      "id": "F04",
+      "p": "P1",
+      "area": "功能",
+      "title": "账单导入有页面和处理函数，但缺少可见入口",
+      "status": "已确认",
+      "problem": "仓库注册了 record-import 页面，“我的”中也保留 importBill，但当前模板没有绑定 importBill，全文检索也未找到其他可见跳转入口。导出则只有“入口已预留”的提示函数。",
+      "effect": "已有的复杂导入能力难以被普通用户发现；功能说明容易与实际可达能力脱节。",
+      "fix": "将导入放入已有记账工具区域，显示目标账本和只读权限；导出按预留能力说明，不标记为已完成。入口恢复前先验收现有流程。",
+      "accept": "有写权限的用户可从主界面进入导入；只读访客不获得操作入口且服务端仍拒绝写入。",
+      "refs": [
+        "E20"
+      ]
+    },
+    {
+      "id": "F05",
+      "p": "P1",
+      "area": "图表",
+      "title": "同一主金额位置，在不同模式含义改变",
+      "status": "已确认",
+      "problem": "周 / 月 / 年主金额是所选方向的总额；自定义 / 累计却使用结余，旁边仍存在支出 / 收入切换。“收支小结”不足以明确告诉用户大数值是结余。",
+      "effect": "用户连续切换模式时，容易把结余误认为支出或收入。",
+      "fix": "若保留现有能力，至少明确标注“区间结余 / 累计结余”，并写清方向切换影响的区域；更一致的方案是在所有模式保持主金额为所选方向总额。",
+      "accept": "五种时间模式任意切换后，主数字有明确指标名、范围和单位；零收入、负结余不产生歧义。",
+      "refs": [
+        "E11"
+      ]
+    },
+    {
+      "id": "F06",
+      "p": "P2",
+      "area": "图表",
+      "title": "近六个月柱图混合完整月与未结束月",
+      "status": "已确认",
+      "problem": "月度柱图取近 6 个自然月总额；当前月只累计到目前，前几个月则完整。图下虽有截至日期，但柱子本身不区分完整度，均值也把当前不完整月计入。",
+      "effect": "本月较矮可能只因本月尚未结束；“平均”又未说明是六个月柱均值，与同卡日均口径不同。",
+      "fix": "当前月使用纹理或明确的“截至 11 日”标注；写“近 6 月月均（含本月未结束）”。比较文案继续保留已实现的同期比较，不把它和柱高比较混为一谈。",
+      "accept": "11 月 11 日查看时，用户能直接辨认 11 月为部分数据；明确区分日均、月均和上月同期。",
+      "refs": [
+        "E12",
+        "E13"
+      ]
+    },
+    {
+      "id": "F07",
+      "p": "P2",
+      "area": "交互",
+      "title": "同一柱形点击有三套操作结果",
+      "status": "已确认",
+      "problem": "周度柱直接进入当日明细；月度柱直接切换当前月份并重新加载；年度柱只选中，再通过“查看该月”进入。图形外观未说明这种差异。",
+      "effect": "用户无法预测点击会筛选、跳页还是改变整个页面范围。",
+      "fix": "统一为“点选 → 显示期间、金额和明确的查看入口”，或在各图下明确说明。选中柱应有可见状态，返回时保留原范围。",
+      "accept": "三种模式点击后都有立即可见、可撤回的反馈；不会无提示改变时间范围。",
+      "refs": [
+        "E06"
+      ]
+    },
+    {
+      "id": "F08",
+      "p": "P2",
+      "area": "交互",
+      "title": "从分析排行查看记录后，编辑链路中断",
+      "status": "已确认",
+      "problem": "分析中的单笔记录固定打开 record-detail；该页面没有编辑 / 删除入口。首页和明细则通常根据 readonly 打开 record-edit 或 record-detail。",
+      "effect": "有编辑权限的用户从分析发现异常记录后，需要回到明细重新找一遍。",
+      "fix": "统一记录入口策略，或在详情显示服务端 canEdit / canDelete 决定的操作。不能用客户端“非只读”替代成员仅能改自己记录的判断。",
+      "accept": "Owner、成员本人、成员他人记录、访客四种角色场景分别验收；允许者可完成纠错，无权限者有清楚说明。",
+      "refs": [
+        "E07",
+        "E08"
+      ]
+    },
+    {
+      "id": "F09",
+      "p": "P2",
+      "area": "图表",
+      "title": "分类图、排行、图标的颜色缺少同一映射",
+      "status": "设计判断",
+      "problem": "环图按金额排序使用 6 色色板；分类图标按领域分类使用另一套颜色，排名前三又使用独立颜色。分类顺序变化后，同一类别的环图颜色可能改变。环图外标签仅 10px。",
+      "effect": "颜色难以帮助用户建立长期识别，多个强调色互相争夺注意力，小屏外标签拥挤。",
+      "fix": "保留线性分类图标；环图与图例采用稳定分类映射，或统一中性色、只强调当前选中项。Top 5 + 其余逻辑已存在，继续保留并让“其余”可展开。",
+      "accept": "切换相邻周期，同类颜色稳定；320–430px 屏幕上长分类名不互相覆盖；不用单靠颜色区分类别。",
+      "refs": [
+        "E14",
+        "E01"
+      ]
+    },
+    {
+      "id": "F10",
+      "p": "P2",
+      "area": "界面",
+      "title": "部分小字和按钮文字对比度不足",
+      "status": "数值验证",
+      "problem": "品牌红配白字 3.77:1，绿色配暖白 3.07:1，三级棕灰配页面 3.4:1。现有按钮约 15px / 700、辅助文案约 11–12px（375px 宽时），不能用大字规则为所有文本豁免。",
+      "effect": "光线强、屏幕小或视觉敏感用户阅读成本更高。",
+      "fix": "保持品牌主色；为正文 / 按钮文字建立更深的语义色，按文字用途校验。图形与装饰不和正文混用阈值；不要直接全局替换品牌红。",
+      "accept": "普通文字目标至少 4.5:1；交互状态、禁用态单独审阅。所有建议颜色先在局部方案中验证。",
+      "refs": [
+        "E23",
+        "E18"
+      ]
+    },
+    {
+      "id": "F11",
+      "p": "P2",
+      "area": "界面",
+      "title": "首页在无预算状态重复展示收支",
+      "status": "已确认",
+      "problem": "“本月支出 / 本月收入”双卡之后，无预算时又显示“本月概览”，再次渲染收入、支出，再补结余。首页另有账本类型切换和 Navbar 账本切换。",
+      "effect": "首屏更多空间用于同一事实，最近记录更晚出现；用户需要判断两组数字是否口径不同。",
+      "fix": "保留一个主汇总区域：有预算以剩余预算为主，无预算以本月结余或支出为主，收入 / 支出只呈现一次。账本名称与类型共享一个明确切换入口。",
+      "accept": "预算开启 / 关闭、空账本、收入为零四种状态下，首屏只有一个主视觉锚点；同口径金额不重复出现。",
+      "refs": [
+        "E09"
+      ]
+    },
+    {
+      "id": "F12",
+      "p": "P2",
+      "area": "组件",
+      "title": "阴影规则与实际实现存在冲突",
+      "status": "已确认",
+      "problem": "AGENTS 要求除 Tabbar 外无阴影；UI 规范基础原则允许微环境阴影，卡片章节却要求无阴影；全局 .card 当前统一带阴影。静态 UI 检查依然通过。",
+      "effect": "后续页面维护会沿不同“正确规则”继续扩散，自动检查无法保证视觉一致。",
+      "fix": "先统一文档与检查基线，再安排视觉变更。依当前协作规则，建议保留 Tabbar 例外，其他容器以背景、细边界和留白表达层级。",
+      "accept": "同一语义只保留一个规则；.card、分析分类图标及按钮 / 浮层全部复查；不单凭 ui:check 通过宣布设计合格。",
+      "refs": [
+        "E15",
+        "E16",
+        "E17"
+      ]
+    },
+    {
+      "id": "F13",
+      "p": "P2",
+      "area": "功能",
+      "title": "预算“消费偏快”没有结合日期进度",
+      "status": "已确认",
+      "problem": "当前 50% / 70% / 90% 阈值同时决定进度条颜色和“已用过半 / 消费偏快 / 预算预警”文案。月底使用 75% 未必偏快，月初使用 45% 反而可能偏快。",
+      "effect": "标签表达了超出计算依据的判断。",
+      "fix": "近期先改成客观用量描述，例如“已使用 75%”；若以后做节奏判断，再明确比较已过天数与预算消耗，不在本轮自行增加新算法。",
+      "accept": "每条状态文案都能由当前已有数据直接证明；100%以上仍显示真实比例和超支额，进度图形可封顶。",
+      "refs": [
+        "E22"
+      ]
+    },
+    {
+      "id": "F14",
+      "p": "P2",
+      "area": "功能",
+      "title": "导入核对页信息过载，主操作容易沉底",
+      "status": "设计判断",
+      "problem": "每行会同时出现来源、商户、分类、疑似重复、交易状态、多个确认按钮等；最多 200 行，确认导入按钮位于长列表之后。技术性临时文件清理状态也进入主要流程。",
+      "effect": "异常核对和普通确认争夺注意力，用户难以判断剩余工作和最终将写入多少笔。",
+      "fix": "保留现有校验逻辑；先显示选中笔数 / 合计 / 待确认数量，异常行展开完整信息。确认能力复用 tl-page-actions；底部安全区只归一个组件。清理信息用用户可理解的恢复提示。",
+      "accept": "正常账单和含重复、退款待审、分类待确认的账单分别验证；可随时看到导入目标和确认总量，重试不会重复写入。",
+      "refs": [
+        "E21"
+      ]
+    },
+    {
+      "id": "F15",
+      "p": "P3",
+      "area": "界面",
+      "title": "强胶囊、粗字、多彩图标同时出现",
+      "status": "设计判断",
+      "problem": "公共按钮全部使用胶囊与 700 字重；我的页每个功能都有不同色块；分析排行再叠排名色、分类色和红色金额。它们各自有理由，叠在同一屏上却弱化主次。",
+      "effect": "视觉负荷来自“处处强调”，而非典型紫色渐变或表情图标。",
+      "fix": "保持圆角、暖红、Logo 与 Remix Icon；先弱化辅助文字、非关键色块和无意义排名强调。控制胶囊只用于选择状态，不为了 UNSLOP 强行换全局风格。",
+      "accept": "首屏缩小看时仍可立即指出一个重点；同级组件共享字阶和间距，次操作明确弱于主操作。",
+      "refs": [
+        "E18",
+        "E14"
+      ]
+    },
+    {
+      "id": "F16",
+      "p": "P3",
+      "area": "功能",
+      "title": "维护入口和部分文案超出普通用户任务",
+      "status": "已确认",
+      "problem": "“清除分类缓存”放在普通设置主列表；版本号固定提示“已是最新版本”，对应方法为空。反馈与更新日志入口被显式隐藏。",
+      "effect": "普通用户承担缓存维护的心智成本，也可能把静态版本说明当成真实检查结果。",
+      "fix": "将缓存刷新收敛到现有同步或故障恢复入口；版本只写当前版本，除非确实执行检查。隐藏功能保持标注为不可达能力，不按已上线入口描述。",
+      "accept": "从用户任务审阅我的页，每项都能回答“我为什么需要点它”；版本状态只表达可验证事实。",
+      "refs": [
+        "E19",
+        "E20"
+      ]
+    }
+  ],
+  "evidences": [
+    {
+      "id": "E01",
+      "title": "累计环图与收入列表的数据源",
+      "file": "miniprogram/components/tl-tab-analysis/index.js",
+      "line": 256,
+      "snippet": " 256      getChartOptionForKey(key) {\n 257        if (key !== \"dashboardCategory\")\n 258          return getChartOption(\n 259            this.data,\n 260            key === \"main\"\n 261              ? undefined\n 262              : key === \"category\" && this.data.analysisType === \"income\"\n 263                ? \"income\"\n 264                : key\n 265          );\n 266        const rows = (this.data.dashboardView.categories || []).filter((item) => item.amount > 0);\n 267        const visible = rows.slice(0, 5);\n 268        const remainder = rows.slice(5).reduce((sum, item) => sum + Math.round(item.amount * 100), 0);\n 269        const categoryChart = remainder\n 270          ? [...visible, { name: \"其余分类\", amount: remainder / 100 }]\n 271          : visible;\n 272        return getChartOption({ ...this.data, categoryChart }, \"category\");\n 273      },"
+    },
+    {
+      "id": "E02",
+      "title": "累计环图受支出 categories.length 控制",
+      "file": "miniprogram/components/tl-tab-analysis/index.wxml",
+      "line": 300,
+      "snippet": " 300              <view wx:if=\"{{mode === 'all' && chartHostMounted && chartFirstReadyEver && rangeCategories.length}}\" class=\"chart-card card\">\n 301                <view wx:if=\"{{chartHostMounted && chartFirstReadyEver && categories.length}}\" class=\"analysis-chart-canvas\">\n 302                  <ec-canvas id=\"all-category-chart\" canvas-id=\"all-category-chart\" data-chart-host=\"secondary\" data-chart-key=\"category\" data-chart-generation=\"{{chartHostGeneration}}\" ec=\"{{ec}}\" bind:init=\"onSecondaryChartInit\" bind:initerror=\"onSecondaryChartInitError\">\n 303                  </ec-canvas>\n 304                </view>\n 305              </view>\n 306              <tl-empty-state wx:if=\"{{!hasChartData}}\" title=\"暂无收支记录\" description=\"选择其他日期范围查看\">\n 307              </tl-empty-state>"
+    },
+    {
+      "id": "E03",
+      "title": "收入 / 支出排行列表确实按方向切换",
+      "file": "miniprogram/components/tl-tab-analysis/index.js",
+      "line": 897,
+      "snippet": " 897              rangeCategories: (request.analysisType === \"income\"\n 898                ? result.incomeCategories\n 899                : result.categories\n 900              ).map((item) => {\n 901                const icon = categoryDisplayIcon(item, request.analysisType || \"expense\");\n 902                const scheme = resolveCategoryScheme(\n 903                  item.name,\n 904                  request.analysisType || \"expense\",\n 905                  icon\n 906                );\n 907                return {\n 908                  ...item,\n 909                  displayIcon: icon,\n 910                  chipClass: scheme.chipClass,\n 911                  iconColor: scheme.iconColor,\n 912                };\n 913              }),"
+    },
+    {
+      "id": "E04",
+      "title": "首次加载以后，骨架不再出现；旧内容被隐藏",
+      "file": "miniprogram/components/tl-tab-analysis/index.wxml",
+      "line": 43,
+      "snippet": "  43        <tl-skeleton wx:if=\"{{loading && !chartFirstReadyEver}}\" variant=\"analysis\">\n  44        </tl-skeleton>\n  45        <tl-empty-state wx:elif=\"{{error}}\" variant=\"error\" title=\"分析数据加载失败\" description=\"请检查网络后重新加载\">\n  46          <tl-button variant=\"secondary\" size=\"small\" bind:tap=\"reload\">重新加载</tl-button>\n  47        </tl-empty-state>\n  48        <tl-empty-state wx:elif=\"{{noLedger}}\" title=\"还没有可分析的账本\" description=\"创建账本并记下第一笔收支后，这里会生成分析\">\n  49        </tl-empty-state>\n  50        <block>\n  51          <view class=\"analysis-content {{loading || error || noLedger ? 'is-analysis-hidden' : ''}}\">\n  52            <block wx:if=\"{{mode === 'week' || mode === 'month' || mode === 'year'}}\">\n  53              <view class=\"analysis-summary-card card dashboard-hero\">\n  54                <text class=\"section-kicker\">{{rangeLabel}} · {{dashboardView.typeLabel}}</text>"
+    },
+    {
+      "id": "E05",
+      "title": "柱高取整且设置 4% 最低高度",
+      "file": "miniprogram/components/tl-tab-analysis/dashboard.js",
+      "line": 141,
+      "snippet": " 141      height: max\n 142        ? Math.max(Number(item[type] || 0) ? 4 : 0, Math.round((Number(item[type] || 0) * 100) / max))\n 143        : 0,\n 144      previousHeight: max\n 145        ? Math.max(\n 146            Number(item.previous || 0) ? 4 : 0,\n 147            Math.round((Number(item.previous || 0) * 100) / max)\n 148          )\n 149        : 0,\n 150    }));\n 151    const completed = source.filter((item) => !item.future);\n 152    const average = completed.length\n 153      ? completed.reduce((sum, item) => sum + Math.round(Number(item[type] || 0) * 100), 0) /\n 154        completed.length /\n 155        100"
+    },
+    {
+      "id": "E06",
+      "title": "周、月、年点击柱子的三种不同结果",
+      "file": "miniprogram/components/tl-tab-analysis/index.js",
+      "line": 475,
+      "snippet": " 475      selectDashboardBar(event) {\n 476        const item = (this.data.dashboardView.bars || [])[Number(event.currentTarget.dataset.index)];\n 477        if (!item || item.future) return;\n 478        if (this.data.mode === \"month\") {\n 479          this.setData({ anchor: item.key });\n 480          return this.loadAnalysis();\n 481        }\n 482        if (this.data.mode === \"week\") {\n 483          return this.openFiltered({\n 484            start: item.key,\n 485            end: dayAdd(item.key, 1),\n 486            name: `${item.key}明细`,\n 487          });\n 488        }\n 489        this.setData({ selectedBar: item });\n 490      },\n 491  \n 492      openSelectedMonth() {\n 493        const item = this.data.selectedBar;\n 494        if (!item || !/^\\d{4}-\\d{2}$/.test(item.key)) return;\n 495        this.setData({\n 496          mode: \"month\",\n 497          modeLabel: \"月度\",\n 498          modeIndex: 1,\n 499          anchor: item.key,\n 500          activeChart: \"monthTrend\",\n 501          selectedBar: null,\n 502        });"
+    },
+    {
+      "id": "E07",
+      "title": "分析记录固定进入 record-detail",
+      "file": "miniprogram/components/tl-tab-analysis/index.js",
+      "line": 466,
+      "snippet": " 466      openDashboardRecord(event) {\n 467        const id = (event.detail && event.detail.id) || event.currentTarget.dataset.id;\n 468        if (id) wx.navigateTo({ url: `/pages/record-detail/index?id=${encodeURIComponent(id)}` });\n 469      },\n 470  "
+    },
+    {
+      "id": "E08",
+      "title": "明细依据只读状态进入详情或编辑",
+      "file": "miniprogram/components/tl-tab-records/index.js",
+      "line": 435,
+      "snippet": " 435      openRecord(event) {\n 436        const id = event.currentTarget.dataset.id;\n 437        if (!id) return;\n 438        const page = this.data.readonly ? \"record-detail\" : \"record-edit\";\n 439        wx.navigateTo({ url: `/pages/${page}/index?id=${encodeURIComponent(id)}` });\n 440      },\n 441  \n 442      reload() {"
+    },
+    {
+      "id": "E09",
+      "title": "无预算时重复展示收入和支出",
+      "file": "miniprogram/components/tl-tab-home/index.wxml",
+      "line": 145,
+      "snippet": " 145            <view class=\"twin-capsules fade-up\">\n 146              <view class=\"capsule-card card\" bindtap=\"goRecords\">\n 147                <view class=\"capsule-icon expense\">\n 148                  <tl-icon name=\"arrow-right-up-line\" size=\"32\" colorKey=\"primary\">\n 149                  </tl-icon>\n 150                </view>\n 151                <view class=\"capsule-data\">\n 152                  <text class=\"capsule-label\">本月支出</text>\n 153                  <text class=\"capsule-amount expense\">¥{{monthExpenseCompact}}</text>\n 154                </view>\n 155              </view>\n 156              <view class=\"capsule-card card\" bindtap=\"goRecords\">\n 157                <view class=\"capsule-icon income\">\n 158                  <tl-icon name=\"arrow-left-down-line\" size=\"32\" colorKey=\"income\">\n 159                  </tl-icon>\n 160                </view>\n 161                <view class=\"capsule-data\">\n 162                  <text class=\"capsule-label\">本月收入</text>\n 163                  <text class=\"capsule-amount income\">¥{{monthIncomeCompact}}</text>\n 164                </view>\n 165              </view>\n 166            </view>\n 167            <view wx:if=\"{{!showBudget || !budgetEnabled}}\" class=\"summary-card card fade-up\">\n 168              <view class=\"summary-head\">\n 169                <view class=\"summary-title\">本月概览</view>\n 170                <view wx:if=\"{{canManageBudget}}\" class=\"summary-action\" bindtap=\"goBudgetSettings\">设置预算</view>\n 171              </view>\n 172              <view class=\"overview-grid\">\n 173                <view class=\"overview-item\">\n 174                  <view class=\"overview-label\">收入</view>\n 175                  <view class=\"overview-value income\">¥{{monthIncomeCompact}}</view>\n 176                </view>\n 177                <view class=\"overview-item\">\n 178                  <view class=\"overview-label\">支出</view>\n 179                  <view class=\"overview-value expense\">¥{{monthExpenseCompact}}</view>\n 180                </view>\n 181                <view class=\"overview-item\">\n 182                  <view class=\"overview-label\">结余</view>\n 183                  <view class=\"overview-value\">¥{{balanceCompact}}</view>\n 184                </view>\n 185              </view>\n 186            </view>\n 187            <view class=\"records-card card fade-up\">\n 188              <view class=\"section-head\">\n 189                <view class=\"section-title\">最近记录</view>\n 190                <view class=\"section-link\" bindtap=\"goRecords\">全部</view>\n 191              </view>\n 192              <view class=\"record-item\" wx:for=\"{{recentRecords}}\" wx:key=\"id\" data-id=\"{{item.id}}\" bindtap=\"goRecordDetail\">\n 193                <view class=\"category-dot {{item.chipClass || item.type}}\">\n 194                  <tl-icon name=\"{{item.categoryIcon}}\" size=\"34\" color=\"{{item.typeIconColor}}\">"
+    },
+    {
+      "id": "E10",
+      "title": "小结同时渲染结余，但样式隐藏第三项",
+      "file": "miniprogram/components/tl-tab-analysis/index.wxss",
+      "line": 957,
+      "snippet": " 957  .analysis-summary-card .summary-metric:nth-child(3) {\n 958    display: none;\n 959  }"
+    },
+    {
+      "id": "E11",
+      "title": "自定义 / 累计的主金额变成结余",
+      "file": "miniprogram/components/tl-tab-analysis/index.wxml",
+      "line": 243,
+      "snippet": " 243                <text class=\"section-kicker\">{{mode === 'custom' ? '区间收支小结' : '全部历史收支小结'}}</text>\n 244                <text class=\"summary-title\">¥{{overview.balanceText}}</text>\n 245                <text class=\"summary-copy\">共 {{overview.recordCount}} 笔 · 收入 ¥{{overview.incomeText}} · 支出 ¥{{overview.expenseText}}</text>\n 246                <text wx:if=\"{{comparisonRange}}\" class=\"summary-copy\">对比 {{comparisonRange.start}} 起至 {{comparisonRange.end}} 前 · 结余 {{balanceCompareText}}</text>\n 247                <view class=\"summary-metrics\">\n 248                  <view class=\"summary-metric\">\n 249                    <text>收入</text>\n 250                    <text class=\"is-income\">¥{{overview.incomeText}}</text>\n 251                  </view>\n 252                  <view class=\"summary-metric\">\n 253                    <text>支出</text>\n 254                    <text class=\"is-expense\">¥{{overview.expenseText}}</text>\n 255                  </view>\n 256                  <view class=\"summary-metric\">\n 257                    <text>结余</text>\n 258                    <text>¥{{overview.balanceText}}</text>\n 259                  </view>\n 260                </view>\n 261              </view>\n 262              <view class=\"showcase-section fade-up\">\n 263                <text class=\"section-kicker\">{{mode === 'custom' ? '区间收支走势' : '累计收支走势'}}</text>\n 264              </view>\n 265              <view wx:if=\"{{chartHostMounted && chartFirstReadyEver && hasChartData}}\" class=\"chart-card card\">"
+    },
+    {
+      "id": "E12",
+      "title": "近六个月按整月归集",
+      "file": "cloudfunctions/ourNest/handlers/analysis.handler.js",
+      "line": 333,
+      "snippet": " 333    let recentMonths = [];\n 334    if (data.analysisView && mode === \"month\") {\n 335      const first = addMonth(range.year, range.month, -5);\n 336      const buckets = new Map(\n 337        Array.from({ length: 6 }, (_, index) => {\n 338          const month = addMonth(first.year, first.month, index);\n 339          const key = `${month.year}-${String(month.month).padStart(2, \"0\")}`;\n 340          return [key, { key, label: `${month.month}月`, income: 0, expense: 0 }];\n 341        })\n 342      );\n 343      extendedRecords.forEach((record) => {\n 344        const bucket = buckets.get(record.date.slice(0, 7));\n 345        if (bucket)\n 346          bucket[record.type === \"income\" ? \"income\" : \"expense\"] += moneyCents(record.amount);\n 347      });\n 348      recentMonths = Array.from(buckets.values(), (bucket) => ({\n 349        ...bucket,\n 350        income: bucket.income / 100,\n 351        expense: bucket.expense / 100,\n 352      }));\n 353    }\n 354    const hasDailyRange = [\"week\", \"month\", \"year\", \"calendar\", \"custom\"].includes(mode);\n 355    const analysisEnd = hasDailyRange ? range.end : \"\";\n 356    const analysisDayCount = hasDailyRange\n 357      ? mode === \"month\" && isCurrentMonth\n 358        ? currentMonthRange.day\n 359        : Math.max(\n 360            1,\n 361            Math.round(\n 362              (new Date(`${analysisEnd}T00:00:00Z`) - new Date(`${range.start}T00:00:00Z`)) / 86400000"
+    },
+    {
+      "id": "E13",
+      "title": "趋势均值包含所有已到时间桶",
+      "file": "miniprogram/components/tl-tab-analysis/dashboard.js",
+      "line": 151,
+      "snippet": " 151    const completed = source.filter((item) => !item.future);\n 152    const average = completed.length\n 153      ? completed.reduce((sum, item) => sum + Math.round(Number(item[type] || 0) * 100), 0) /\n 154        completed.length /\n 155        100\n 156      : 0;\n 157    return {\n 158      typeLabel: label,\n 159      totalText: formatDisplayMoney(total),\n 160      recordCount: Number(dashboard.recordCount || 0),"
+    },
+    {
+      "id": "E14",
+      "title": "环图使用按排序分配的多色色板和 10px 标签",
+      "file": "miniprogram/components/tl-tab-analysis/chart-options.js",
+      "line": 45,
+      "snippet": "  45  const CHART_COLORS = [\n  46    CHART_THEME.expense,\n  47    \"#ff8e67\",\n  48    CHART_THEME.accentWarm,\n  49    CHART_THEME.income,\n  50    CHART_THEME.accentCool,\n  51    \"#9b7de5\",\n  52  ];\n  53  \n  54  const ANALYSIS_CHART_TYPES = [\n  55    \"monthTrend\",\n  56    \"monthRatio\",\n  57    \"yearCashflow\",\n  58    \"yearBalance\",\n  59    \"yearRatio\",\n  60  ];\n  61  \n  62  function defaultChartForMode(mode) {\n  63    if (mode === \"month\") return \"monthTrend\";\n  64    if (mode === \"year\") return \"yearCashflow\";\n  65    return \"trend\";\n  66  }\n  67  \n  68  function formatTooltipAmount(value) {\n  69    return money(Array.isArray(value) ? value[value.length - 1] : value);\n  70  }\n  71  \n  72  function getPieOption(data, chartType, ratio = false) {\n  73    const rows = getRanking(data, chartType);\n  74    return {\n  75      color: CHART_COLORS,\n  76      animationDuration: 350,\n  77      tooltip: {\n  78        trigger: \"item\",\n  79        triggerOn: \"click\",\n  80        confine: true,\n  81        formatter: (params) =>\n  82          `${params.data.displayName || params.name}\\n${formatTooltipAmount(params.value)} · ${params.percent}%`,\n  83      },\n  84      series: [\n  85        {\n  86          type: \"pie\",\n  87          selectedMode: ratio ? \"single\" : false,\n  88          radius: [\"48%\", \"72%\"],\n  89          center: [\"50%\", \"50%\"],\n  90          avoidLabelOverlap: true,\n  91          itemStyle: { borderColor: CHART_THEME.surface, borderWidth: 3 },\n  92          label: {"
+    },
+    {
+      "id": "E15",
+      "title": "全局卡片实际采用阴影",
+      "file": "miniprogram/app.wxss",
+      "line": 228,
+      "snippet": " 228  .card {\n 229    border: var(--tl-border-width) solid var(--tl-color-border-subtle);\n 230    border-radius: var(--tl-radius-card);\n 231    background: var(--tl-color-surface);\n 232    box-shadow: var(--tl-shadow-card);\n 233    transition:\n 234      transform var(--tl-duration-fast) ease,\n 235      box-shadow var(--tl-duration-fast) ease;\n 236  }\n 237  "
+    },
+    {
+      "id": "E16",
+      "title": "仓库约束：只有 Tabbar 允许阴影",
+      "file": "AGENTS.md",
+      "line": 39,
+      "snippet": "  39  - 除 `tl-tabbar` 外不使用阴影；渐变仅限规范允许的页面背景、Tabbar 中央操作和骨架动画，并保证端点自然衔接。"
+    },
+    {
+      "id": "E17",
+      "title": "视觉规范同时要求阴影与无阴影",
+      "file": "docs/UI-GUIDELINES.md",
+      "line": 35,
+      "snippet": "  35  3. 投影采用标准微环境光 Token（`--tl-shadow-sm`、`--tl-shadow-card`、`--tl-shadow-float`），严禁业务页面私写硬编码阴影；`tl-tabbar` 与中央记账 Hub 保持柔和向上的浮动与微光晕。\n  36  4. 渐变用于页面底色、重点看板背景与呼吸动效，深浅过渡自然，结束颜色与相邻底色无缝衔接。\n  37  5. 确立黄金 3 秒数据层级：同一视区必须存在唯一的主视觉锚点（Hero Metric），次级信息采用微胶囊或次级字阶承托。\n  38  6. 统一的是视觉语义、交互节奏与触感预期，不强迫不同业务页面共用相同布局。"
+    },
+    {
+      "id": "E18",
+      "title": "公共按钮使用胶囊和 700 字重",
+      "file": "miniprogram/components/tl-button/index.wxss",
+      "line": 3,
+      "snippet": "   3    --tl-button-radius: 999rpx;\n   4    --tl-button-height-medium: 92rpx;\n   5    --tl-button-height-small: 78rpx;\n   6    --tl-button-font-medium: 30rpx;\n   7    --tl-button-font-small: 28rpx;\n   8    --tl-button-font-weight: 700;\n   9    --tl-button-primary: var(--tl-color-primary);\n  10    --tl-button-primary-soft: var(--tl-color-primary-soft);"
+    },
+    {
+      "id": "E19",
+      "title": "清除分类缓存暴露给普通用户",
+      "file": "miniprogram/components/tl-tab-profile/index.wxml",
+      "line": 146,
+      "snippet": " 146            <view class=\"function-row\" bindtap=\"clearCategoryCache\">\n 147              <view class=\"function-icon icon-chip-amber\">\n 148                <tl-icon name=\"delete-bin-line\" size=\"30\" color=\"#d97706\" />\n 149              </view>\n 150              <view class=\"function-main\">\n 151                <view class=\"function-title\">清除分类缓存</view>\n 152                <view class=\"function-tip\">重新加载当前账本的分类</view>\n 153              </view>\n 154              <view class=\"function-arrow\">\n 155                <tl-icon name=\"arrow-right-s-line\" size=\"32\" colorKey=\"tertiary\" />\n 156              </view>\n 157            </view>\n 158            <!-- 暂时隐藏意见反馈和更新日志入口。 -->\n 159            <view wx:if=\"{{false}}\" class=\"function-row\" bindtap=\"feedback\">\n 160              <view class=\"function-icon\">"
+    },
+    {
+      "id": "E20",
+      "title": "导入有处理函数，导出仅预留",
+      "file": "miniprogram/components/tl-tab-profile/index.js",
+      "line": 213,
+      "snippet": " 213      importBill() {\n 214        if (this.data.readonly) {\n 215          feedback.showReadonlyToast();\n 216          return;\n 217        }\n 218        wx.navigateTo({ url: \"/pages/record-import/index\" });\n 219      },\n 220  \n 221      exportBill() {\n 222        feedback.showToast({ type: \"info\", message: \"导出账单入口已预留\" });\n 223      },\n 224  \n 225      feedback() {\n 226        wx.navigateTo({ url: \"/pages/feedback/index\" });"
+    },
+    {
+      "id": "E21",
+      "title": "导入预览一次展示大量复核信息",
+      "file": "miniprogram/pages/record-import/index.wxml",
+      "line": 54,
+      "snippet": "  54            <view wx:for=\"{{previewRows}}\" wx:key=\"rowNumber\" class=\"preview-row\" data-row=\"{{item.rowNumber}}\" bindtap=\"togglePreviewRow\">\n  55              <view class=\"preview-heading\">\n  56                <text>{{item.excluded ? '不计入' : item.selected ? '已选择' : '未选择'}} · 第 {{item.rowNumber}} 行</text>\n  57                <text>{{(item.manualType || item.type) === 'income' ? '收入' : '支出'}} ¥{{item.amount}}</text>\n  58              </view>\n  59              <view>{{item.date}} · {{item.parentCategory}} / {{item.categoryName}} · {{item.account}}</view>\n  60              <view wx:if=\"{{item.note}}\">备注：{{item.note}}</view>\n  61              <view wx:if=\"{{item.categoryWarning}}\">{{item.categoryWarning}}</view>\n  62              <view wx:if=\"{{item.duplicateWarning}}\">{{item.duplicateWarning}}</view>\n  63              <view wx:if=\"{{item.source}}\">来源：{{item.sourceText}} · 对方：{{item.merchant}} · 状态：{{item.status}}</view>\n  64              <view wx:if=\"{{item.sourceCategory}}\">来源分类：{{item.sourceCategory}}</view>\n  65              <picker wx:if=\"{{item.categoryChoiceRequired}}\" mode=\"selector\" range=\"{{item.categoryOptions}}\" range-key=\"label\" value=\"{{item.categoryIndex}}\" data-row=\"{{item.rowNumber}}\" catchtap=\"stopPreviewTap\" bindchange=\"choosePreviewCategory\">\n  66                <view>账本分类：{{item.categoryOptions[item.categoryIndex].label}} · {{item.categoryConfirmed ? '已确认' : '待确认'}} ▾</view>\n  67              </picker>\n  68              <view wx:if=\"{{item.reviewReason}}\">{{item.reviewReason}}</view>\n  69              <view wx:if=\"{{item.sourceIdWarning}}\">{{item.sourceIdWarning}}</view>\n  70              <view wx:if=\"{{item.confirmedDuplicate}}\">该来源交易已导入，将自动跳过</view>\n  71              <view wx:if=\"{{item.sourceDuplicateWarning}}\">{{item.sourceDuplicateWarning}}</view>\n  72              <view wx:if=\"{{item.crossSourceWarning}}\">{{item.crossSourceWarning}}</view>\n  73              <view wx:if=\"{{item.needsReview}}\" class=\"dialog-actions\">\n  74                <tl-button variant=\"secondary\" size=\"small\" data-row=\"{{item.rowNumber}}\" data-type=\"income\" catch:tap=\"chooseReviewType\">确认成功并计收入</tl-button>\n  75                <tl-button variant=\"secondary\" size=\"small\" data-row=\"{{item.rowNumber}}\" data-type=\"expense\" catch:tap=\"chooseReviewType\">确认成功并计支出</tl-button>\n  76              </view>\n  77            </view>\n  78            <view wx:if=\"{{previewErrors.length}}\" class=\"error-list\">\n  79              <text wx:for=\"{{previewErrors}}\" wx:key=\"*this\">{{item}}</text>\n  80            </view>\n  81            <view class=\"dialog-actions\">\n  82              <tl-button variant=\"secondary\" block=\"{{true}}\" disabled=\"{{uploading}}\" bind:tap=\"cancelPreview\">取消</tl-button>\n  83              <tl-button block=\"{{true}}\" loading=\"{{uploading}}\" loading-text=\"正在导入...\" bind:tap=\"confirmImport\">确认导入</tl-button>\n  84            </view>\n  85            <view class=\"import-note\">导入中断后可继续上次导入。</view>\n  86          </view>\n  87        </view>\n  88      </scroll-view>"
+    },
+    {
+      "id": "E22",
+      "title": "预算提示仅按绝对使用比例判断",
+      "file": "miniprogram/components/tl-tab-home/index.wxml",
+      "line": 33,
+      "snippet": "  33                    <view class=\"budget-status-tag {{isOverBudget ? 'danger' : budgetRate >= 90 ? 'danger' : budgetRate >= 70 ? 'warning' : budgetRate >= 50 ? 'attention' : 'safe'}}\">{{isOverBudget ? '已超支' : budgetRate >= 90 ? '预算预警' : budgetRate >= 70 ? '消费偏快' : budgetRate >= 50 ? '已用过半' : '预算充足'}}</view>"
+    },
+    {
+      "id": "E23",
+      "title": "全局文字和语义颜色",
+      "file": "miniprogram/app.wxss",
+      "line": 21,
+      "snippet": "  21    --tl-color-primary: #f0442f;\n  22    --tl-color-primary-pressed: #d9483b;\n  23    --tl-color-primary-soft: #fff0ea;\n  24    --tl-color-income: #25a66a;\n  25    --tl-color-income-soft: #edf9f2;\n  26    --tl-color-expense: #f0442f;\n  27    --tl-color-danger: #d9483b;\n  28    --tl-color-danger-soft: #fff1ef;\n  29    --tl-color-warning: #b56a13;\n  30    --tl-color-warning-soft: #fff3e0;\n  31    --tl-color-info: #3679bc;\n  32    --tl-color-info-soft: #ebf5ff;\n  33    --tl-color-text: #312522;\n  34    --tl-color-text-secondary: #6f625d;\n  35    --tl-color-text-tertiary: #9a8278;\n  36    --tl-color-text-inverse: #ffffff;\n  37    --tl-color-warning-alt: #d58a18;"
+    },
+    {
+      "id": "E24",
+      "title": "自定义模式中的家庭支出不受收入切换限制",
+      "file": "miniprogram/components/tl-tab-analysis/index.wxml",
+      "line": 332,
+      "snippet": " 332            <block wx:if=\"{{family && ((analysisType === 'expense' && (mode === 'week' || mode === 'month' || mode === 'year')) || mode === 'custom')}}\">\n 333              <view id=\"analysis-family\">\n 334              </view>\n 335              <view class=\"showcase-section\">\n 336                <text class=\"section-kicker\">家庭支出 · ¥{{family.totalText}}</text>\n 337              </view>\n 338              <view class=\"showcase-insights card\">\n 339                <view class=\"showcase-insight\">付款人和消费归属分别统计；公共及多人消费按记录人展示，未知数据计入其他。</view>\n 340              </view>"
+    },
+    {
+      "id": "E25",
+      "title": "日历折叠保留月初 14 格",
+      "file": "miniprogram/components/tl-tab-analysis/index.wxml",
+      "line": 118,
+      "snippet": " 118                    <view wx:for=\"{{dashboardView.cells}}\" wx:key=\"key\" wx:if=\"{{calendarExpanded || index < 14}}\" class=\"dashboard-day {{item.blank ? 'is-blank' : ''}} {{item.isToday ? 'is-today' : ''}} {{item.future ? 'is-future' : ''}} {{item.hasAmount ? 'has-amount' : ''}} {{selectedDay === item.key ? 'is-selected' : ''}}\" data-date=\"{{item.blank ? '' : item.key}}\" bindtap=\"selectDashboardDay\">\n 119                      <text wx:if=\"{{!item.blank}}\" class=\"dashboard-day-number\">{{item.isToday ? '今天' : item.day}}</text>\n 120                      <text wx:if=\"{{!item.blank}}\" class=\"dashboard-day-amount\">{{item.amountText}}</text>\n 121                    </view>\n 122                  </view>\n 123                  <tl-button variant=\"text\" size=\"small\" bind:tap=\"toggleCalendar\">{{calendarExpanded ? '收起日历' : '展开全部'}}</tl-button>\n 124                  <view wx:if=\"{{selectedDay}}\" class=\"dashboard-day-detail\">"
+    },
+    {
+      "id": "E26",
+      "title": "默认完整展开日历",
+      "file": "miniprogram/components/tl-tab-analysis/index.js",
+      "line": 109,
+      "snippet": " 109      calendarExpanded: true,"
+    },
+    {
+      "id": "E27",
+      "title": "页面动作和键盘加载 / 只读条件",
+      "file": "miniprogram/pages/record-edit/index.wxml",
+      "line": 154,
+      "snippet": " 154    <tl-page-actions wx:if=\"{{isEditing && !readonly && !keypadOpen && !recordLoading && !recordLoadError && !familyLoading && !familyError}}\">\n 155      <view class=\"record-actions {{isEditing ? 'has-delete' : ''}}\">\n 156        <tl-button wx:if=\"{{isEditing}}\" variant=\"danger\" block=\"{{true}}\" loading=\"{{deleting}}\" loading-text=\"删除中...\" disabled=\"{{saving}}\" bind:tap=\"deleteRecord\">删除记录</tl-button>\n 157        <block wx:if=\"{{isEditing}}\">\n 158          <tl-button block=\"{{true}}\" loading=\"{{saving}}\" loading-text=\"保存中...\" disabled=\"{{deleting || !canSave}}\" bind:tap=\"saveAndLeave\">保存记录</tl-button>\n 159        </block>\n 160      </view>\n 161    </tl-page-actions>\n 162  </view>\n 163  "
+    }
+  ]
+}

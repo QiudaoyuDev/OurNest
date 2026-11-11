@@ -117,7 +117,7 @@
   padding: 18rpx 24rpx;
   border-radius: var(--tl-radius-pill);
   background: var(--tl-color-primary-soft);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-body-sm);
   font-weight: var(--tl-font-weight-bold);
   line-height: 1;
@@ -144,7 +144,7 @@
 }
 
 .required-star {
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   padding-left: 4rpx;
 }
 
@@ -295,7 +295,7 @@
   border-radius: var(--tl-radius-control);
   background: var(--tl-color-page);
   border: 1rpx solid rgba(240, 68, 47, 0.1);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-heading);
   font-weight: var(--tl-font-weight-bold);
 }

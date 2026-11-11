@@ -41,7 +41,7 @@
 .amount-pill {
   padding: 14rpx 18rpx 14rpx 22rpx;
   border-radius: var(--tl-radius-pill);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   background: var(--tl-color-primary-soft);
   font-size: var(--tl-font-body);
   font-weight: var(--tl-font-weight-bold);
@@ -58,7 +58,7 @@
   padding: 0 14rpx 0 24rpx;
   border: var(--tl-border-width) solid var(--tl-color-border-warm);
   border-radius: var(--tl-radius-control);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   background: var(--tl-color-page);
   font-size: var(--tl-font-heading);
   font-weight: var(--tl-font-weight-bold);
@@ -83,6 +83,6 @@
 }
 .default-link {
   margin-top: 22rpx;
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-body-sm);
 }

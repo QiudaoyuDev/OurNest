@@ -19,9 +19,10 @@ page {
   --tl-color-surface-soft: #fff0ea;
   --tl-color-surface-muted: #f7eee8;
   --tl-color-primary: #f0442f;
+  --tl-color-primary-ink: #c33425;
   --tl-color-primary-pressed: #d9483b;
   --tl-color-primary-soft: #fff0ea;
-  --tl-color-income: #25a66a;
+  --tl-color-income: #1f7a4b;
   --tl-color-income-soft: #edf9f2;
   --tl-color-expense: #f0442f;
   --tl-color-danger: #d9483b;
@@ -32,7 +33,7 @@ page {
   --tl-color-info-soft: #ebf5ff;
   --tl-color-text: #312522;
   --tl-color-text-secondary: #6f625d;
-  --tl-color-text-tertiary: #9a8278;
+  --tl-color-text-tertiary: #7c6860;
   --tl-color-text-inverse: #ffffff;
   --tl-color-warning-alt: #d58a18;
   --tl-color-warning-accent: #e86f30;
@@ -120,8 +121,8 @@ page {
   --tl-line-height-normal: 1.5;
 
   /* Semantic typography */
-  --tl-font-caption: 22rpx;
-  --tl-font-caption-compact: 18rpx;
+  --tl-font-caption: 24rpx;
+  --tl-font-caption-compact: 22rpx;
   --tl-font-body-sm: 24rpx;
   --tl-font-body: 28rpx;
   --tl-font-heading: 32rpx;
@@ -229,10 +230,7 @@ button::after {
   border: var(--tl-border-width) solid var(--tl-color-border-subtle);
   border-radius: var(--tl-radius-card);
   background: var(--tl-color-surface);
-  box-shadow: var(--tl-shadow-card);
-  transition:
-    transform var(--tl-duration-fast) ease,
-    box-shadow var(--tl-duration-fast) ease;
+  transition: transform var(--tl-duration-fast) ease;
 }
 
 /* Category color chips */

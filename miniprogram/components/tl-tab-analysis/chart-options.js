@@ -51,6 +51,15 @@ const CHART_COLORS = [
   "#9b7de5",
 ];
 
+function categoryChartColor(key) {
+  if (!key) return "#c8bcb5";
+  let hash = 2166136261;
+  for (let index = 0; index < key.length; index += 1) {
+    hash = Math.imul(hash ^ key.charCodeAt(index), 16777619);
+  }
+  return CHART_COLORS[(hash >>> 0) % CHART_COLORS.length];
+}
+
 const ANALYSIS_CHART_TYPES = [
   "monthTrend",
   "monthRatio",
@@ -69,7 +78,7 @@ function formatTooltipAmount(value) {
   return money(Array.isArray(value) ? value[value.length - 1] : value);
 }
 
-function getPieOption(data, chartType, ratio = false) {
+function getPieOption(data, chartType) {
   const rows = getRanking(data, chartType);
   return {
     color: CHART_COLORS,
@@ -84,14 +93,14 @@ function getPieOption(data, chartType, ratio = false) {
     series: [
       {
         type: "pie",
-        selectedMode: ratio ? "single" : false,
+        selectedMode: "single",
         radius: ["48%", "72%"],
         center: ["50%", "50%"],
         avoidLabelOverlap: true,
         itemStyle: { borderColor: CHART_THEME.surface, borderWidth: 3 },
         label: {
           color: CHART_THEME.labelText,
-          fontSize: 10,
+          fontSize: 12,
           formatter: (params) => `${params.data.displayName || params.name}\n${params.percent}%`,
         },
         labelLine: { length: 10, length2: 8 },
@@ -101,10 +110,15 @@ function getPieOption(data, chartType, ratio = false) {
           ratioRemainder: !item.key,
           // This ECharts version keys selectedMap by name before id. Keep display
           // labels separate so equally named legacy categories remain independent.
-          name: ratio ? item.key || "ratio-remainder" : item.name,
+          name: item.key || "ratio-remainder",
           displayName: item.name,
           value: amount(item.amount),
-          selected: !!(item.key && data.ratioSelection && data.ratioSelection.key === item.key),
+          itemStyle: { color: categoryChartColor(item.key) },
+          selected: !!(
+            item.key &&
+            ((data.ratioSelection && data.ratioSelection.key === item.key) ||
+              (data.selectedCategory && data.selectedCategory.key === item.key))
+          ),
         })),
       },
     ],
@@ -410,4 +424,10 @@ function hasChartData(data, activeChart) {
   return Boolean(getRanking(data, activeChart).length);
 }
 
-module.exports = { CHART_META, defaultChartForMode, getChartOption, hasChartData };
+module.exports = {
+  CHART_META,
+  defaultChartForMode,
+  getChartOption,
+  hasChartData,
+  categoryChartColor,
+};

@@ -2,6 +2,7 @@ const { formatMoney: formatDisplayMoney } = require("../../utils/money");
 const { resolveCategoryScheme } = require("../../utils/category-color");
 const ICON_GLYPHS = require("../tl-icon/glyphs");
 const CATEGORY_ICONS = require("../tl-icon/category-icons");
+const { categoryChartColor } = require("./chart-options");
 
 function categoryDisplayIcon(item, type) {
   const fallback = type === "income" ? "funds-line" : "price-tag-3-line";
@@ -48,6 +49,7 @@ function makeDashboardView(result, mode, type, today) {
       displayIcon: icon,
       chipClass: scheme.chipClass,
       iconColor: scheme.iconColor,
+      chartColor: categoryChartColor(item.key),
       amountText: formatDisplayMoney(item.amount),
       previousText: formatDisplayMoney(item.previousAmount),
       deltaText: formatDisplayMoney(
@@ -137,16 +139,10 @@ function makeDashboardView(result, mode, type, today) {
   );
   const bars = source.map((item) => ({
     ...item,
+    partial: !item.future && (item.key === today || item.key === today.slice(0, 7)),
     amountText: item.future ? "—" : formatDisplayMoney(item[type]),
-    height: max
-      ? Math.max(Number(item[type] || 0) ? 4 : 0, Math.round((Number(item[type] || 0) * 100) / max))
-      : 0,
-    previousHeight: max
-      ? Math.max(
-          Number(item.previous || 0) ? 4 : 0,
-          Math.round((Number(item.previous || 0) * 100) / max)
-        )
-      : 0,
+    height: max ? (Number(item[type] || 0) * 100) / max : 0,
+    previousHeight: max ? (Number(item.previous || 0) * 100) / max : 0,
   }));
   const completed = source.filter((item) => !item.future);
   const average = completed.length
@@ -165,6 +161,7 @@ function makeDashboardView(result, mode, type, today) {
     topRecords,
     cells,
     bars,
+    maxText: formatDisplayMoney(max),
     averageText: formatDisplayMoney(average),
     incomeText: formatDisplayMoney((result.overview || {}).income),
     expenseText: formatDisplayMoney((result.overview || {}).expense),

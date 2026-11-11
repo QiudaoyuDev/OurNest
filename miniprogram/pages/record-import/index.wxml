@@ -1,7 +1,7 @@
 <view class="page plain-page record-import-page">
   <tl-navbar title="导入账单" showBack="{{true}}">
   </tl-navbar>
-  <tl-container>
+  <tl-container safe-area="{{!previewVisible}}">
     <scroll-view class="page-scroll" scroll-y="{{true}}">
       <view class="page-content">
         <view class="hero-card card">
@@ -48,40 +48,42 @@
         </view>
         <view wx:else class="import-card card">
           <view class="card-title">核对导入记录</view>
+          <view class="import-note">{{ledgerName}} · 已选 {{previewSummary.count}} 笔 · 收入 ¥{{previewSummary.income}} · 支出 ¥{{previewSummary.expense}} · 待处理 {{previewSummary.pending}} 笔</view>
+          <tl-button variant="text" size="small" bind:tap="toggleReviewFilter">{{reviewOnly ? '查看全部记录' : '只看需要处理'}}</tl-button>
           <view class="import-note">点击记录可取消选择；确认后写入账本。</view>
           <tl-button wx:if="{{hasCategoryChoices}}" variant="secondary" size="small" bind:tap="confirmUnmappedCategories">未确认分类全部保持其他</tl-button>
           <view wx:if="{{duplicatesIncomplete}}" class="import-note">账本记录较多，未完成跨来源疑似重复核对，请自行检查。</view>
-          <view wx:for="{{previewRows}}" wx:key="rowNumber" class="preview-row" data-row="{{item.rowNumber}}" bindtap="togglePreviewRow">
+          <view wx:for="{{previewRows}}" wx:key="rowNumber" wx:if="{{!reviewOnly || item.needsAttention}}" class="preview-row" data-row="{{item.rowNumber}}" bindtap="togglePreviewRow">
             <view class="preview-heading">
               <text>{{item.excluded ? '不计入' : item.selected ? '已选择' : '未选择'}} · 第 {{item.rowNumber}} 行</text>
               <text>{{(item.manualType || item.type) === 'income' ? '收入' : '支出'}} ¥{{item.amount}}</text>
             </view>
             <view>{{item.date}} · {{item.parentCategory}} / {{item.categoryName}} · {{item.account}}</view>
-            <view wx:if="{{item.note}}">备注：{{item.note}}</view>
-            <view wx:if="{{item.categoryWarning}}">{{item.categoryWarning}}</view>
-            <view wx:if="{{item.duplicateWarning}}">{{item.duplicateWarning}}</view>
-            <view wx:if="{{item.source}}">来源：{{item.sourceText}} · 对方：{{item.merchant}} · 状态：{{item.status}}</view>
-            <view wx:if="{{item.sourceCategory}}">来源分类：{{item.sourceCategory}}</view>
-            <picker wx:if="{{item.categoryChoiceRequired}}" mode="selector" range="{{item.categoryOptions}}" range-key="label" value="{{item.categoryIndex}}" data-row="{{item.rowNumber}}" catchtap="stopPreviewTap" bindchange="choosePreviewCategory">
-              <view>账本分类：{{item.categoryOptions[item.categoryIndex].label}} · {{item.categoryConfirmed ? '已确认' : '待确认'}} ▾</view>
-            </picker>
-            <view wx:if="{{item.reviewReason}}">{{item.reviewReason}}</view>
-            <view wx:if="{{item.sourceIdWarning}}">{{item.sourceIdWarning}}</view>
-            <view wx:if="{{item.confirmedDuplicate}}">该来源交易已导入，将自动跳过</view>
-            <view wx:if="{{item.sourceDuplicateWarning}}">{{item.sourceDuplicateWarning}}</view>
-            <view wx:if="{{item.crossSourceWarning}}">{{item.crossSourceWarning}}</view>
-            <view wx:if="{{item.needsReview}}" class="dialog-actions">
-              <tl-button variant="secondary" size="small" data-row="{{item.rowNumber}}" data-type="income" catch:tap="chooseReviewType">确认成功并计收入</tl-button>
-              <tl-button variant="secondary" size="small" data-row="{{item.rowNumber}}" data-type="expense" catch:tap="chooseReviewType">确认成功并计支出</tl-button>
-            </view>
+            <view data-row="{{item.rowNumber}}" catchtap="togglePreviewDetails">{{item.expanded ? '收起详情' : '查看详情'}}</view>
+            <block wx:if="{{item.expanded}}">
+              <view wx:if="{{item.note}}">备注：{{item.note}}</view>
+              <view wx:if="{{item.categoryWarning}}">{{item.categoryWarning}}</view>
+              <view wx:if="{{item.duplicateWarning}}">{{item.duplicateWarning}}</view>
+              <view wx:if="{{item.source}}">来源：{{item.sourceText}} · 对方：{{item.merchant}} · 状态：{{item.status}}</view>
+              <view wx:if="{{item.sourceCategory}}">来源分类：{{item.sourceCategory}}</view>
+              <picker wx:if="{{item.categoryChoiceRequired}}" mode="selector" range="{{item.categoryOptions}}" range-key="label" value="{{item.categoryIndex}}" data-row="{{item.rowNumber}}" catchtap="stopPreviewTap" bindchange="choosePreviewCategory">
+                <view>账本分类：{{item.categoryOptions[item.categoryIndex].label}} · {{item.categoryConfirmed ? '已确认' : '待确认'}} ▾</view>
+              </picker>
+              <view wx:if="{{item.reviewReason}}">{{item.reviewReason}}</view>
+              <view wx:if="{{item.sourceIdWarning}}">{{item.sourceIdWarning}}</view>
+              <view wx:if="{{item.confirmedDuplicate}}">该来源交易已导入，将自动跳过</view>
+              <view wx:if="{{item.sourceDuplicateWarning}}">{{item.sourceDuplicateWarning}}</view>
+              <view wx:if="{{item.crossSourceWarning}}">{{item.crossSourceWarning}}</view>
+              <view wx:if="{{item.needsReview}}" class="dialog-actions">
+                <tl-button variant="secondary" size="small" data-row="{{item.rowNumber}}" data-type="income" catch:tap="chooseReviewType">确认成功并计收入</tl-button>
+                <tl-button variant="secondary" size="small" data-row="{{item.rowNumber}}" data-type="expense" catch:tap="chooseReviewType">确认成功并计支出</tl-button>
+              </view>
+            </block>
           </view>
           <view wx:if="{{previewErrors.length}}" class="error-list">
             <text wx:for="{{previewErrors}}" wx:key="*this">{{item}}</text>
           </view>
-          <view class="dialog-actions">
-            <tl-button variant="secondary" block="{{true}}" disabled="{{uploading}}" bind:tap="cancelPreview">取消</tl-button>
-            <tl-button block="{{true}}" loading="{{uploading}}" loading-text="正在导入..." bind:tap="confirmImport">确认导入</tl-button>
-          </view>
+          <view wx:if="{{previewSummary.blocked}}" class="import-note">请选择记录并完成所选记录的必需确认</view>
           <view class="import-note">导入中断后可继续上次导入。</view>
         </view>
       </view>
@@ -111,4 +113,8 @@
       </view>
     </tl-dialog>
   </tl-container>
+  <tl-page-actions wx:if="{{previewVisible}}">
+    <tl-button variant="secondary" block="{{true}}" disabled="{{uploading}}" bind:tap="cancelPreview">取消</tl-button>
+    <tl-button block="{{true}}" disabled="{{previewSummary.blocked}}" loading="{{uploading}}" loading-text="正在导入..." bind:tap="confirmImport">确认导入</tl-button>
+  </tl-page-actions>
 </view>

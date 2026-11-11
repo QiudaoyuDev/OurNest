@@ -80,7 +80,7 @@
   line-height: 1;
   border-radius: var(--tl-radius-xs);
   background: var(--tl-color-primary-soft);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-caption);
   font-weight: var(--tl-font-weight-bold);
 }

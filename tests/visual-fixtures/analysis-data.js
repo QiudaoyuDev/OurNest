@@ -64,10 +64,13 @@ module.exports = {
         recordCount: 4,
         dailyAverage: 72.28,
         categories,
-        accounts: [{ name: "微信", amount: 1268.5, rate: 58, recordCount: 3 }],
+        accounts: [
+          { name: "微信", amount: 1268.5, rate: 58, recordCount: 3 },
+          { name: "银行卡", amount: 900, rate: 42, recordCount: 1 },
+        ],
         daily: [
           { date: "2025-11-03", expense: 900 },
-          { date: "2025-11-06", expense: 268.5 },
+          { date: "2025-11-06", expense: 1268.5 },
         ],
         topRecords: records,
       },

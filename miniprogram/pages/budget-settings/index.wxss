@@ -47,7 +47,7 @@
 }
 
 .currency {
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-data);
   font-weight: var(--tl-font-weight-bold);
 }

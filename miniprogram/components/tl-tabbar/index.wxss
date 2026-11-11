@@ -46,7 +46,7 @@
 }
 
 .tab-item.active {
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-weight: var(--tl-font-weight-bold);
 }
 

@@ -20,6 +20,20 @@
           </tl-empty-state>
         </view>
         <block wx:elif="{{isEmpty}}">
+          <view wx:if="{{!showBudget || !budgetEnabled}}" class="summary-card card fade-up">
+            <view class="summary-title">本月结余</view>
+            <view class="overview-value">¥{{balanceCompact}}</view>
+            <view class="overview-grid">
+              <view class="overview-item">
+                <view class="overview-label">收入</view>
+                <view class="overview-value income">¥{{monthIncomeCompact}}</view>
+              </view>
+              <view class="overview-item">
+                <view class="overview-label">支出</view>
+                <view class="overview-value expense">¥{{monthExpenseCompact}}</view>
+              </view>
+            </view>
+          </view>
           <view class="state-card card fade-up">
             <tl-empty-state text="暂无数据">
             </tl-empty-state>
@@ -30,7 +44,7 @@
               <view class="budget-card-header">
                 <view class="budget-card-heading">
                   <text class="budget-card-title">本月预算</text>
-                  <view class="budget-status-tag {{isOverBudget ? 'danger' : budgetRate >= 90 ? 'danger' : budgetRate >= 70 ? 'warning' : budgetRate >= 50 ? 'attention' : 'safe'}}">{{isOverBudget ? '已超支' : budgetRate >= 90 ? '预算预警' : budgetRate >= 70 ? '消费偏快' : budgetRate >= 50 ? '已用过半' : '预算充足'}}</view>
+                  <view class="budget-status-tag {{isOverBudget ? 'danger' : budgetRate >= 90 ? 'danger' : budgetRate >= 70 ? 'warning' : budgetRate >= 50 ? 'attention' : 'safe'}}">{{isOverBudget ? '已超支' : budgetRate >= 100 ? '预算已用完' : '已使用 ' + budgetRateText + '%'}}</view>
                 </view>
                 <view class="budget-actions">
                   <view class="budget-action-btn" bindtap="goBudgetRecords">
@@ -99,7 +113,7 @@
             <view class="budget-card-header">
               <view class="budget-card-heading">
                 <text class="budget-card-title">本月预算</text>
-                <view class="budget-status-tag {{isOverBudget ? 'danger' : budgetRate >= 90 ? 'danger' : budgetRate >= 70 ? 'warning' : budgetRate >= 50 ? 'attention' : 'safe'}}">{{isOverBudget ? '已超支' : budgetRate >= 90 ? '预算预警' : budgetRate >= 70 ? '消费偏快' : budgetRate >= 50 ? '已用过半' : '预算充足'}}</view>
+                <view class="budget-status-tag {{isOverBudget ? 'danger' : budgetRate >= 90 ? 'danger' : budgetRate >= 70 ? 'warning' : budgetRate >= 50 ? 'attention' : 'safe'}}">{{isOverBudget ? '已超支' : budgetRate >= 100 ? '预算已用完' : '已使用 ' + budgetRateText + '%'}}</view>
               </view>
               <view class="budget-actions">
                 <view class="budget-action-btn" bindtap="goBudgetRecords">
@@ -142,43 +156,22 @@
               </view>
             </view>
           </view>
-          <view class="twin-capsules fade-up">
-            <view class="capsule-card card" bindtap="goRecords">
-              <view class="capsule-icon expense">
-                <tl-icon name="arrow-right-up-line" size="32" colorKey="primary">
-                </tl-icon>
-              </view>
-              <view class="capsule-data">
-                <text class="capsule-label">本月支出</text>
-                <text class="capsule-amount expense">¥{{monthExpenseCompact}}</text>
-              </view>
-            </view>
-            <view class="capsule-card card" bindtap="goRecords">
-              <view class="capsule-icon income">
-                <tl-icon name="arrow-left-down-line" size="32" colorKey="income">
-                </tl-icon>
-              </view>
-              <view class="capsule-data">
-                <text class="capsule-label">本月收入</text>
-                <text class="capsule-amount income">¥{{monthIncomeCompact}}</text>
-              </view>
-            </view>
-          </view>
-          <view wx:if="{{!showBudget || !budgetEnabled}}" class="summary-card card fade-up">
+          <view class="summary-card card fade-up">
             <view class="summary-head">
-              <view class="summary-title">本月概览</view>
-              <view wx:if="{{canManageBudget}}" class="summary-action" bindtap="goBudgetSettings">设置预算</view>
+              <view class="summary-title">{{showBudget && budgetEnabled ? '本月收支' : '本月结余'}}</view>
+              <view wx:if="{{canManageBudget && (!showBudget || !budgetEnabled)}}" class="summary-action" bindtap="goBudgetSettings">设置预算</view>
             </view>
+            <view class="overview-value" wx:if="{{!showBudget || !budgetEnabled}}">¥{{balanceCompact}}</view>
             <view class="overview-grid">
               <view class="overview-item">
                 <view class="overview-label">收入</view>
                 <view class="overview-value income">¥{{monthIncomeCompact}}</view>
               </view>
-              <view class="overview-item">
+              <view wx:if="{{!showBudget || !budgetEnabled}}" class="overview-item">
                 <view class="overview-label">支出</view>
                 <view class="overview-value expense">¥{{monthExpenseCompact}}</view>
               </view>
-              <view class="overview-item">
+              <view wx:if="{{showBudget && budgetEnabled}}" class="overview-item">
                 <view class="overview-label">结余</view>
                 <view class="overview-value">¥{{balanceCompact}}</view>
               </view>

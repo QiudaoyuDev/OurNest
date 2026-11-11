@@ -6,7 +6,7 @@
   --tl-button-font-medium: 30rpx;
   --tl-button-font-small: 28rpx;
   --tl-button-font-weight: 700;
-  --tl-button-primary: var(--tl-color-primary);
+  --tl-button-primary: var(--tl-color-primary-ink);
   --tl-button-primary-soft: var(--tl-color-primary-soft);
   --tl-button-danger: var(--tl-color-primary-pressed);
   --tl-button-inverse: var(--tl-palette-white);
@@ -43,11 +43,13 @@
 
 .tl-button--medium {
   height: var(--tl-button-height-medium);
+  min-height: 44px;
   font-size: var(--tl-button-font-medium);
 }
 
 .tl-button--small {
   height: var(--tl-button-height-small);
+  min-height: 44px;
   font-size: var(--tl-button-font-small);
 }
 

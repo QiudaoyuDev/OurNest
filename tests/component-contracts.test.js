@@ -236,7 +236,7 @@ test("analysis chart hosts encode the loading and terminal-state invariant", () 
   // Both cumulative and period chart hosts use the same lifecycle guard.
   assert.match(
     template,
-    /wx:if="\{\{chartHostMounted && chartFirstReadyEver && categories\.length\}\}" class="analysis-chart-canvas"/
+    /wx:if="\{\{chartHostMounted && chartFirstReadyEver && rangeCategories\.length\}\}" class="analysis-chart-canvas"/
   );
   assert.match(template, /id="all-category-chart"[^>]*bind:initerror="onSecondaryChartInitError"/);
 });

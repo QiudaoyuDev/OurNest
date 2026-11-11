@@ -21,7 +21,6 @@
   align-items: center;
   justify-content: center;
   margin-bottom: var(--tl-space-xs);
-  box-shadow: var(--tl-shadow-sm);
 }
 .brand-hero-title {
   font-size: var(--tl-font-size-xl);
@@ -44,7 +43,6 @@
   padding: var(--tl-space-lg);
   border-radius: var(--tl-radius-card);
   background: var(--tl-color-surface);
-  box-shadow: var(--tl-shadow-sm);
 }
 
 /* 输入态 */
@@ -65,7 +63,7 @@
   padding: 8rpx 18rpx;
   border-radius: var(--tl-radius-pill);
   background: var(--tl-color-primary-soft);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-caption);
   font-weight: var(--tl-font-weight-bold);
 }
@@ -126,7 +124,7 @@
 .ticket-badge {
   font-size: var(--tl-font-caption);
   font-weight: var(--tl-font-weight-bold);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
 }
 .role-pill {
   padding: 4rpx 16rpx;
@@ -159,7 +157,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--tl-shadow-sm);
   margin-bottom: 4rpx;
 }
 .ledger-preview-name {
@@ -201,7 +198,7 @@
 }
 .already-joined-desc {
   font-size: var(--tl-font-caption);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   margin-top: 4rpx;
   line-height: 1.4;
 }
@@ -238,7 +235,7 @@
 .success-ledger-name {
   font-size: var(--tl-font-heading);
   font-weight: var(--tl-font-weight-bold);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
 }
 .success-desc {
   font-size: var(--tl-font-body-sm);

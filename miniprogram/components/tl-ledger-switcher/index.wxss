@@ -93,7 +93,7 @@
 
 .tl-ledger-switcher__current {
   flex: 0 0 auto;
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-caption);
   font-weight: var(--tl-font-weight-bold);
 }

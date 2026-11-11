@@ -86,7 +86,6 @@
   align-items: center;
   justify-content: center;
   background: var(--tl-color-primary-soft);
-  box-shadow: var(--tl-shadow-sm);
 }
 .category-icon.income {
   background: var(--tl-color-income-soft);
@@ -162,7 +161,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--tl-shadow-sm);
 }
 .notice-title {
   font-size: var(--tl-font-heading);
@@ -197,8 +195,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--tl-shadow-sm);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-heading);
   font-weight: var(--tl-font-weight-bold);
 }
@@ -212,7 +209,7 @@
 }
 .icon-tip-main {
   font-size: var(--tl-font-caption);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-weight: var(--tl-font-weight-bold);
 }
 .editor-input-wrap {

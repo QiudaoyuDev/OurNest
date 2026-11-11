@@ -172,9 +172,8 @@
   width: 68rpx;
   height: 68rpx;
   border-radius: var(--tl-radius-md);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   background: var(--tl-color-primary-soft);
-  box-shadow: var(--tl-shadow-sm);
   display: flex;
   align-items: center;
   justify-content: center;

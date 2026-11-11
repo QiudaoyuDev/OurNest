@@ -14,7 +14,6 @@
   border-radius: var(--tl-radius-pill);
   border: var(--tl-border-width) solid var(--tl-color-border-subtle);
   background: rgba(255, 255, 255, 0.88);
-  box-shadow: var(--tl-shadow-sm);
   overflow: hidden;
 }
 
@@ -45,7 +44,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-data);
   font-weight: var(--tl-font-weight-bold);
   flex: 0 0 88rpx;
@@ -81,7 +80,6 @@
   border-radius: var(--tl-radius-pill);
   background: rgba(255, 255, 255, 0.88);
   border: var(--tl-border-width) solid var(--tl-color-border-subtle);
-  box-shadow: var(--tl-shadow-sm);
 }
 
 .seg-item {
@@ -109,7 +107,6 @@
   background: var(--tl-color-surface);
   border-radius: var(--tl-radius-md);
   border: var(--tl-border-width) solid var(--tl-color-border-subtle);
-  box-shadow: var(--tl-shadow-sm);
 }
 
 .month-brief > view {
@@ -135,7 +132,7 @@
   color: var(--tl-color-income);
 }
 .brief-expense {
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
 }
 .brief-count {
   color: var(--tl-color-text-muted);
@@ -150,7 +147,6 @@
   border-radius: var(--tl-radius-md);
   background: rgba(255, 255, 255, 0.92);
   border: var(--tl-border-width) solid var(--tl-color-border-subtle);
-  box-shadow: var(--tl-shadow-sm);
   overflow: visible;
 }
 
@@ -194,7 +190,7 @@
   color: var(--tl-color-income);
 }
 .day-expense {
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
 }
 
 .record-row {
@@ -219,11 +215,10 @@
   justify-content: center;
   font-size: var(--tl-font-caption);
   font-weight: var(--tl-font-weight-bold);
-  box-shadow: var(--tl-shadow-sm);
 }
 
 .category-mark.expense {
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   background: var(--tl-color-chip-orange);
 }
 
@@ -254,7 +249,7 @@
 }
 
 .record-amount.expense {
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
 }
 .record-amount.income {
   color: var(--tl-color-income);
@@ -420,7 +415,7 @@
 }
 
 .empty-actions .retry-button.secondary {
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   background: var(--tl-color-primary-soft);
 }
 

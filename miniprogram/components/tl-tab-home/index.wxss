@@ -31,7 +31,6 @@
   gap: 16rpx;
   cursor: pointer;
   background: var(--tl-color-surface);
-  box-shadow: var(--tl-shadow-sm);
   border: var(--tl-border-width) solid var(--tl-color-border-subtle);
   border-radius: var(--tl-radius-md);
   transition: transform var(--tl-duration-fast) ease;
@@ -53,7 +52,7 @@
 
 .capsule-icon.expense {
   background: var(--tl-color-chip-orange);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
 }
 
 .capsule-icon.income {
@@ -83,7 +82,7 @@
 }
 
 .capsule-amount.expense {
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
 }
 
 .capsule-amount.income {
@@ -92,7 +91,7 @@
 
 .summary-action {
   font-size: var(--tl-font-caption);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-weight: var(--tl-font-weight-bold);
   cursor: pointer;
 }
@@ -142,7 +141,7 @@
   padding: 7rpx 14rpx;
   border-radius: var(--tl-radius-pill);
   background: var(--tl-color-primary-soft);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-caption);
   font-weight: var(--tl-font-weight-bold);
   line-height: 1;
@@ -196,7 +195,7 @@
   padding: 12rpx 20rpx;
   border-radius: var(--tl-radius-pill);
   background: var(--tl-color-surface);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-body-sm);
   font-weight: var(--tl-font-weight-bold);
 }
@@ -227,7 +226,7 @@
   color: var(--tl-color-income);
 }
 .overview-value.expense {
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
 }
 
 .mini-stats {
@@ -249,7 +248,7 @@
   height: 42rpx;
   border-radius: var(--tl-radius-xs);
   background: var(--tl-color-primary-soft);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -282,7 +281,7 @@
 
 .section-link,
 .budget-left {
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-body-sm);
   font-weight: var(--tl-font-weight-bold);
 }
@@ -303,11 +302,10 @@
   font-size: var(--tl-font-caption);
   font-weight: var(--tl-font-weight-bold);
   overflow: hidden;
-  box-shadow: var(--tl-shadow-sm);
 }
 
 .category-dot.expense {
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   background: var(--tl-color-chip-orange);
 }
 .category-dot.income {
@@ -355,7 +353,7 @@
 }
 
 .record-amount.expense {
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
 }
 .record-amount.income {
   color: var(--tl-color-income);
@@ -483,7 +481,7 @@
   font-weight: var(--tl-font-weight-medium);
 }
 .budget-action-btn:active {
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
 }
 
 .budget-hero-row {

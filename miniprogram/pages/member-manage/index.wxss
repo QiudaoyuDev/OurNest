@@ -75,7 +75,7 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-body-sm);
   font-weight: var(--tl-font-weight-bold);
 }
@@ -153,7 +153,7 @@
   align-items: center;
   padding: 20rpx 0;
   border-bottom: 1rpx solid var(--tl-color-divider);
-  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: color 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .invite-item:last-child {
   border-bottom: none;
@@ -209,7 +209,7 @@
   padding: 10rpx 24rpx;
   border-radius: var(--tl-radius-pill);
   background: var(--tl-color-primary-soft);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-caption);
   font-weight: var(--tl-font-weight-bold);
   cursor: pointer;
@@ -248,8 +248,7 @@
   border: var(--tl-border-width) solid var(--tl-color-border-subtle);
   border-radius: var(--tl-radius-md);
   background: var(--tl-color-surface);
-  box-shadow: var(--tl-shadow-sm);
-  transition: all var(--tl-duration-fast) ease;
+  transition: color var(--tl-duration-fast) ease;
 }
 .share-option-card.is-selected {
   border-color: var(--tl-color-primary);
@@ -305,7 +304,6 @@
   border-radius: var(--tl-radius-md);
   background: var(--tl-color-surface);
   border: 2rpx dashed var(--tl-color-primary);
-  box-shadow: var(--tl-shadow-sm);
 }
 .ticket-header {
   display: flex;
@@ -316,7 +314,7 @@
 .ticket-badge {
   font-size: var(--tl-font-caption);
   font-weight: var(--tl-font-weight-bold);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
 }
 .ticket-status {
   font-size: var(--tl-font-caption);
@@ -336,7 +334,7 @@
   font-size: var(--tl-font-heading);
   font-weight: var(--tl-font-weight-bold);
   letter-spacing: 6rpx;
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
 }
 .ticket-copy-pill {
   display: inline-flex;
@@ -345,7 +343,7 @@
   padding: 8rpx 18rpx;
   border-radius: var(--tl-radius-pill);
   background: var(--tl-color-primary-soft);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-caption);
   font-weight: var(--tl-font-weight-bold);
 }

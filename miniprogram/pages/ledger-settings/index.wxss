@@ -196,7 +196,7 @@
 }
 
 .required-star {
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
 }
 
 .optional-tip {

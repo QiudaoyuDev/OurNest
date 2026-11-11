@@ -4,14 +4,13 @@
   border-radius: var(--tl-radius-card);
   box-sizing: border-box;
   background: var(--tl-color-surface);
-  box-shadow: var(--tl-shadow-sm);
 }
 .tl-record-form__amount {
   display: flex;
   align-items: center;
   padding-bottom: 20rpx;
   border-bottom: var(--tl-border-width) solid var(--tl-color-divider-warm);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
 }
 .tl-record-form__amount text {
   font-size: var(--tl-font-size-2xl);
@@ -206,7 +205,6 @@
   align-items: center;
   justify-content: center;
   background: var(--tl-color-surface);
-  box-shadow: var(--tl-shadow-sm);
   color: var(--tl-color-text);
   font-size: var(--tl-font-heading);
   font-weight: var(--tl-font-weight-bold);
@@ -253,7 +251,7 @@
   border: var(--tl-border-width) solid var(--tl-color-border-warm);
   border-radius: var(--tl-radius-control);
   background: var(--tl-palette-warm-100);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-body-sm);
   font-weight: var(--tl-font-weight-bold);
   box-sizing: border-box;
@@ -291,7 +289,7 @@
 
 .calc-btn:active {
   background: var(--tl-color-primary-soft);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
 }
 
 .calc-btn--clear {
@@ -326,7 +324,7 @@
 .keypad-submit-btn.keypad-submit-btn--continue {
   border: var(--tl-border-width) solid var(--tl-color-primary);
   background: var(--tl-color-primary-soft);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
 }
 
 .keypad-submit-btn.keypad-submit-btn--continue:active {
@@ -407,7 +405,7 @@
   height: 68rpx;
 }
 .keypad-key--operator {
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   background: var(--tl-palette-warm-100);
 }
 

@@ -108,6 +108,34 @@
               </tl-icon>
             </view>
           </view>
+          <view wx:if="{{!readonly && currentLedger.id}}" class="function-row" bindtap="importBill">
+            <view class="function-icon">
+              <tl-icon name="file-upload-line" size="32" colorKey="primary">
+              </tl-icon>
+            </view>
+            <view class="function-main">
+              <view class="function-title">导入账单</view>
+              <view class="function-tip">导入到 {{currentLedger.name}}</view>
+            </view>
+            <view class="function-arrow">
+              <tl-icon name="arrow-right-s-line" size="32" colorKey="tertiary">
+              </tl-icon>
+            </view>
+          </view>
+          <view wx:if="{{!currentLedger.id}}" class="function-row" bindtap="createLedger">
+            <view class="function-icon">
+              <tl-icon name="file-upload-line" size="32" colorKey="primary">
+              </tl-icon>
+            </view>
+            <view class="function-main">
+              <view class="function-title">导入账单</view>
+              <view class="function-tip">先创建账本再导入</view>
+            </view>
+            <view class="function-arrow">
+              <tl-icon name="arrow-right-s-line" size="32" colorKey="tertiary">
+              </tl-icon>
+            </view>
+          </view>
           <view class="function-row" bindtap="manageQuickAmounts">
             <view class="function-icon icon-chip-green">
               <tl-icon name="wallet-3-line" size="32" color="#0ea569">
@@ -141,18 +169,6 @@
               </tl-icon>
               <tl-icon name="arrow-right-s-line" size="32" colorKey="tertiary" wx:else>
               </tl-icon>
-            </view>
-          </view>
-          <view class="function-row" bindtap="clearCategoryCache">
-            <view class="function-icon icon-chip-amber">
-              <tl-icon name="delete-bin-line" size="30" color="#d97706" />
-            </view>
-            <view class="function-main">
-              <view class="function-title">清除分类缓存</view>
-              <view class="function-tip">重新加载当前账本的分类</view>
-            </view>
-            <view class="function-arrow">
-              <tl-icon name="arrow-right-s-line" size="32" colorKey="tertiary" />
             </view>
           </view>
           <!-- 暂时隐藏意见反馈和更新日志入口。 -->
@@ -194,7 +210,7 @@
             </view>
             <view class="function-main">
               <view class="function-title">版本号</view>
-              <view class="function-tip">已是最新版本</view>
+              <view class="function-tip">当前版本</view>
             </view>
             <view class="function-value">{{version}}</view>
           </view>

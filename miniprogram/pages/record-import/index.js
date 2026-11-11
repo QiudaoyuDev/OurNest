@@ -12,6 +12,8 @@ Page({
     uploading: false,
     previewVisible: false,
     previewRows: [],
+    previewSummary: { count: 0, income: "0.00", expense: "0.00", pending: 0, blocked: true },
+    reviewOnly: false,
     hasCategoryChoices: false,
     categoryOptions: { income: [], expense: [] },
     previewErrors: [],
@@ -32,7 +34,12 @@ Page({
   onLoad() {
     const ledger = app.globalData.currentLedger || {};
     if (!app.globalData.loggedIn) return wx.reLaunch({ url: "/pages/login/index" });
-    if (ledger.readonly) {
+    if (!ledger._id) {
+      feedback.showToast({ type: "warning", message: "请先创建账本" });
+      setTimeout(() => wx.navigateBack(), 300);
+      return;
+    }
+    if (ledger.readonly || ledger.role === "readonly") {
       feedback.showReadonlyToast();
       setTimeout(() => wx.navigateBack(), 300);
       return;
@@ -148,26 +155,39 @@ Page({
               label: `${parent.name} / ${item.name}`,
             });
         });
-      this.setData({
-        categoryOptions,
-        hasCategoryChoices: needsCategories,
-        previewVisible: true,
-        previewRows: (result.rows || []).map((row) => ({
-          ...row,
-          selected: !row.excluded && !row.needsReview && !row.confirmedDuplicate,
-          manualType: "",
-          categoryConfirmed: !row.categoryChoiceRequired,
-          categoryId: "",
-          categoryIndex: 0,
-          categoryOptions: categoryOptions[row.type] || categoryOptions.expense,
-        })),
-        previewErrors: result.errors || [],
-        duplicatesIncomplete: Boolean(result.duplicatesIncomplete),
-        previewFileId: uploaded.fileID,
-        previewFileHash: result.fileHash,
-        previewBatchId: result.batchId,
-        previewAccount: account,
-      });
+      this.setData(
+        {
+          categoryOptions,
+          hasCategoryChoices: needsCategories,
+          previewVisible: true,
+          previewRows: (result.rows || []).map((row) => ({
+            ...row,
+            selected: !row.excluded && !row.needsReview && !row.confirmedDuplicate,
+            manualType: "",
+            categoryConfirmed: !row.categoryChoiceRequired,
+            expanded: Boolean(
+              row.needsReview ||
+              row.categoryChoiceRequired ||
+              row.categoryWarning ||
+              row.duplicateWarning ||
+              row.sourceDuplicateWarning ||
+              row.crossSourceWarning ||
+              row.sourceIdWarning ||
+              row.confirmedDuplicate
+            ),
+            categoryId: "",
+            categoryIndex: 0,
+            categoryOptions: categoryOptions[row.type] || categoryOptions.expense,
+          })),
+          previewErrors: result.errors || [],
+          duplicatesIncomplete: Boolean(result.duplicatesIncomplete),
+          previewFileId: uploaded.fileID,
+          previewFileHash: result.fileHash,
+          previewBatchId: result.batchId,
+          previewAccount: account,
+        },
+        () => this.refreshPreviewSummary()
+      );
     } catch (error) {
       try {
         let cleanup;
@@ -193,56 +213,120 @@ Page({
   },
   togglePreviewRow(event) {
     const rowNumber = Number(event.currentTarget.dataset.row);
-    this.setData({
-      previewRows: this.data.previewRows.map((row) =>
-        row.rowNumber === rowNumber && !row.excluded && (!row.needsReview || row.manualType)
-          ? { ...row, selected: !row.selected }
-          : row
-      ),
-    });
+    this.setData(
+      {
+        previewRows: this.data.previewRows.map((row) =>
+          row.rowNumber === rowNumber &&
+          !row.excluded &&
+          !row.confirmedDuplicate &&
+          (!row.needsReview || row.manualType)
+            ? { ...row, selected: !row.selected }
+            : row
+        ),
+      },
+      () => this.refreshPreviewSummary()
+    );
   },
   chooseReviewType(event) {
     const rowNumber = Number(event.currentTarget.dataset.row);
     const type = event.currentTarget.dataset.type;
     if (!["income", "expense"].includes(type)) return;
-    this.setData({
-      previewRows: this.data.previewRows.map((row) =>
-        row.rowNumber === rowNumber && row.needsReview && !row.excluded
-          ? {
-              ...row,
-              selected: true,
-              manualType: type,
-              categoryConfirmed: false,
-              categoryId: "",
-              categoryIndex: 0,
-              categoryOptions: this.data.categoryOptions[type],
-            }
-          : row
-      ),
-    });
+    this.setData(
+      {
+        previewRows: this.data.previewRows.map((row) =>
+          row.rowNumber === rowNumber && row.needsReview && !row.excluded && !row.confirmedDuplicate
+            ? {
+                ...row,
+                selected: true,
+                manualType: type,
+                categoryConfirmed: false,
+                categoryId: "",
+                categoryIndex: 0,
+                categoryOptions: this.data.categoryOptions[type],
+              }
+            : row
+        ),
+      },
+      () => this.refreshPreviewSummary()
+    );
   },
   stopPreviewTap() {},
   choosePreviewCategory(event) {
     const rowNumber = Number(event.currentTarget.dataset.row);
     const index = Number(event.detail.value);
-    this.setData({
-      previewRows: this.data.previewRows.map((row) => {
-        if (row.rowNumber !== rowNumber || !row.categoryOptions[index]) return row;
-        return {
-          ...row,
-          categoryIndex: index,
-          categoryId: row.categoryOptions[index].id,
-          categoryConfirmed: true,
-        };
-      }),
-    });
+    this.setData(
+      {
+        previewRows: this.data.previewRows.map((row) => {
+          if (row.rowNumber !== rowNumber || !row.categoryOptions[index]) return row;
+          return {
+            ...row,
+            categoryIndex: index,
+            categoryId: row.categoryOptions[index].id,
+            categoryConfirmed: true,
+          };
+        }),
+      },
+      () => this.refreshPreviewSummary()
+    );
   },
   confirmUnmappedCategories() {
+    this.setData(
+      {
+        previewRows: this.data.previewRows.map((row) =>
+          row.categoryChoiceRequired && !row.categoryConfirmed
+            ? { ...row, categoryConfirmed: true, categoryId: "", categoryIndex: 0 }
+            : row
+        ),
+      },
+      () => this.refreshPreviewSummary()
+    );
+  },
+  refreshPreviewSummary() {
+    const rows = this.data.previewRows || [];
+    const totals = { count: 0, income: 0, expense: 0, pending: 0, blocked: false };
+    const previewRows = rows.map((row) => {
+      const pending =
+        Boolean(row.needsReview && !row.manualType) ||
+        Boolean(row.categoryChoiceRequired && !row.categoryConfirmed) ||
+        Boolean(
+          row.categoryWarning ||
+          row.duplicateWarning ||
+          row.sourceDuplicateWarning ||
+          row.crossSourceWarning ||
+          row.sourceIdWarning ||
+          row.confirmedDuplicate
+        );
+      if (pending) totals.pending += 1;
+      if (row.selected && !row.excluded && !row.confirmedDuplicate) {
+        totals.count += 1;
+        totals[row.manualType || row.type] += Math.round(Number(row.amount || 0) * 100);
+        if (
+          (row.needsReview && !row.manualType) ||
+          (row.categoryChoiceRequired && !row.categoryConfirmed)
+        )
+          totals.blocked = true;
+      }
+      return { ...row, needsAttention: pending };
+    });
+    this.setData({
+      previewRows,
+      previewSummary: {
+        count: totals.count,
+        income: (totals.income / 100).toFixed(2),
+        expense: (totals.expense / 100).toFixed(2),
+        pending: totals.pending,
+        blocked: totals.blocked || !totals.count,
+      },
+    });
+  },
+  toggleReviewFilter() {
+    this.setData({ reviewOnly: !this.data.reviewOnly });
+  },
+  togglePreviewDetails(event) {
+    const rowNumber = Number(event.currentTarget.dataset.row);
     this.setData({
       previewRows: this.data.previewRows.map((row) =>
-        row.categoryChoiceRequired && !row.categoryConfirmed
-          ? { ...row, categoryConfirmed: true, categoryId: "", categoryIndex: 0 }
-          : row
+        row.rowNumber === rowNumber ? { ...row, expanded: !row.expanded } : row
       ),
     });
   },

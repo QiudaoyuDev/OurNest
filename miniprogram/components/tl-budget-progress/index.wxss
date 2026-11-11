@@ -10,8 +10,7 @@
 .tl-budget-progress__bar {
   height: 100%;
   border-radius: inherit;
-  background: var(--tl-color-income);
-  transition: width var(--tl-duration-fast) var(--tl-easing-standard);
+  background: var(--tl-palette-green-500);
 }
 .tl-budget-progress__bar.attention {
   background: var(--tl-color-warning-alt);

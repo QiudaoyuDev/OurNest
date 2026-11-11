@@ -21,11 +21,9 @@
 
 .type-mark.expense {
   background: var(--tl-color-chip-orange);
-  box-shadow: var(--tl-shadow-sm);
 }
 .type-mark.income {
   background: var(--tl-color-chip-green);
-  box-shadow: var(--tl-shadow-sm);
 }
 
 .category-name {
@@ -49,7 +47,7 @@
 }
 
 .amount.expense {
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
 }
 .amount.income {
   color: var(--tl-color-income);
@@ -138,7 +136,7 @@
 .tag-chip {
   padding: 8rpx 16rpx;
   border-radius: var(--tl-radius-pill);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   background: var(--tl-color-primary-soft);
   font-size: var(--tl-font-body-sm);
   font-weight: var(--tl-font-weight-bold);

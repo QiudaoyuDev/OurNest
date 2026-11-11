@@ -34,7 +34,7 @@
 .operation-actions {
   display: flex;
   gap: 20rpx;
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-body-sm);
   font-weight: var(--tl-font-weight-bold);
 }
@@ -60,7 +60,7 @@
   border: 3rpx dashed var(--tl-color-border-warm);
   border-radius: 50%;
   background: var(--tl-color-primary-soft);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-data-lg);
   line-height: 1;
 }

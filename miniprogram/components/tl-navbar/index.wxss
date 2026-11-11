@@ -27,7 +27,6 @@
   background: rgba(255, 255, 255, 0.85);
   border: var(--tl-border-width) solid var(--tl-color-border-subtle);
   border-radius: var(--tl-radius-pill);
-  box-shadow: var(--tl-shadow-sm);
   cursor: pointer;
   transition:
     transform var(--tl-duration-fast) ease,
@@ -90,8 +89,7 @@
   background: rgba(255, 255, 255, 0.85);
   border: var(--tl-border-width) solid var(--tl-color-border-subtle);
   border-radius: var(--tl-radius-pill);
-  box-shadow: var(--tl-shadow-sm);
-  color: var(--tl-color-primary);
+  color: var(--tl-color-primary-ink);
   font-size: var(--tl-font-data);
   font-weight: var(--tl-font-weight-bold);
   line-height: 1;
