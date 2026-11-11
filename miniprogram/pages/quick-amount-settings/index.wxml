@@ -24,7 +24,7 @@
           </view>
           <view class="amount-add">
             <text>¥</text>
-            <input type="digit" value="{{inputAmount}}" placeholder="输入金额" disabled="{{!quickAmountsEnabled || amounts.length >= 5}}" bindinput="onAmountInput" />
+            <input type="digit" value="{{inputAmount}}" placeholder="输入金额" disabled="{{!quickAmountsEnabled || amounts.length >= 5}}" adjust-position="{{true}}" cursor-spacing="140" bindinput="onAmountInput" />
             <view class="add-button" bindtap="addAmount">添加</view>
           </view>
           <view wx:if="{{!amounts.length}}" class="default-link" bindtap="useDefaults">使用推荐金额：9.9、20、100、200、500</view>

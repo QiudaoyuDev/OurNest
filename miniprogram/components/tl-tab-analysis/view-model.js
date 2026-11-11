@@ -33,12 +33,18 @@ function decorateRanking(rows = []) {
 }
 
 function decorateTrend(rows = []) {
-  return rows.map((item) => ({
-    ...item,
-    incomeText: formatDisplayMoney(item.income),
-    expenseText: formatDisplayMoney(item.expense),
-    balanceText: formatDisplayMoney(item.balance),
-  }));
+  return rows.map((item) => {
+    const income = Number(item.income || 0);
+    const expense = Number(item.expense || 0);
+    const hasTx = income > 0 || expense > 0;
+    return {
+      ...item,
+      hasTx,
+      incomeText: formatDisplayMoney(item.income),
+      expenseText: formatDisplayMoney(item.expense),
+      balanceText: formatDisplayMoney(item.balance),
+    };
+  });
 }
 
 function decorateTopExpenseRecords(records = []) {

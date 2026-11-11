@@ -64,3 +64,11 @@ test("analysis response contract preserves non-analysis responses with valid ove
   delete result.dashboard;
   assert.equal(validateAnalysisResponse(result, { ledgerId: "ledger" }), result);
 });
+
+test("analysis response contract accepts all-time mode with empty start and end dates", () => {
+  const result = analysisResponse({
+    range: { start: "", end: "", label: "全部时间" },
+  });
+  delete result.dashboard;
+  assert.equal(validateAnalysisResponse(result, { ledgerId: "ledger", mode: "all" }), result);
+});

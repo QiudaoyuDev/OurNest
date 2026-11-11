@@ -54,9 +54,15 @@ function validateAnalysisResponse(data, request = {}) {
   if (request.ledgerId && ledger._id !== request.ledgerId)
     throw contractError("ledger._id", "does not match request");
   const range = assertObject(data.range, "range");
-  const start = assertDate(range.start, "range.start");
-  const end = assertDate(range.end, "range.end");
-  if (start >= end) throw contractError("range", "end must be after start");
+  if (request.mode === "all" || data.mode === "all" || (range.start === "" && range.end === "")) {
+    if (typeof range.label !== "string") {
+      throw contractError("range.label", "string required");
+    }
+  } else {
+    const start = assertDate(range.start, "range.start");
+    const end = assertDate(range.end, "range.end");
+    if (start >= end) throw contractError("range", "end must be after start");
+  }
 
   const overview = assertObject(data.overview, "overview");
   for (const key of ["income", "expense", "balance"])

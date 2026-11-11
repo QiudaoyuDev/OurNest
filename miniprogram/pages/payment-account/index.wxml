@@ -55,6 +55,8 @@
           bindinput="onDraftInput"
           bindconfirm="confirmAddAccount"
           focus="{{addDialogVisible}}"
+          adjust-position="{{true}}"
+          cursor-spacing="140"
         />
         <view wx:if="{{accountDraft.length > 0}}" class="dialog-input-clear" bindtap="clearDraft">
           <tl-icon name="close-circle-fill" size="32" colorKey="muted">

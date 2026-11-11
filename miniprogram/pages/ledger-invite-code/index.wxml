@@ -32,6 +32,8 @@
               placeholder-class="invite-placeholder"
               disabled="{{busy}}"
               confirm-type="done"
+              adjust-position="{{true}}"
+              cursor-spacing="140"
               bindinput="onInput"
               bindconfirm="previewInvite"
             />

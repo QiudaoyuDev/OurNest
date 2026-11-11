@@ -42,7 +42,7 @@
 
 .analysis-header {
   position: relative;
-  z-index: 100;
+  z-index: var(--tl-z-sticky);
   padding: 12rpx var(--tl-page-inline) 16rpx;
   background: var(--tl-color-page);
   transform: translateZ(0);
@@ -60,11 +60,15 @@
 .analysis-primary-tab {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4rpx;
-  padding: var(--tl-space-sm) var(--tl-space-md);
+  padding: var(--tl-space-sm) 8rpx;
   border-bottom: 4rpx solid transparent;
   color: var(--tl-color-text-secondary);
   font-weight: var(--tl-font-weight-bold);
+  font-size: var(--tl-font-size-sm);
+  flex: 1;
+  text-align: center;
 }
 
 .analysis-primary-tab.is-active {
@@ -95,6 +99,287 @@
   margin-top: 14rpx;
   color: var(--tl-color-text-tertiary);
   font-size: var(--tl-font-caption);
+}
+
+.custom-context-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  margin-bottom: var(--tl-space-sm);
+}
+
+.date-preset-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.preset-pill {
+  flex: 1;
+  text-align: center;
+  padding: 10rpx 0;
+  background: var(--tl-color-surface);
+  border-radius: var(--tl-radius-pill);
+  color: var(--tl-color-text-secondary);
+  font-size: var(--tl-font-caption);
+  font-weight: var(--tl-font-weight-medium);
+  transition: all var(--tl-duration-fast) ease;
+}
+
+.preset-pill.is-active {
+  background: var(--tl-color-primary-soft);
+  color: var(--tl-color-primary);
+  font-weight: var(--tl-font-weight-bold);
+}
+
+.range-selector-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  background: var(--tl-color-surface);
+  padding: 12rpx 20rpx;
+  border-radius: var(--tl-radius-md);
+}
+
+.range-picker-item {
+  flex: 1;
+  text-align: center;
+}
+
+.range-picker-val {
+  font-size: var(--tl-font-caption);
+  color: var(--tl-color-text);
+  font-weight: var(--tl-font-weight-medium);
+}
+
+.range-separator {
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-caption);
+}
+
+.range-days-tag {
+  font-size: var(--tl-font-caption-compact);
+  color: var(--tl-color-primary);
+  background: var(--tl-color-primary-soft);
+  padding: 4rpx 12rpx;
+  border-radius: var(--tl-radius-pill);
+  white-space: nowrap;
+}
+
+/* 原生微柱状图卡片 */
+.chart-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--tl-space-md);
+}
+
+.chart-card-title {
+  font-size: var(--tl-font-body);
+  font-weight: var(--tl-font-weight-bold);
+  color: var(--tl-color-text);
+}
+
+.chart-legend-box {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  font-size: var(--tl-font-caption);
+  color: var(--tl-color-text-secondary);
+}
+
+.legend-dot {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+}
+
+.legend-dot.is-income {
+  background: var(--tl-color-income);
+}
+
+.legend-dot.is-expense {
+  background: var(--tl-color-primary);
+}
+
+.native-bar-scroll {
+  width: 100%;
+  white-space: nowrap;
+  padding-bottom: 8rpx;
+}
+
+.native-bar-container {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 16rpx;
+  min-width: 100%;
+  height: 220rpx;
+  padding: 0 10rpx 10rpx;
+  border-bottom: 1rpx solid var(--tl-color-border);
+}
+
+.bar-col {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 44rpx;
+  height: 100%;
+  justify-content: flex-end;
+  padding: 4rpx;
+  border-radius: var(--tl-radius-sm);
+  transition: background var(--tl-duration-fast) ease;
+}
+
+.bar-col.is-selected {
+  background: var(--tl-color-primary-soft);
+}
+
+.bar-pair {
+  display: flex;
+  align-items: flex-end;
+  gap: 4rpx;
+  height: 170rpx;
+  width: 100%;
+  justify-content: center;
+}
+
+.bar-stem {
+  width: 12rpx;
+  min-height: 4rpx;
+  border-radius: var(--tl-radius-xs) var(--tl-radius-xs) 0 0;
+  transition: height var(--tl-duration-fast) ease;
+}
+
+.bar-stem.is-income {
+  background: var(--tl-color-income);
+}
+
+.bar-stem.is-expense {
+  background: var(--tl-color-primary);
+}
+
+.bar-x-label {
+  margin-top: 8rpx;
+  font-size: var(--tl-font-caption-compact);
+  color: var(--tl-color-text-tertiary);
+  white-space: nowrap;
+}
+
+/* 结构化趋势明细 */
+.timeline-detail-box {
+  margin-top: var(--tl-space-md);
+  padding-top: var(--tl-space-md);
+  border-top: 1rpx solid var(--tl-color-border-subtle);
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--tl-space-sm);
+}
+
+.timeline-title {
+  font-size: var(--tl-font-body);
+  font-weight: var(--tl-font-weight-bold);
+  color: var(--tl-color-text);
+}
+
+.timeline-cols-head {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  width: 440rpx;
+  justify-content: flex-end;
+}
+
+.th-cell {
+  flex: 1;
+  text-align: right;
+  font-size: var(--tl-font-caption);
+  color: var(--tl-color-text-tertiary);
+}
+
+.timeline-table {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.timeline-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14rpx 10rpx;
+  border-radius: var(--tl-radius-md);
+  background: var(--tl-color-page);
+  transition: background var(--tl-duration-fast) ease;
+}
+
+.timeline-row.is-active-row {
+  background: var(--tl-color-primary-soft);
+}
+
+.date-badge-box {
+  flex: 0 0 108rpx;
+}
+
+.date-badge {
+  display: inline-block;
+  padding: 4rpx 10rpx;
+  background: var(--tl-color-surface);
+  border-radius: var(--tl-radius-sm);
+  font-size: var(--tl-font-caption);
+  color: var(--tl-color-text-secondary);
+  font-weight: var(--tl-font-weight-medium);
+  white-space: nowrap;
+}
+
+.timeline-data-grid {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  width: 440rpx;
+  justify-content: flex-end;
+}
+
+.val-cell {
+  flex: 1;
+  text-align: right;
+  font-size: var(--tl-font-caption);
+  white-space: nowrap;
+}
+
+.val-cell.val-inc.has-val {
+  color: var(--tl-color-income);
+}
+
+.val-cell.val-exp.has-val {
+  color: var(--tl-color-primary);
+}
+
+.val-cell.is-zero {
+  color: var(--tl-color-text-tertiary);
+}
+
+.val-cell.val-bal {
+  font-weight: var(--tl-font-weight-bold);
+}
+
+.val-cell.val-bal.is-surplus {
+  color: var(--tl-color-text);
+}
+
+.val-cell.val-bal.is-deficit {
+  color: var(--tl-color-primary);
 }
 
 .ledger-name {
@@ -1041,6 +1326,7 @@
 .dashboard-card {
   margin-bottom: var(--tl-space-md);
   padding: var(--tl-space-lg);
+  scroll-margin-top: 110rpx;
 }
 
 .dashboard-heading,

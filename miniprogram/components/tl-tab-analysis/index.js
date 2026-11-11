@@ -17,6 +17,8 @@ const {
   customRangeDefaults,
   shiftMonth,
   formatAnalysisRangeLabel,
+  getPresetRange,
+  getDaysCount,
 } = require("./dates");
 const {
   comparisonText,
@@ -34,6 +36,39 @@ const {
   getChartOption,
   hasChartData,
 } = require("./chart-options");
+
+function computeTrendBars(trendList = [], selectedKey = "") {
+  if (!Array.isArray(trendList) || trendList.length === 0) return [];
+  let maxAmount = 0;
+  for (const item of trendList) {
+    const inc = Number(item.income || 0);
+    const exp = Number(item.expense || 0);
+    if (inc > maxAmount) maxAmount = inc;
+    if (exp > maxAmount) maxAmount = exp;
+  }
+  if (maxAmount <= 0) maxAmount = 1;
+
+  return trendList.map((item) => {
+    const inc = Number(item.income || 0);
+    const exp = Number(item.expense || 0);
+    const incH = Math.max(inc > 0 ? 8 : 0, Math.round((inc / maxAmount) * 100));
+    const expH = Math.max(exp > 0 ? 8 : 0, Math.round((exp / maxAmount) * 100));
+    const isSelected = selectedKey ? item.key === selectedKey : false;
+    const label = item.label || item.key || "";
+    return {
+      key: item.key,
+      label,
+      shortLabel: label.length > 5 ? label.slice(-5) : label,
+      income: inc,
+      expense: exp,
+      balance: Number(item.balance || inc - exp),
+      incomeHeight: incH,
+      expenseHeight: expH,
+      selected: isSelected,
+      hasTx: inc > 0 || exp > 0,
+    };
+  });
+}
 
 Component({
   properties: {
@@ -97,6 +132,8 @@ Component({
     customStart: "",
     customEnd: "",
     customToday: "",
+    customPreset: "",
+    customDays: 0,
     rangeLabel: "",
     trendCaption: "",
     activeChart: "monthTrend",
@@ -104,6 +141,8 @@ Component({
     chartSubtitle: CHART_META.monthTrend.subtitle,
     hasChartData: false,
     hasRecords: false,
+    trendBars: [],
+    selectedTrendKey: "",
     ec: { disableTouch: false },
     categoryChartHidden: false,
     categoryChartActivated: false,
@@ -737,7 +776,7 @@ Component({
       }
       this.categoryRequestId = (this.categoryRequestId || 0) + 1;
       this.dayRequestId = (this.dayRequestId || 0) + 1;
-      this.setData({
+      const patch = {
         loading: true,
         error: false,
         noLedger: false,
@@ -751,14 +790,17 @@ Component({
         selectedDay: "",
         dayStatus: "idle",
         selectedBar: null,
-        scrollTarget: "",
-        scrollTop: 0,
         sectionEndSpace: 0,
         dashboardChartError: false,
         categoryChartActivated: false,
         categoryChartHidden: false,
         activeSection: "summary",
-      });
+      };
+      if (!reuseChartNode) {
+        patch.scrollTarget = "";
+        patch.scrollTop = 0;
+      }
+      this.setData(patch);
 
       const flight = (async () => {
         try {
@@ -847,6 +889,11 @@ Component({
                 : "",
             activeDetailRows,
             trendRows: getDetailRows(result, "trend"),
+            trendBars: computeTrendBars(result.trend || [], this.data.selectedTrendKey),
+            customDays:
+              request.mode === "custom" && request.customStart && request.customEnd
+                ? getDaysCount(request.customStart, request.customEnd)
+                : this.data.customDays,
             rangeCategories: (request.analysisType === "income"
               ? result.incomeCategories
               : result.categories
@@ -906,6 +953,8 @@ Component({
             overview: {},
             comparison: { enabled: false },
             trend: [],
+            trendBars: [],
+            selectedTrendKey: "",
             categories: [],
             categoryChart: [],
             incomeCategories: [],
@@ -932,6 +981,8 @@ Component({
     async switchLedger() {
       if (this.data.isLoadingLedgers) return;
       this.setData({
+        isModeSheetVisible: false,
+        isRatioSheetVisible: false,
         isLedgerSwitcherVisible: true,
         isLoadingLedgers: true,
         ledgerLoadError: false,
@@ -1052,29 +1103,60 @@ Component({
       )
         .toISOString()
         .slice(0, 10);
+      const anchor =
+        mode === "week"
+          ? selectedMonth === current.slice(0, 7)
+            ? current
+            : monthEnd
+          : mode === "month"
+            ? selectedMonth
+            : mode === "year"
+              ? referenceYear
+              : "";
       const nextData = {
         mode,
         activeChart: defaultChartForMode(mode),
         modeIndex: this.data.modeOptions.findIndex((item) => item.value === mode),
         modeLabel: this.data.modeOptions.find((item) => item.value === mode).label,
-        anchor:
-          mode === "week"
-            ? selectedMonth === current.slice(0, 7)
-              ? current
-              : monthEnd
-            : mode === "month"
-              ? selectedMonth
-              : mode === "year"
-                ? referenceYear
-                : "",
+        anchor,
+        rangeLabel: formatAnalysisRangeLabel(
+          mode,
+          anchor,
+          mode === "week" ? "本周" : mode === "all" ? "全部时间" : ""
+        ),
       };
       if (mode === "custom") {
         nextData.customStart = this.data.customStart || customRange.start;
         nextData.customEnd = this.data.customEnd || customRange.end;
         nextData.customToday = dateAnchor();
+        nextData.customDays = getDaysCount(nextData.customStart, nextData.customEnd);
       }
       this.setData(nextData);
       this.loadAnalysis();
+    },
+
+    applyDatePreset(event) {
+      const preset = event.currentTarget.dataset.preset;
+      if (!preset) return;
+      const range = getPresetRange(preset);
+      if (!range) return;
+      const customDays = getDaysCount(range.start, range.end);
+      this.setData({
+        customPreset: preset,
+        customStart: range.start,
+        customEnd: range.end,
+        customDays,
+      });
+      this.loadAnalysis();
+    },
+
+    selectTrendBar(event) {
+      const key = event.currentTarget.dataset.key;
+      const nextKey = this.data.selectedTrendKey === key ? "" : key;
+      this.setData({
+        selectedTrendKey: nextKey,
+        trendBars: computeTrendBars(this.data.trend || [], nextKey),
+      });
     },
 
     changeCustomStart(event) {
@@ -1087,7 +1169,8 @@ Component({
         feedback.showToast({ type: "warning", message: "自定义范围最多 366 天" });
         return;
       }
-      this.setData({ customStart, customEnd });
+      const customDays = getDaysCount(customStart, customEnd);
+      this.setData({ customStart, customEnd, customPreset: "", customDays });
       this.loadAnalysis();
     },
 
@@ -1101,7 +1184,8 @@ Component({
         feedback.showToast({ type: "warning", message: "自定义范围最多 366 天" });
         return;
       }
-      this.setData({ customStart, customEnd });
+      const customDays = getDaysCount(customStart, customEnd);
+      this.setData({ customStart, customEnd, customPreset: "", customDays });
       this.loadAnalysis();
     },
 

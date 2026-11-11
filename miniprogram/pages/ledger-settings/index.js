@@ -205,7 +205,6 @@ Page({
         deletingLedgerName: "",
       });
       await this.loadLedgers();
-      feedback.showToast({ type: "success", message: "已删除账本" });
     } catch (error) {
       feedback.showToast({ type: "error", message: error.message || "删除失败" });
     } finally {

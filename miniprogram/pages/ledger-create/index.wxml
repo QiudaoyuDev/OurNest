@@ -47,14 +47,14 @@
                 账本名称
                 <text class="required-star">*</text>
               </view>
-              <input class="ledger-input" value="{{name}}" placeholder="1-8个字符，例如：日常" bindinput="onNameInput" />
+              <input class="ledger-input" value="{{name}}" placeholder="1-8个字符，例如：日常" adjust-position="{{true}}" cursor-spacing="140" bindinput="onNameInput" />
             </view>
             <view class="field-block">
               <view class="field-label">
                 账本备注
                 <text class="optional-tip">（选填）</text>
               </view>
-              <textarea class="ledger-textarea" value="{{remark}}" maxlength="80" placeholder="写一句它的用途，例如：家庭日常开销" bindinput="onRemarkInput">
+              <textarea class="ledger-textarea" value="{{remark}}" maxlength="80" placeholder="写一句它的用途，例如：家庭日常开销" adjust-position="{{true}}" cursor-spacing="140" bindinput="onRemarkInput">
               </textarea>
             </view>
             <view class="field-block">
@@ -76,7 +76,7 @@
                 </view>
                 <view class="budget-input-row">
                   <text>¥</text>
-                  <input class="budget-input" type="digit" value="{{monthlyBudget}}" placeholder="1 - 999999，最多两位小数" bindinput="onBudgetInput" />
+                  <input class="budget-input" type="digit" value="{{monthlyBudget}}" placeholder="1 - 999999，最多两位小数" adjust-position="{{true}}" cursor-spacing="140" bindinput="onBudgetInput" />
                 </view>
               </view>
             </view>

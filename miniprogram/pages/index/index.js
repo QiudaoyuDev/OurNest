@@ -26,8 +26,7 @@ Page({
     this.syncRecordAccess();
     this.onCurrentLedgerChanged = () => this.syncRecordAccess();
     on("ledger:current-changed", this.onCurrentLedgerChanged);
-    this.onLedgerSyncFailed = () =>
-      feedback.showToast({ type: "warning", message: "账本同步失败，请稍后手动同步" });
+    this.onLedgerSyncFailed = () => console.warn("ledger sync failed, retrying in background");
     on("ledger:sync-failed", this.onLedgerSyncFailed);
     const activeTab = TAB_TITLES.hasOwnProperty(options.tab) ? options.tab : "index";
     const currentLedger = (getApp().globalData || {}).currentLedger;

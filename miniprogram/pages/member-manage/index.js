@@ -223,7 +223,9 @@ Page({
         }
         return;
       }
-      feedback.showToast({ type: "success", message: "操作成功" });
+      if (method !== "revokeLedgerInvite") {
+        feedback.showToast({ type: "success", message: "操作成功" });
+      }
       if (method === "leaveLedger") wx.reLaunch({ url: "/pages/index/index" });
       else await this.loadMembers();
     } catch (error) {

@@ -91,7 +91,7 @@
         <view class="editor-input-wrap">
           <view class="editor-input-label">分类名称</view>
           <view class="editor-input-box">
-            <input class="name-input" value="{{draftName}}" placeholder="例如：咖啡、健身、宠物" maxlength="6" bindinput="bindNameInput"/>
+            <input class="name-input" value="{{draftName}}" placeholder="例如：咖啡、健身、宠物" maxlength="6" adjust-position="{{true}}" cursor-spacing="140" bindinput="bindNameInput"/>
             <view class="name-count">{{draftName.length}}/6</view>
           </view>
         </view>

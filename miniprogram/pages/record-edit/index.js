@@ -696,7 +696,6 @@ Page({
     const ledgerId = this.data.ledgerId;
     try {
       await recordService.deleteRecord({ recordId, ledgerId, syncVersion: this.data.syncVersion });
-      feedback.showToast({ type: "success", message: "已删除" });
       wx.navigateBack();
     } catch (error) {
       this.setData({ deleting: false });

@@ -231,7 +231,7 @@ Component({
     },
 
     viewVersion() {
-      feedback.showToast({ type: "info", message: `当前版本 ${this.data.version}` });
+      // 保持静默，界面已有副文案“已是最新版本”，无需弹窗打扰
     },
   },
 });
