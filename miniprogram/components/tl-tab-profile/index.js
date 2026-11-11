@@ -5,7 +5,7 @@ const categoryStore = require("../../services/category.store");
 const feedback = require("../../services/feedback-ui");
 const { getId } = require("../../utils/mapper");
 
-const APP_VERSION = "v26.11.11.01";
+const APP_VERSION = "v26.11.11.04";
 
 function normalizeCreatedAt(value) {
   if (!value) return null;

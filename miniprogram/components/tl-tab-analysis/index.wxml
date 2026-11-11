@@ -7,34 +7,49 @@
       <view class="analysis-primary-tab {{mode === 'custom' ? 'is-active' : ''}}" data-mode="custom" bindtap="switchMode">自定义</view>
       <view class="analysis-primary-tab {{mode === 'all' ? 'is-active' : ''}}" data-mode="all" bindtap="switchMode">累计</view>
     </view>
-    <view class="analysis-context-bar" wx:if="{{mode !== 'custom'}}">
-      <view wx:if="{{mode === 'week' || mode === 'month' || mode === 'year'}}" class="context-period">
-        <view class="context-nav" data-delta="-1" bindtap="shift">
-          <tl-icon name="arrow-left-s-line" size="38" colorKey="primary">
-          </tl-icon>
-        </view>
-        <picker mode="date" fields="{{mode === 'year' ? 'year' : mode === 'month' ? 'month' : 'day'}}" value="{{anchor}}" end="{{customToday}}" bindchange="chooseAnalysisDate" class="context-picker">
-          <view class="context-picker-btn">
-            <text class="context-period-text">{{rangeLabel}}</text>
-            <tl-icon name="arrow-down-s-fill" size="24" colorKey="primary">
+    <view class="analysis-action-bar" wx:if="{{mode !== 'custom'}}">
+      <view class="analysis-context-bar">
+        <view wx:if="{{mode === 'week' || mode === 'month' || mode === 'year'}}" class="context-period">
+          <view class="context-nav" data-delta="-1" bindtap="shift">
+            <tl-icon name="arrow-left-s-line" size="36" colorKey="primary">
             </tl-icon>
           </view>
-        </picker>
-        <view class="context-nav {{canShiftNext ? '' : 'is-disabled'}}" data-delta="1" bindtap="shift">
-          <tl-icon name="arrow-right-s-line" size="38" colorKey="primary">
+          <picker mode="date" fields="{{mode === 'year' ? 'year' : mode === 'month' ? 'month' : 'day'}}" value="{{anchor}}" end="{{customToday}}" bindchange="chooseAnalysisDate" class="context-picker">
+            <view class="context-picker-btn">
+              <text class="context-period-text">{{rangeLabel}}</text>
+              <tl-icon name="arrow-down-s-fill" size="20" colorKey="primary">
+              </tl-icon>
+            </view>
+          </picker>
+          <view class="context-nav {{canShiftNext ? '' : 'is-disabled'}}" data-delta="1" bindtap="shift">
+            <tl-icon name="arrow-right-s-line" size="36" colorKey="primary">
+            </tl-icon>
+          </view>
+        </view>
+        <view wx:elif="{{mode === 'all'}}" class="context-period is-static">
+          <tl-icon name="calendar-todo-line" size="26" colorKey="primary">
           </tl-icon>
+          <text class="context-period-text">全部历史汇总</text>
         </view>
       </view>
-      <view wx:elif="{{mode === 'all'}}" class="context-period is-static">
-        <tl-icon name="calendar-todo-line" size="28" colorKey="primary">
-        </tl-icon>
-        <text class="context-period-text">全部历史收支汇总</text>
+      <view class="dashboard-controls">
+        <view class="dashboard-toggle">
+          <view class="dashboard-toggle-item {{analysisType === 'expense' ? 'is-active' : ''}}" data-type="expense" bindtap="changeAnalysisType">支出</view>
+          <view class="dashboard-toggle-item {{analysisType === 'income' ? 'is-active' : ''}}" data-type="income" bindtap="changeAnalysisType">收入</view>
+        </view>
       </view>
     </view>
-    <view class="dashboard-controls">
-      <view class="dashboard-toggle">
-        <view class="dashboard-toggle-item {{analysisType === 'expense' ? 'is-active' : ''}}" data-type="expense" bindtap="changeAnalysisType">支出</view>
-        <view class="dashboard-toggle-item {{analysisType === 'income' ? 'is-active' : ''}}" data-type="income" bindtap="changeAnalysisType">收入</view>
+    <view class="analysis-action-bar is-custom" wx:else>
+      <view class="analysis-custom-kicker">
+        <tl-icon name="calendar-check-line" size="28" colorKey="primary">
+        </tl-icon>
+        <text>按日期区间统计</text>
+      </view>
+      <view class="dashboard-controls">
+        <view class="dashboard-toggle">
+          <view class="dashboard-toggle-item {{analysisType === 'expense' ? 'is-active' : ''}}" data-type="expense" bindtap="changeAnalysisType">支出</view>
+          <view class="dashboard-toggle-item {{analysisType === 'income' ? 'is-active' : ''}}" data-type="income" bindtap="changeAnalysisType">收入</view>
+        </view>
       </view>
     </view>
   </view>
@@ -240,19 +255,34 @@
                 <view class="preset-pill {{customPreset === 'year' ? 'is-active' : ''}}" data-preset="year" bindtap="applyDatePreset">今年</view>
               </view>
               <view class="custom-range__dates">
-                <picker mode="date" value="{{customStart}}" end="{{customToday}}" bindchange="changeCustomStart">
-                  <view>{{customStart}} ▾</view>
+                <picker mode="date" value="{{customStart}}" end="{{customToday}}" bindchange="changeCustomStart" class="custom-date-picker">
+                  <view class="custom-date-box">
+                    <tl-icon name="calendar-line" size="26" colorKey="primary">
+                    </tl-icon>
+                    <text class="custom-date-text">{{customStart}}</text>
+                    <tl-icon name="arrow-down-s-fill" size="20" colorKey="tertiary">
+                    </tl-icon>
+                  </view>
                 </picker>
-                <text>至</text>
-                <picker mode="date" value="{{customEnd}}" end="{{customToday}}" bindchange="changeCustomEnd">
-                  <view>{{customEnd}} ▾</view>
+                <view class="custom-range__separator">至</view>
+                <picker mode="date" value="{{customEnd}}" end="{{customToday}}" bindchange="changeCustomEnd" class="custom-date-picker">
+                  <view class="custom-date-box">
+                    <tl-icon name="calendar-line" size="26" colorKey="primary">
+                    </tl-icon>
+                    <text class="custom-date-text">{{customEnd}}</text>
+                    <tl-icon name="arrow-down-s-fill" size="20" colorKey="tertiary">
+                    </tl-icon>
+                  </view>
                 </picker>
               </view>
-              <text class="custom-range__note">
-                最多 366 天，比较前一个等长区间
-                <text wx:if="{{customDays > 0}}">（当前共 {{customDays}} 天）</text>
-                。
-              </text>
+              <view class="custom-range__footer">
+                <view class="custom-range__days-badge" wx:if="{{customDays > 0}}">
+                  <tl-icon name="time-line" size="22" colorKey="primary">
+                  </tl-icon>
+                  <text>共 {{customDays}} 天</text>
+                </view>
+                <text class="custom-range__note">对比前一个等长区间 · 最多 366 天</text>
+              </view>
             </view>
             <block wx:if="{{hasRecords}}">
               <view class="analysis-summary-card card dashboard-hero">

@@ -49,7 +49,7 @@ function makeDashboardView(result, mode, type, today) {
       displayIcon: icon,
       chipClass: scheme.chipClass,
       iconColor: scheme.iconColor,
-      chartColor: categoryChartColor(item.key),
+      chartColor: categoryChartColor(item.key, type),
       amountText: formatDisplayMoney(item.amount),
       previousText: formatDisplayMoney(item.previousAmount),
       deltaText: formatDisplayMoney(

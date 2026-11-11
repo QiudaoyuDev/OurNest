@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OurNest (咱家小账) · UI/UX 界面设计与图表系统综合分析报告</title>
+  <style>
+    :root {
+      --primary: #F0442F;
+      --primary-ink: #C33425;
+      --primary-soft: #FFF0EA;
+      --income: #25A66A;
+      --income-soft: #EDF9F2;
+      --expense: #F0442F;
+      --bg-warm: #FFF7F2;
+      --surface: #FFFFFF;
+      --surface-subtle: #FFFDFC;
+      --text-main: #312522;
+      --text-muted: #6F625D;
+      --text-tertiary: #9A8278;
+      --border: rgba(49, 37, 34, 0.08);
+      --border-warm: #FFE1D6;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-card: 24px;
+      --shadow-soft: 0 4px 20px -2px rgba(70, 35, 20, 0.05), 0 2px 6px rgba(70, 35, 20, 0.02);
+      --shadow-hover: 0 10px 30px -4px rgba(70, 35, 20, 0.08);
+      --font-stack: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg-warm);
+      color: var(--text-main);
+      font-family: var(--font-stack);
+      line-height: 1.6;
+      padding: 32px 24px 80px;
+      background-image: 
+        radial-gradient(circle at 10% 0%, rgba(255, 112, 88, 0.15), transparent 450px),
+        radial-gradient(circle at 90% 20%, rgba(255, 178, 150, 0.12), transparent 500px);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .report-header {
+      background: var(--surface);
+      border-radius: var(--radius-card);
+      padding: 40px;
+      margin-bottom: 32px;
+      border: 1px solid var(--border-warm);
+      box-shadow: var(--shadow-soft);
+      position: relative;
+      overflow: hidden;
+    }
+    .report-header::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, #F0442F, #FF8268, #FFAA91);
+    }
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--primary-soft);
+      color: var(--primary-ink);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      border: 1px solid rgba(240, 68, 47, 0.15);
+    }
+    .report-title {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+    .report-subtitle {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 860px;
+      line-height: 1.7;
+    }
+
+    .meta-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px dashed var(--border-warm);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .meta-item strong {
+      color: var(--text-main);
+    }
+
+    /* Section Cards */
+    .section-card {
+      background: var(--surface);
+      border-radius: var(--radius-card);
+      padding: 36px;
+      margin-bottom: 32px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+    }
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--primary-soft);
+    }
+    .section-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title span.number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 50%;
+    }
+    .section-tag {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      background: var(--bg-warm);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      margin-top: 16px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 16px;
+    }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .info-box {
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .info-box:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+    .info-box h4 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .info-box p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Color Tokens Preview */
+    .token-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .token-item {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: #fff;
+    }
+    .token-swatch {
+      height: 48px;
+      width: 100%;
+    }
+    .token-desc {
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+    .token-name {
+      font-weight: 600;
+      color: var(--text-main);
+      display: block;
+    }
+    .token-val {
+      color: var(--text-tertiary);
+      font-family: monospace;
+    }
+
+    /* Component Table */
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      text-align: left;
+    }
+    th {
+      background: var(--bg-warm);
+      color: var(--text-main);
+      font-weight: 600;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface-subtle); }
+
+    /* Chart Showcase Mockups */
+    .chart-showcase {
+      background: #FFFAF7;
+      border: 1px solid var(--border-warm);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-top: 20px;
+    }
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 18px;
+    }
+    .chart-title-box h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .chart-title-box p {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      margin-top: 2px;
+    }
+
+    /* Mock Bars */
+    .mock-bar-chart {
+      display: flex;
+      align-items: flex-end;
+      height: 160px;
+      gap: 12px;
+      padding: 16px 0 6px;
+      border-bottom: 1px solid #EADBD4;
+      position: relative;
+    }
+    .mock-bar-chart::before {
+      content: "";
+      position: absolute;
+      top: 30%;
+      left: 0;
+      right: 0;
+      border-top: 1px dashed rgba(234, 219, 212, 0.6);
+      pointer-events: none;
+    }
+    .mock-bar-chart::after {
+      content: "";
+      position: absolute;
+      top: 65%;
+      left: 0;
+      right: 0;
+      border-top: 1px dashed rgba(234, 219, 212, 0.6);
+      pointer-events: none;
+    }
+    .mock-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .mock-bars-group {
+      display: flex;
+      gap: 4px;
+      align-items: flex-end;
+      width: 100%;
+      justify-content: center;
+      height: calc(100% - 24px);
+    }
+    .bar-prev {
+      width: 14px;
+      background: #FFB2A0;
+      border-radius: 4px 4px 0 0;
+    }
+    .bar-curr {
+      width: 14px;
+      background: var(--primary);
+      border-radius: 4px 4px 0 0;
+    }
+    .bar-curr.is-selected {
+      outline: 2px solid var(--text-main);
+    }
+    .bar-curr.is-future {
+      background: #E8DDD8;
+    }
+    .col-label {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    /* Mock Donut */
+    .mock-donut-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 16px 0;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .donut-visual {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: conic-gradient(
+        #F0442F 0% 42%,
+        #FF8E67 42% 64%,
+        #F5B04E 64% 78%,
+        #6F9CEB 78% 90%,
+        #9B7DE5 90% 100%
+      );
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(70,35,20,0.06);
+    }
+    .donut-hole {
+      width: 82px;
+      height: 82px;
+      border-radius: 50%;
+      background: #FFFAF7;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .donut-hole-val {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.1;
+    }
+    .donut-hole-lbl {
+      font-size: 10px;
+      color: var(--text-tertiary);
+    }
+
+    .legend-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 180px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+    .legend-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    /* Mock Calendar Heatmap */
+    .mock-calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .cal-cell {
+      height: 48px;
+      background: #FFF0EA;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: var(--text-main);
+      position: relative;
+    }
+    .cal-cell.is-today {
+      border: 1.5px solid var(--primary);
+    }
+    .cal-cell.is-selected {
+      background: #FFE1D6;
+      font-weight: 700;
+      color: var(--primary-ink);
+    }
+    .cal-cell.is-future {
+      background: #FAF3F0;
+      color: #B5A49D;
+    }
+    .cal-amount {
+      font-size: 9px;
+      color: var(--primary-ink);
+      font-weight: 600;
+    }
+
+    /* UNSLOP Analysis Boxes */
+    .unslop-pass-card {
+      background: #FFFDFB;
+      border-left: 4px solid var(--primary);
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      padding: 16px 20px;
+      margin-bottom: 14px;
+      border-top: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .unslop-pass-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .tag-status {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .tag-good { background: #EDF9F2; color: #1F7A4B; }
+    .tag-warn { background: #FFF3E0; color: #B56A13; }
+    .tag-fix { background: #FFF1EF; color: #D9483B; }
+
+    /* Comparison Table Before / After */
+    .redline-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .redline-card {
+      border-radius: var(--radius-md);
+      padding: 20px;
+      border: 1px solid var(--border);
+    }
+    .redline-card.before {
+      background: #FFF6F5;
+      border-color: #FFD5CE;
+    }
+    .redline-card.after {
+      background: #F4FBF7;
+      border-color: #C3EADB;
+    }
+    .redline-head {
+      font-weight: 700;
+      font-size: 15px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .redline-card.before .redline-head { color: #D9483B; }
+    .redline-card.after .redline-head { color: #1F7A4B; }
+
+    ul.clean-list {
+      padding-left: 18px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    ul.clean-list li {
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    /* Footer */
+    .report-footer {
+      text-align: center;
+      padding-top: 40px;
+      color: var(--text-tertiary);
+      font-size: 13px;
+    }
+
+    @media (max-width: 768px) {
+      body { padding: 16px 12px 60px; }
+      .report-header, .section-card { padding: 20px; }
+      .redline-grid { grid-template-columns: 1fr; }
+      .mock-bar-chart { gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Report Header -->
+  <header class="report-header">
+    <div class="badge-pill">
+      <span>🛡️</span> mini-program-engineering-suite × UNSLOP Redline Audit
+    </div>
+    <h1 class="report-title">咱家小账 (OurNest) · UI/UX 界面设计与图表系统深度综合分析</h1>
+    <p class="report-subtitle">
+      基于 <strong>UNSLOP</strong>（Craft, Character, Moments & 9-Pass Redline）与 <strong>mini-program-engineering-suite</strong>（微信真机约束、Canvas渲染、安全区与异步状态流）双重标准，对当前小程序的界面设计、功能蓝图、组件解耦、交互链路及统计图表体系进行全面诊断与设计重构建议。
+    </p>
+
+    <div class="meta-bar">
+      <div class="meta-item">📦 <strong>项目代号：</strong> OurNest (咱家小账)</div>
+      <div class="meta-item">🎨 <strong>设计风格：</strong> Warm Hearth (暖家暖红体系)</div>
+      <div class="meta-item">📱 <strong>技术架构：</strong> 微信小程序 + 微信云开发 + ECharts (ec-canvas)</div>
+      <div class="meta-item">🔍 <strong>核心剖析：</strong> 统计分析体系、多维图表、微交互与去AI化润色</div>
+    </div>
+  </header>
+
+  <!-- SECTION 1: 产品定位与视觉风格体系 -->
+  <section class="section-card">
+    <div class="section-head">
+      <h2 class="section-title"><span class="number">1</span> 视觉设计系统与风格语言 (Design System)</h2>
+      <span class="section-tag">Tokens & Palette</span>
+    </div>
+
+    <p style="color: var(--text-muted); font-size: 15px; margin-bottom: 16px;">
+      OurNest 整体构建在温暖的<strong>“家庭壁炉 / 温润账本 (Warm Hearth & Ink)”</strong>语境中。彻底摈弃了泛滥于大众 AI 生成界面的冷色高饱和紫蓝渐变、刺眼霓虹光晕和浮夸毛玻璃，转而采用沉静暖红与米暖灰的搭配，带来亲近且耐看的家庭陪伴感。
+    </p>
+
+    <!-- Token Grids -->
+    <div class="token-grid">
+      <div class="token-item">
+        <div class="token-swatch" style="background: #F0442F;"></div>
+        <div class="token-desc">
+          <span class="token-name">Primary (暖红)</span>
+          <span class="token-val">#F0442F</span>
+        </div>
+      </div>
+      <div class="token-item">
+        <div class="token-swatch" style="background: #FFF7F2;"></div>
+        <div class="token-desc">
+          <span class="token-name">Page Bg (暖米白)</span>
+          <span class="token-val">#FFF7F2</span>
+        </div>
+      </div>
+      <div class="token-item">
+        <div class="token-swatch" style="background: #312522;"></div>
+        <div class="token-desc">
+          <span class="token-name">Text Main (暖墨褐)</span>
+          <span class="token-val">#312522</span>
+        </div>
+      </div>
+      <div class="token-item">
+        <div class="token-swatch" style="background: #25A66A;"></div>
+        <div class="token-desc">
+          <span class="token-name">Income (进账绿)</span>
+          <span class="token-val">#25A66A</span>
+        </div>
+      </div>
+      <div class="token-item">
+        <div class="token-swatch" style="background: #FFF0EA;"></div>
+        <div class="token-desc">
+          <span class="token-name">Surface Soft (暖杏底)</span>
+          <span class="token-val">#FFF0EA</span>
+        </div>
+      </div>
+      <div class="token-item">
+        <div class="token-swatch" style="background: #6F625D;"></div>
+        <div class="token-desc">
+          <span class="token-name">Text Muted (温和灰)</span>
+          <span class="token-val">#6F625D</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-3" style="margin-top: 24px;">
+      <div class="info-box">
+        <h4>📐 4px / 8rpx 弹性栅格</h4>
+        <p>全站间距以 8rpx、16rpx、24rpx、32rpx、48rpx 为基本进阶，严控自由随意像素；内边距与外边距符合“内聚外疏”的群组层级原则。</p>
+      </div>
+      <div class="info-box">
+        <h4>🔘 嵌套圆角约束 (Nested Radii)</h4>
+        <p>外卡片采用 <code>--tl-radius-card: 34rpx</code>，内部输入框与操作按键为 <code>--tl-radius-control: 20rpx</code>，形成符合光学美感的内外角嵌套关系。</p>
+      </div>
+      <div class="info-box">
+        <h4>🌑 克制的层次与阴影</h4>
+        <p>除底部导航栏采用防漂浮轻微阴影 (<code>0 -8rpx 24rpx rgba(49,37,34,0.06)</code>) 外，其余卡片主要依赖 1rpx 微边框和浅底色阶表达空间层级。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 2: 全局功能与页面交互逻辑 -->
+  <section class="section-card">
+    <div class="section-head">
+      <h2 class="section-title"><span class="number">2</span> 全局功能架构与交互逻辑 (Feature & Flow)</h2>
+      <span class="section-tag">Architecture & UX States</span>
+    </div>
+
+    <p style="color: var(--text-muted); font-size: 15px; margin-bottom: 20px;">
+      小程序采用<strong>“单 Shell 承载 4 大常驻 Tab + 中央微凸快捷记账”</strong>的核心框架，结合微信原生胶囊自定义导航栏和安全区，实现高频记账与深度分析的双轨并进。
+    </p>
+
+    <div class="grid-2">
+      <div class="info-box">
+        <h4>🎯 4+1 核心导航模式</h4>
+        <ul class="clean-list" style="margin-top: 8px;">
+          <li><strong>首页 (Home)：</strong> 月度收支大盘、本月结余总览、预算进度水位条与预警、最近收支记录。</li>
+          <li><strong>明细 (Records)：</strong> 按月份归集的流水列表、按日 Sticky 头部聚合（日收/日支）、无缝游标无限加载。</li>
+          <li><strong>中央 FAB (Record Hub)：</strong> 核心记账入口，弹出快捷记账面板或进入全功能记账页，支持多分类、账户、分摊与小算盘计算。</li>
+          <li><strong>分析 (Analysis)：</strong> 周/月/年/自定义/累计 5 大维度看板，集成多维趋势柱状图、月度日历热力、分类环形占比及家庭成员透视。</li>
+          <li><strong>我的 (Profile)：</strong> 多账本管理与切换、家庭协同成员与邀请邀请码、分类自定义、预算设定与账单导入。</li>
+        </ul>
+      </div>
+
+      <div class="info-box">
+        <h4>🔄 状态机闭环与防白屏机制</h4>
+        <ul class="clean-list" style="margin-top: 8px;">
+          <li><strong>互斥状态链：</strong> 遵循 <code>Loading (Skeleton) → Error (Retry) / Empty (Action) → Ready</code>，禁止在加载中提前渲染空容器或报错。</li>
+          <li><strong>Tab 保持与懒加载：</strong> 采用 <code>visitedTabs</code> 机制，未点击的 Tab 不初始化，已访问的 Tab 在切换时仅隐藏（<code>display: none</code> / <code>hidden class</code>），避免重复请求和图表重绘。</li>
+          <li><strong>家庭分摊模型：</strong> 独创“付款人 (Payer)”与“消费归属人 (Consumer)”解耦机制，支持公共支出、多人平摊与个人独享。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: 核心组件系统全景拆解 -->
+  <section class="section-card">
+    <div class="section-head">
+      <h2 class="section-title"><span class="number">3</span> 业务与基础组件库解耦评测 (Component Suite)</h2>
+      <span class="section-tag">21 Components Evaluated</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>组件名称</th>
+            <th>类型定位</th>
+            <th>核心职责与交互表现</th>
+            <th>工程与设备考量</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>tl-navbar</code></td>
+            <td>基础布局</td>
+            <td>自定义顶部导航栏，自适应微信右侧胶囊宽度，支持账本切换下拉</td>
+            <td>通过系统信息获取 <code>statusBarHeight</code>，避免刘海屏遮挡</td>
+          </tr>
+          <tr>
+            <td><code>tl-tabbar</code></td>
+            <td>导航容器</td>
+            <td>双侧各 2 个 Tab，中央凸起悬浮记账按钮（带只读权限检测）</td>
+            <td>严格处理 <code>env(safe-area-inset-bottom)</code>，防止遮挡手势条</td>
+          </tr>
+          <tr>
+            <td><code>tl-skeleton</code></td>
+            <td>状态反馈</td>
+            <td>提供 home、records、analysis、detail、list 5 种形态的骨架占位</td>
+            <td>暖色微光呼吸动效，降低加载焦虑</td>
+          </tr>
+          <tr>
+            <td><code>tl-empty-state</code></td>
+            <td>状态反馈</td>
+            <td>空状态、网络错误、账本缺失等兜底展示，带语义化插图与行动按钮</td>
+            <td>支持一键重试，杜绝信息死胡同</td>
+          </tr>
+          <tr>
+            <td><code>tl-budget-progress</code></td>
+            <td>数据展示</td>
+            <td>多阶预算进度条（安全绿、注意黄、警告橙、超支红）</td>
+            <td>纯 CSS 宽度驱动，无额外重绘开销</td>
+          </tr>
+          <tr>
+            <td><code>tl-bottom-sheet</code></td>
+            <td>容器弹窗</td>
+            <td>半屏浮层，用于其余分类展开、账本切换、周期模式选择</td>
+            <td>包含遮罩防穿透、滑出弹簧动效</td>
+          </tr>
+          <tr>
+            <td><code>tl-record-form</code></td>
+            <td>表单交互</td>
+            <td>数字键盘输入、计算器即时运算、快捷金额 Chip、账户与标签选择</td>
+            <td>解决移动端软键盘遮挡，自带金额合法性校验</td>
+          </tr>
+          <tr>
+            <td><code>ec-canvas</code></td>
+            <td>图表核心</td>
+            <td>Apache ECharts 微信原生 Canvas 2D 适配容器</td>
+            <td>处理 DPR 缩放、Touch 触摸联动与上下文释放</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SECTION 4: 统计与图表体系深度拆解（重中之重） -->
+  <section class="section-card" style="border-left: 6px solid var(--primary);">
+    <div class="section-head">
+      <h2 class="section-title"><span class="number">4</span> 统计分析与图表体系全景深度拆解（核心重点）</h2>
+      <span class="section-tag">Charts & Analytics Deep Dive</span>
+    </div>
+
+    <p style="color: var(--text-muted); font-size: 15px; margin-bottom: 20px;">
+      小程序的统计分析页 (<code>tl-tab-analysis</code>) 是整个系统的核心亮点。针对移动端小程序的性能瓶颈与交互特征，系统采用了<strong>“轻量纯 CSS 柱状图 + ECharts 矢量图表 + 日历热力表格”</strong>的混合技术选型，兼顾首屏渲染速度与专业下钻能力。
+    </p>
+
+    <!-- 图表 1: CSS-Driven Dashboard Bar Chart -->
+    <div class="chart-showcase">
+      <div class="chart-header">
+        <div class="chart-title-box">
+          <h3>1. 周度 / 月度趋势对比柱状图 (HTML/CSS Bar Chart)</h3>
+          <p>纯 WXML/WXSS 百分比高度驱动，极速加载，无 Canvas 白屏等待</p>
+        </div>
+        <span class="tag-status tag-good">⚡ 零延迟 · 高交互</span>
+      </div>
+
+      <!-- Mockup -->
+      <div class="mock-bar-chart">
+        <div class="mock-col">
+          <div class="mock-bars-group">
+            <div class="bar-prev" style="height: 35%;"></div>
+            <div class="bar-curr" style="height: 50%;"></div>
+          </div>
+          <span class="col-label">周一</span>
+        </div>
+        <div class="mock-col">
+          <div class="mock-bars-group">
+            <div class="bar-prev" style="height: 60%;"></div>
+            <div class="bar-curr" style="height: 45%;"></div>
+          </div>
+          <span class="col-label">周二</span>
+        </div>
+        <div class="mock-col">
+          <div class="mock-bars-group">
+            <div class="bar-prev" style="height: 20%;"></div>
+            <div class="bar-curr is-selected" style="height: 85%;"></div>
+          </div>
+          <span class="col-label" style="font-weight:700; color:var(--text-main);">周三</span>
+        </div>
+        <div class="mock-col">
+          <div class="mock-bars-group">
+            <div class="bar-prev" style="height: 70%;"></div>
+            <div class="bar-curr" style="height: 60%;"></div>
+          </div>
+          <span class="col-label">周四</span>
+        </div>
+        <div class="mock-col">
+          <div class="mock-bars-group">
+            <div class="bar-prev" style="height: 40%;"></div>
+            <div class="bar-curr" style="height: 75%;"></div>
+          </div>
+          <span class="col-label">周五</span>
+        </div>
+        <div class="mock-col">
+          <div class="mock-bars-group">
+            <div class="bar-prev" style="height: 90%;"></div>
+            <div class="bar-curr is-future" style="height: 10%;"></div>
+          </div>
+          <span class="col-label">周六</span>
+        </div>
+        <div class="mock-col">
+          <div class="mock-bars-group">
+            <div class="bar-prev" style="height: 80%;"></div>
+            <div class="bar-curr is-future" style="height: 10%;"></div>
+          </div>
+          <span class="col-label">周日</span>
+        </div>
+      </div>
+
+      <div class="grid-3" style="margin-top: 16px;">
+        <div style="font-size: 13px; color: var(--text-muted);">
+          <strong>双柱同屏对比：</strong> 浅色为上周期（上周/上月），深色为当前周期，实时感知支出走势波动。
+        </div>
+        <div style="font-size: 13px; color: var(--text-muted);">
+          <strong>未来期虚化：</strong> 未到达日期呈现灰色弱化条，避免用户误将空缺理解为“零支出”。
+        </div>
+        <div style="font-size: 13px; color: var(--text-muted);">
+          <strong>点击选中穿透：</strong> 点击任意柱子，高亮边框并即时在下方弹出该柱所属周期的金额汇总与明细跳转。
+        </div>
+      </div>
+    </div>
+
+    <!-- 图表 2: 月度收支日历热力网格 -->
+    <div class="chart-showcase">
+      <div class="chart-header">
+        <div class="chart-title-box">
+          <h3>2. 月度收支日历网格 (Calendar Heatmap Grid)</h3>
+          <p>基于自然周对齐的月度全景日历，按日精确定位消费分布</p>
+        </div>
+        <span class="tag-status tag-good">📅 空间认知明晰</span>
+      </div>
+
+      <div class="mock-calendar">
+        <div class="cal-cell" style="background:transparent; color:#bbb;">日</div>
+        <div class="cal-cell" style="background:transparent; color:#bbb;">一</div>
+        <div class="cal-cell" style="background:transparent; color:#bbb;">二</div>
+        <div class="cal-cell" style="background:transparent; color:#bbb;">三</div>
+        <div class="cal-cell" style="background:transparent; color:#bbb;">四</div>
+        <div class="cal-cell" style="background:transparent; color:#bbb;">五</div>
+        <div class="cal-cell" style="background:transparent; color:#bbb;">六</div>
+
+        <div class="cal-cell"><span>1</span><span class="cal-amount">¥48</span></div>
+        <div class="cal-cell"><span>2</span><span class="cal-amount">¥120</span></div>
+        <div class="cal-cell"><span>3</span><span class="cal-amount">¥26</span></div>
+        <div class="cal-cell is-selected"><span>4</span><span class="cal-amount">¥350</span></div>
+        <div class="cal-cell is-today"><span>5 今天</span><span class="cal-amount">¥89</span></div>
+        <div class="cal-cell is-future"><span>6</span></div>
+        <div class="cal-cell is-future"><span>7</span></div>
+      </div>
+
+      <p style="font-size: 13px; color: var(--text-muted); margin-top: 14px;">
+        💡 <strong>交互细节：</strong> 支持 14 天两周紧凑模式与整月展开模式切换；点击日期即在下方就地展开 <code>tl-analysis-record</code> 列表，无需跳转即可连续查阅当日账单并支持无限滚动加载更多。
+      </p>
+    </div>
+
+    <!-- 图表 3: ECharts 分类环形占比图 -->
+    <div class="chart-showcase">
+      <div class="chart-header">
+        <div class="chart-title-box">
+          <h3>3. 支出 / 收入分类环形构成图 (ECharts Donut Chart)</h3>
+          <p>Top 5 核心支出分类聚焦 + 其余长尾分类归拢为 Bottom Sheet 抽屉</p>
+        </div>
+        <span class="tag-status tag-warn">⚠️ 存在色彩语义优化空间</span>
+      </div>
+
+      <div class="mock-donut-wrap">
+        <div class="donut-visual">
+          <div class="donut-hole">
+            <span class="donut-hole-val">¥3,860</span>
+            <span class="donut-hole-lbl">总支出</span>
+          </div>
+        </div>
+
+        <div class="legend-list">
+          <div class="legend-item">
+            <div class="legend-left"><span class="legend-dot" style="background:#F0442F;"></span>餐饮美食</div>
+            <strong>42% (¥1,620)</strong>
+          </div>
+          <div class="legend-item">
+            <div class="legend-left"><span class="legend-dot" style="background:#FF8E67;"></span>商超日用</div>
+            <strong>22% (¥850)</strong>
+          </div>
+          <div class="legend-item">
+            <div class="legend-left"><span class="legend-dot" style="background:#F5B04E;"></span>交通出行</div>
+            <strong>14% (¥540)</strong>
+          </div>
+          <div class="legend-item">
+            <div class="legend-left"><span class="legend-dot" style="background:#6F9CEB;"></span>休闲娱乐</div>
+            <strong>12% (¥460)</strong>
+          </div>
+          <div class="legend-item">
+            <div class="legend-left"><span class="legend-dot" style="background:#9B7DE5;"></span>其余分类 ›</div>
+            <strong>10% (¥390)</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-box" style="margin-top: 12px; background:#fff;">
+        <p style="font-size: 13px;">
+          <strong>高阶联动逻辑：</strong> 点击饼图扇区，下方分类列表自动展开该分类的最近几笔流水；点击“其余分类”，从底部呼出 <code>tl-bottom-sheet</code> 展示全部二级细分账目。
+        </p>
+      </div>
+    </div>
+
+    <!-- 图表 4: 综合走势折线图与年度现金流 -->
+    <div class="chart-showcase">
+      <div class="chart-header">
+        <div class="chart-title-box">
+          <h3>4. 综合收支折线走势图 & 年度现金流双柱图</h3>
+          <p>三线同屏（收入绿、支出红、结余灰虚线）与 12 个月收支配对柱状图</p>
+        </div>
+        <span class="tag-status tag-good">📈 宏观财务把控</span>
+      </div>
+
+      <div class="grid-2">
+        <div class="info-box">
+          <h4>📉 三线收支走势 (Multi-Line)</h4>
+          <p>自适应采样点，平滑三次样条曲线；横轴自动按周期疏密抽稀；下方紧密联动“趋势明细表格”，支持快速查阅各阶段财务盈亏状态。</p>
+        </div>
+        <div class="info-box">
+          <h4>📊 年度现金流 (Year Cashflow)</h4>
+          <p>收入与支出并列成对柱状图，直观展现季节性开支波峰波谷；近 5 年结余图则采用正负对称轴，直观揭示年度资产增减。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 5: UNSLOP 标准审查与红线优化 -->
+  <section class="section-card">
+    <div class="section-head">
+      <h2 class="section-title"><span class="number">5</span> UNSLOP 9-Pass 红线审查与去“AI感”优化建议</h2>
+      <span class="section-tag">Redline Audit</span>
+    </div>
+
+    <p style="color: var(--text-muted); font-size: 15px; margin-bottom: 20px;">
+      依据 <code>UNSLOP</code> 规范审查：<strong>“Craft keeps the chrome quiet and puts the richness into one or two moments”</strong>。OurNest 整体底子极佳，没有使用 AI 模板常见的全屏紫蓝渐变和浮夸发光，但在图表调色与控制台层级上仍存在一些“AI痕迹”值得精细化打磨。
+    </p>
+
+    <!-- Pass 诊断清单 -->
+    <div class="unslop-pass-card">
+      <div class="unslop-pass-title">
+        <span>Pass 1: Spacing & Alignment (间距与对齐)</span>
+        <span class="tag-status tag-good">良好 (Pass)</span>
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted);">
+        严格遵循 8rpx/16rpx/24rpx 节奏。卡片内边距统一为 24rpx~34rpx。数字列均实现了 <code>tabular-nums</code> 右对齐，图标与文本垂直居中规范。
+      </p>
+    </div>
+
+    <div class="unslop-pass-card">
+      <div class="unslop-pass-title">
+        <span>Pass 2: Color Semantics (色彩语义与图表调色)</span>
+        <span class="tag-status tag-fix">需要重构 (Slop Found)</span>
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted);">
+        <strong>🚨 严重色彩歧义隐患：</strong> 在 <code>chart-options.js</code> 的 <code>categoryChartColor()</code> 中，通过分类字符串哈希随机抽取 <code>CHART_COLORS</code>。这导致<strong>支出分类有可能被赋予收入绿 (#25A66A)</strong>，收入分类可能被赋予支出红 (#F0442F)！在财务记账场景下，这会给用户带来灾难性的心理误判。<br>
+        <strong>🚨 年度支出柱的“彩虹条”：</strong> <code>year-cashflow</code> 中将最大支出染成黄色、最小支出染成蓝色。UNSLOP 明确指出：<em>“No rainbow bars inside one series... One accent per chart”</em>。同一支出序列应保持同色系灰阶或统一红调，不应混杂多种高饱和互补色。
+      </p>
+    </div>
+
+    <div class="unslop-pass-card">
+      <div class="unslop-pass-title">
+        <span>Pass 3 & 4: Copy & Icons (文案克制与图标一致性)</span>
+        <span class="tag-status tag-good">优秀 (Craft)</span>
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted);">
+        全站 0 处 emoji 滥用，统一采用本地 Remix Icon 线性图标；标题干脆利落（如“支出构成”、“消费走势”），绝无“超级助手、智能黑科技、AI赋能”等口号式喊话。
+      </p>
+    </div>
+
+    <div class="unslop-pass-card">
+      <div class="unslop-pass-title">
+        <span>Pass 6: Layout & Control Density (控制台布局密度)</span>
+        <span class="tag-status tag-warn">建议精简 (Need Polish)</span>
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted);">
+        统计页头部纵向堆叠了 4 层操作控件：①周期分段器（周/月/年/自定义/累计）→ ②日期前后翻页器 → ③收支分段器（支出/收入）→ ④二级浮动锚点（小结/分类/账户/家庭）。在普通手机上占用了近 40% 的首屏可视面积。
+      </p>
+    </div>
+
+    <!-- Redline 对比 -->
+    <div class="redline-grid">
+      <div class="redline-card before">
+        <div class="redline-head">❌ 现有潜在问题 (Before)</div>
+        <ul class="clean-list">
+          <li>分类颜色哈希随机分配，可能出现“绿色支出扇区”打破认知习惯。</li>
+          <li>年度收支柱状图中，最高月显示橙黄、最低月显示冷蓝，形成一序列多色杂乱。</li>
+          <li>统计页头部 4 层控制条同时展开，挤占图表可视高度。</li>
+          <li>部分过渡动效带有弹性，在低端机型上偶尔出现掉帧感。</li>
+        </ul>
+      </div>
+
+      <div class="redline-card after">
+        <div class="redline-head">✅ UNSLOP 改进建议 (After)</div>
+        <ul class="clean-list">
+          <li><strong>语义锚定调色：</strong> 支出分类锁定在暖红-暖橘-土黄-紫灰温暖渐变阶；收入分类锁定在墨绿-薄荷绿阶，绝不互串。</li>
+          <li><strong>单序列纯化：</strong> 年度支出柱全用暖红；极值点通过柱顶徽标或微弱饱和度微调表达，杜绝黄蓝红彩虹条。</li>
+          <li><strong>头部控件整合：</strong> 将二级分段器或辅助日期筛选整合为沉浸式紧凑状态栏，下放空间给核心图表卡片。</li>
+          <li><strong>硬件加速微动效：</strong> 统一使用 180ms ease 线性过渡，禁用大范围 scale，保证滑动如丝顺滑。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 6: 小程序工程与真机设备适配 -->
+  <section class="section-card">
+    <div class="section-head">
+      <h2 class="section-title"><span class="number">6</span> 微信小程序工程约束与设备适配 (Engineering Suite)</h2>
+      <span class="section-tag">WeChat Platform Specifics</span>
+    </div>
+
+    <div class="grid-3">
+      <div class="info-box">
+        <h4>📱 胶囊避让与安全区</h4>
+        <p>自定义导航栏使用 <code>wx.getMenuButtonBoundingClientRect()</code> 动态解算胶囊上下间距与标题垂直居中；底部严格应用 <code>constant(safe-area-inset-bottom)</code> 与 <code>env(...)</code> 双重兜底，兼顾新老 iOS 与折叠屏。</p>
+      </div>
+
+      <div class="info-box">
+        <h4>⚡ Canvas 2D 内存与手势协同</h4>
+        <p>ECharts 容器在 <code>scroll-view</code> 内部容易产生滚动劫持。当前采用同层渲染 Canvas 2D，并在 <code>chart-controller.js</code> 中实现严格的 <code>disposeAll</code> 机制，Tab 离开或页面卸载时注销图表事件，杜绝内存泄漏。</p>
+      </div>
+
+      <div class="info-box">
+        <h4>🌐 游标分页与数据安全</h4>
+        <p>记录分页采用服务端 <code>{ date, id }</code> 双键游标，避免高频增删场景下的跳页与重复；云函数作为权限唯一裁决者，绝不轻信客户端传入的角色声明。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="report-footer">
+    <p>OurNest (咱家小账) · UI/UX 界面设计与图表系统综合分析报告</p>
+    <p style="margin-top: 4px;">Created with UNSLOP Skill & mini-program-engineering-suite · 2026</p>
+  </footer>
+
+</div>
+
+</body>
+</html>

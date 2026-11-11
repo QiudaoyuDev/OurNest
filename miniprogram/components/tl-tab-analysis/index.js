@@ -932,7 +932,7 @@ Component({
                 displayIcon: icon,
                 chipClass: scheme.chipClass,
                 iconColor: scheme.iconColor,
-                chartColor: categoryChartColor(item.key),
+                chartColor: categoryChartColor(item.key, request.analysisType || "expense"),
               };
             }),
             hasDetailRows: activeDetailRows.length > 0,

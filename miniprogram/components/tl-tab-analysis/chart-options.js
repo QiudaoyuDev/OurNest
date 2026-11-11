@@ -42,22 +42,32 @@ const CHART_THEME = {
   accentWarm: "#f5b04e",
   accentCool: "#6f9ceb",
 };
-const CHART_COLORS = [
+const EXPENSE_CHART_COLORS = [
   CHART_THEME.expense,
   "#ff8e67",
   CHART_THEME.accentWarm,
-  CHART_THEME.income,
-  CHART_THEME.accentCool,
+  "#d9483b",
   "#9b7de5",
+  "#9a8278",
 ];
+const INCOME_CHART_COLORS = [
+  CHART_THEME.income,
+  "#1f7a4b",
+  "#38b57b",
+  CHART_THEME.accentCool,
+  "#4f46e5",
+  "#6f625d",
+];
+const CHART_COLORS = EXPENSE_CHART_COLORS;
 
-function categoryChartColor(key) {
+function categoryChartColor(key, type = "expense") {
   if (!key) return "#c8bcb5";
   let hash = 2166136261;
   for (let index = 0; index < key.length; index += 1) {
     hash = Math.imul(hash ^ key.charCodeAt(index), 16777619);
   }
-  return CHART_COLORS[(hash >>> 0) % CHART_COLORS.length];
+  const palette = type === "income" ? INCOME_CHART_COLORS : EXPENSE_CHART_COLORS;
+  return palette[(hash >>> 0) % palette.length];
 }
 
 const ANALYSIS_CHART_TYPES = [
@@ -80,8 +90,11 @@ function formatTooltipAmount(value) {
 
 function getPieOption(data, chartType) {
   const rows = getRanking(data, chartType);
+  const type =
+    chartType === "income" || (data && data.analysisType === "income") ? "income" : "expense";
+  const palette = type === "income" ? INCOME_CHART_COLORS : EXPENSE_CHART_COLORS;
   return {
-    color: CHART_COLORS,
+    color: palette,
     animationDuration: 350,
     tooltip: {
       trigger: "item",
@@ -113,7 +126,7 @@ function getPieOption(data, chartType) {
           name: item.key || "ratio-remainder",
           displayName: item.name,
           value: amount(item.amount),
-          itemStyle: { color: categoryChartColor(item.key) },
+          itemStyle: { color: categoryChartColor(item.key, type) },
           selected: !!(
             item.key &&
             ((data.ratioSelection && data.ratioSelection.key === item.key) ||
@@ -320,18 +333,12 @@ function getYearChartOption(data, key) {
   };
   if (key === "year-ratio") return getPieOption(data, "category", true);
   if (key === "year-cashflow") {
-    const expenseValues = trend.map((item) => amount(item.expense)).filter((value) => value > 0);
-    const maxExpense = expenseValues.length ? Math.max(...expenseValues) : null;
-    const minExpense = expenseValues.length ? Math.min(...expenseValues) : null;
     const expenseData = trend.map((item) => {
       const value = amount(item.expense);
-      const color =
-        value > 0 && value === maxExpense
-          ? CHART_THEME.accentWarm
-          : value > 0 && value === minExpense
-            ? CHART_THEME.accentCool
-            : CHART_THEME.expense;
-      return { value, itemStyle: { color, borderRadius: [6, 6, 0, 0] } };
+      return {
+        value,
+        itemStyle: { color: CHART_THEME.expense, borderRadius: [6, 6, 0, 0] },
+      };
     });
     return {
       ...base,
@@ -426,6 +433,10 @@ function hasChartData(data, activeChart) {
 
 module.exports = {
   CHART_META,
+  CHART_THEME,
+  CHART_COLORS,
+  EXPENSE_CHART_COLORS,
+  INCOME_CHART_COLORS,
   defaultChartForMode,
   getChartOption,
   hasChartData,

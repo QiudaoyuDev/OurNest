@@ -50,8 +50,10 @@ test("category chart colors follow category identity across ordering", () => {
   const a = getChartOption({ categoryChart: [first, second] }, "category").series[0].data;
   const b = getChartOption({ categoryChart: [second, first] }, "category").series[0].data;
   assert.equal(a[0].itemStyle.color, b[1].itemStyle.color);
-  assert.equal(a[0].itemStyle.color, categoryChartColor(first.key));
+  assert.equal(a[0].itemStyle.color, categoryChartColor(first.key, "expense"));
   assert.equal(categoryChartColor(null), "#c8bcb5");
+  const incomeOption = getChartOption({ incomeCategoryChart: [second] }, "income").series[0].data;
+  assert.equal(incomeOption[0].itemStyle.color, categoryChartColor(second.key, "income"));
 });
 
 test("analysis visual fixture conserves category, account and daily totals", async () => {
@@ -259,8 +261,8 @@ test("analysis charts use supplied data for zero days, yearly extrema and negati
     ],
   });
   assert.deepEqual(cashflow.series[0].data, [10, 20, 30]);
-  assert.equal(cashflow.series[1].data[1].itemStyle.color, "#6f9ceb");
-  assert.equal(cashflow.series[1].data[2].itemStyle.color, "#f5b04e");
+  assert.equal(cashflow.series[1].data[1].itemStyle.color, "#f0442f");
+  assert.equal(cashflow.series[1].data[2].itemStyle.color, "#f0442f");
   const data = {
     activeChart: "yearBalance",
     overview: { recordCount: 0 },
