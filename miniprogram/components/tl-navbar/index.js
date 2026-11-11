@@ -20,6 +20,14 @@ Component({
       type: Boolean,
       value: false,
     },
+    ledgerName: {
+      type: String,
+      value: "",
+    },
+    showLedger: {
+      type: Boolean,
+      value: false,
+    },
   },
 
   data: {
@@ -39,6 +47,10 @@ Component({
   },
 
   methods: {
+    handleSwitchLedger() {
+      this.triggerEvent("switchledger");
+    },
+
     handleBack() {
       if (this.data.interceptBack) {
         this.triggerEvent("back");

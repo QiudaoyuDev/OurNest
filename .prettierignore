@@ -9,3 +9,5 @@ project.private.config.json
 *.zip
 *.tgz
 miniprogram/components/ec-canvas/
+docs/previews/
+.thinkrail/

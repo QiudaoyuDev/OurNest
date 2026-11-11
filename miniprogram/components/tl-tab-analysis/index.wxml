@@ -1,92 +1,35 @@
-<template name="ratio-section">
-  <view wx:if="{{ratioSelection}}" class="ratio-preview card">
-    <view class="ratio-preview-heading">
-      <text class="card-title">{{ratioSelection.name}}明细</text>
-      <text wx:if="{{ratioSelection.parentCategory}}" class="ratio-preview-meta">{{ratioSelection.parentCategory}}</text>
-      <text class="ratio-preview-meta">{{ratioPreviewRangeLabel}}</text>
-    </view>
-    <tl-skeleton wx:if="{{ratioPreviewStatus === 'loading'}}" variant="list">
-    </tl-skeleton>
-    <tl-empty-state wx:elif="{{ratioPreviewStatus === 'error'}}" variant="error" title="{{ratioPreviewStale ? '分析数据需要刷新' : '明细加载失败'}}" description="{{ratioPreviewError}}">
-      <tl-button wx:if="{{ratioPreviewStale}}" variant="secondary" size="small" bind:tap="refreshRatioAnalysis">刷新分析</tl-button>
-      <tl-button wx:else variant="secondary" size="small" bind:tap="retryRatioPreview">重新加载</tl-button>
-    </tl-empty-state>
-    <block wx:elif="{{ratioPreviewStatus === 'ready' || ratioPreviewStatus === 'empty'}}">
-      <view class="ratio-preview-summary">
-        <text class="is-expense">合计 ¥{{ratioPreviewAmountText}}</text>
-        <text>共 {{ratioPreviewCount}} 笔</text>
-      </view>
-      <tl-empty-state wx:if="{{ratioPreviewStatus === 'empty'}}" title="本期该分类暂无支出" description="可以选择其他分类查看明细">
-      </tl-empty-state>
-      <block wx:else>
-        <text class="ratio-preview-meta">最近 {{ratioPreviewRecords.length}} 笔</text>
-        <view wx:for="{{ratioPreviewRecords}}" wx:key="id" class="ratio-preview-record">
-          <view class="ratio-preview-record-main">
-            <text class="ratio-preview-record-title">{{item.note || item.categoryName || '其他'}}</text>
-            <text class="ratio-preview-meta">{{item.date}} · {{item.account || '未设置账户'}}</text>
-          </view>
-          <text class="record-amount expense">-¥{{item.amountText}}</text>
-        </view>
-      </block>
-      <tl-button variant="text" size="small" bind:tap="openRatioRecords">查看全部 {{ratioPreviewCount}} 笔明细</tl-button>
-    </block>
-  </view>
-  <view wx:elif="{{activeRanking.length}}" class="ratio-preview-hint">点选扇区或分类，查看最近 3 笔支出</view>
-  <tl-empty-state wx:else title="本期暂无支出分类" description="可以选择其他时间范围查看">
-  </tl-empty-state>
-  <view wx:if="{{activeRanking.length}}" class="analysis-ratio-list">
-    <view wx:for="{{activeRanking}}" wx:key="key" class="analysis-ratio-row {{ratioSelection && ratioSelection.key === item.key ? 'is-selected' : ''}}" data-key="{{item.key}}" bindtap="selectRatioCategory">
-      <view class="ratio-category-main">
-        <text>{{item.name}}</text>
-        <text wx:if="{{item.parentCategory}}" class="ratio-preview-meta">{{item.parentCategory}}</text>
-      </view>
-      <view class="ratio-category-amount">
-        <text>¥{{item.amountText}} · {{item.rate}}%</text>
-        <tl-icon wx:if="{{ratioSelection && ratioSelection.key === item.key}}" name="check-line" size="26" colorKey="primary">
-        </tl-icon>
-      </view>
-    </view>
-  </view>
-</template>
 <view class="tab-panel analysis-page">
   <view class="analysis-header fade-up">
     <view class="analysis-primary-tabs">
       <view class="analysis-primary-tab {{mode === 'week' ? 'is-active' : ''}}" data-mode="week" bindtap="switchMode">周度</view>
       <view class="analysis-primary-tab {{mode === 'month' ? 'is-active' : ''}}" data-mode="month" bindtap="switchMode">月度</view>
       <view class="analysis-primary-tab {{mode === 'year' ? 'is-active' : ''}}" data-mode="year" bindtap="switchMode">年度</view>
-    </view>
-    <view class="analysis-context-bar">
-      <view class="context-ledger" bindtap="switchLedger">
-        <text class="ledger-name">{{ledgerName}}</text>
-        <tl-icon name="arrow-down-s-line" size="24" colorKey="primary">
+      <view class="analysis-primary-tab analysis-primary-tab--more {{mode === 'custom' || mode === 'all' ? 'is-active' : ''}}" bindtap="openModeSheet">
+        <text>{{mode === 'custom' ? '自定义' : mode === 'all' ? '累计' : '更多'}}</text>
+        <tl-icon name="arrow-down-s-line" size="24" colorKey="{{mode === 'custom' || mode === 'all' ? 'primary' : 'muted'}}">
         </tl-icon>
       </view>
-      <view class="context-divider">
-      </view>
+    </view>
+    <view class="analysis-context-bar">
       <view wx:if="{{mode !== 'all' && mode !== 'custom'}}" class="context-period">
         <view class="context-nav" data-delta="-1" bindtap="shift">
-          <tl-icon name="arrow-left-s-line" size="28" colorKey="primary">
+          <tl-icon name="arrow-left-s-line" size="38" colorKey="primary">
           </tl-icon>
         </view>
-        <picker mode="date" fields="{{mode === 'year' ? 'year' : mode === 'month' ? 'month' : 'day'}}" value="{{anchor}}" end="{{customToday}}" bindchange="chooseAnalysisDate">
-          <text class="context-period-text">{{rangeLabel}} ▾</text>
+        <picker mode="date" fields="{{mode === 'year' ? 'year' : mode === 'month' ? 'month' : 'day'}}" value="{{anchor}}" end="{{customToday}}" bindchange="chooseAnalysisDate" class="context-picker">
+          <view class="context-picker-btn">
+            <text class="context-period-text">{{rangeLabel}}</text>
+            <tl-icon name="arrow-down-s-fill" size="24" colorKey="primary">
+            </tl-icon>
+          </view>
         </picker>
         <view class="context-nav {{canShiftNext ? '' : 'is-disabled'}}" data-delta="1" bindtap="shift">
-          <tl-icon name="arrow-right-s-line" size="28" colorKey="primary">
+          <tl-icon name="arrow-right-s-line" size="38" colorKey="primary">
           </tl-icon>
         </view>
       </view>
       <view wx:else class="context-period is-static">
         <text class="context-period-text">{{rangeLabel}}</text>
-      </view>
-      <view class="context-divider">
-      </view>
-      <view class="context-mode-picker" bindtap="openModeSheet">
-        <view class="context-mode">
-          <text>{{modeLabel}}</text>
-          <tl-icon name="arrow-down-s-line" size="24" colorKey="primary">
-          </tl-icon>
-        </view>
       </view>
     </view>
     <view wx:if="{{mode === 'week' || mode === 'month' || mode === 'year'}}" class="dashboard-controls">
@@ -212,8 +155,8 @@
                 <text class="card-title">{{dashboardView.typeLabel}}分类</text>
                 <view bindtap="toggleCategoryComparison">对比上期 {{compareCategories ? '●' : '○'}}</view>
               </view>
-              <view wx:if="{{chartHostMounted && chartFirstReadyEver && dashboardView.recordCount}}" class="analysis-chart-canvas">
-                <ec-canvas id="dashboard-category-chart" canvas-id="dashboard-category-chart" data-chart-host="secondary" data-chart-key="dashboardCategory" data-chart-generation="{{chartHostGeneration}}" ec="{{ec}}" bind:init="onSecondaryChartInit" bind:initerror="onSecondaryChartInitError">
+              <view wx:if="{{chartHostMounted && chartFirstReadyEver && dashboardView.recordCount}}" id="dashboard-category-chart-wrap" class="analysis-chart-canvas {{categoryChartHidden ? 'is-chart-hidden' : ''}}">
+                <ec-canvas wx:if="{{categoryChartActivated}}" id="dashboard-category-chart" canvas-id="dashboard-category-chart" data-chart-host="secondary" data-chart-key="dashboardCategory" data-chart-generation="{{chartHostGeneration}}" ec="{{ec}}" bind:init="onSecondaryChartInit" bind:initerror="onSecondaryChartInitError">
                 </ec-canvas>
               </view>
               <text wx:if="{{dashboardChartError}}" class="dashboard-meta">图表加载失败，可查看下方分类列表。</text>

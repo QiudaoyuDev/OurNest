@@ -19,6 +19,54 @@ function mountedChart() {
   };
 }
 
+test("dashboard chart waits until its card enters the scroll viewport", () => {
+  const definition = loadAnalysisDefinition(() => Promise.resolve());
+  let observerCallback;
+  const instance = {
+    ...definition.methods,
+    data: {
+      ...definition.data,
+      active: true,
+      foreground: true,
+      loading: false,
+      hasChartData: true,
+    },
+    isAttached: true,
+    setData(patch, callback) {
+      Object.assign(this.data, patch);
+      if (callback) callback();
+    },
+    createIntersectionObserver() {
+      return {
+        relativeTo() {
+          return this;
+        },
+        observe(_selector, callback) {
+          observerCallback = callback;
+        },
+      };
+    },
+    ensureChartHostInitialized(key) {
+      this.initialized = key;
+    },
+  };
+  instance.setupChartVisibilityObserver();
+  observerCallback({
+    intersectionRatio: 0,
+    boundingClientRect: { top: 900 },
+    relativeRect: { top: 100 },
+  });
+  assert.equal(instance.data.categoryChartActivated, false);
+  assert.equal(instance.initialized, undefined);
+  observerCallback({
+    intersectionRatio: 0.1,
+    boundingClientRect: { top: 400 },
+    relativeRect: { top: 100 },
+  });
+  assert.equal(instance.data.categoryChartActivated, true);
+  assert.equal(instance.initialized, "dashboardCategory");
+});
+
 test("chart init accepts WeChat metadata for primary and secondary hosts", () => {
   const definition = loadAnalysisDefinition(() => Promise.resolve());
   const instance = {
@@ -80,6 +128,7 @@ test("a host init lost during loading is retried for main and secondary without 
       loading: true,
       hasChartData: true,
       chartHostMounted: true,
+      categoryChartActivated: true,
       chartNodeGeneration: 4,
       dashboardView: { recordCount: 2 },
       categories: [{ key: "food", amount: 1 }],

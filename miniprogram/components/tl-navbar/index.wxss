@@ -7,7 +7,8 @@
 }
 
 .nav-row,
-.nav-brand {
+.nav-brand,
+.nav-brand-ledger-flow {
   display: flex;
   align-items: center;
 }
@@ -15,6 +16,34 @@
 .nav-row {
   position: relative;
   justify-content: space-between;
+}
+
+.nav-brand-ledger-flow {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  cursor: pointer;
+}
+
+.nav-brand-ledger-flow:active {
+  opacity: 0.8;
+}
+
+.brand-ledger-name {
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-heading, 32rpx);
+  font-weight: var(--tl-font-weight-bold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.brand-ledger-arrow {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: 6rpx;
 }
 
 .nav-brand,

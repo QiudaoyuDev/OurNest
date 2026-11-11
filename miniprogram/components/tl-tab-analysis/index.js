@@ -104,6 +104,8 @@ Component({
     hasChartData: false,
     hasRecords: false,
     ec: { disableTouch: false },
+    categoryChartHidden: false,
+    categoryChartActivated: false,
     // Rendered onto every chart host so init callbacks carry the node lifetime
     // they originated from, rather than relying on the mutable component state.
     chartNodeGeneration: 0,
@@ -200,6 +202,10 @@ Component({
       this._sectionRequestId = (this._sectionRequestId || 0) + 1;
       this.disposeChart();
       this.disposeSecondaryCharts();
+      if (this._chartObserver && typeof this._chartObserver.disconnect === "function") {
+        this._chartObserver.disconnect();
+        this._chartObserver = null;
+      }
       this.chartController = null;
     },
   },
@@ -332,6 +338,8 @@ Component({
       ["summary", "category", "account", "family"].forEach((section) => {
         query.select(`#analysis-${section}`).boundingClientRect();
       });
+      query.select("#dashboard-category-chart-wrap").boundingClientRect();
+      query.select(".analysis-scroll").boundingClientRect();
       query.exec((rects) => {
         this._sectionMeasurement = false;
         if (!this.isAttached || !rects || !rects[0]) return;
@@ -341,6 +349,23 @@ Component({
           if (rect && rect.top <= rects[0].bottom + 8) active = section;
         });
         if (active !== this.data.activeSection) this.setData({ activeSection: active });
+
+        const chartWrap = rects[5];
+        const viewport = rects[6];
+        if (
+          chartWrap &&
+          viewport &&
+          chartWrap.bottom > viewport.top &&
+          chartWrap.top < viewport.bottom
+        ) {
+          this.activateDashboardChart();
+        }
+        if (chartWrap) {
+          const isOccluded = chartWrap.bottom <= rects[0].bottom;
+          if (Boolean(this.data.categoryChartHidden) !== Boolean(isOccluded)) {
+            this.setData({ categoryChartHidden: Boolean(isOccluded) });
+          }
+        }
       });
     },
 
@@ -701,6 +726,14 @@ Component({
       this.clearRatioPreview();
       this._sectionRequestId = (this._sectionRequestId || 0) + 1;
       this._chartRetryCount = 0;
+      if (this._chartObserver && typeof this._chartObserver.disconnect === "function") {
+        this._chartObserver.disconnect();
+        this._chartObserver = null;
+      }
+      if (this.secondaryCharts && this.secondaryCharts.dashboardCategory) {
+        if (this.chartController) this.chartController.dispose("dashboardCategory");
+        delete this.secondaryCharts.dashboardCategory;
+      }
       this.categoryRequestId = (this.categoryRequestId || 0) + 1;
       this.dayRequestId = (this.dayRequestId || 0) + 1;
       this.setData({
@@ -721,6 +754,8 @@ Component({
         scrollTop: 0,
         sectionEndSpace: 0,
         dashboardChartError: false,
+        categoryChartActivated: false,
+        categoryChartHidden: false,
         activeSection: "summary",
       });
 
@@ -1384,6 +1419,8 @@ Component({
         return;
       }
       if (this.chartController) {
+        this.setupChartVisibilityObserver();
+        this.onAnalysisScroll({ detail: { scrollTop: this._scrollTop || 0 } });
         this.chartController.update("main");
         // A preserved ec-canvas can finish its init while the analysis is
         // hidden/loading. Its init event is intentionally rejected by the
@@ -1421,6 +1458,7 @@ Component({
     },
 
     ensureChartHostInitialized(key, componentId) {
+      if (key === "dashboardCategory" && !this.data.categoryChartActivated) return false;
       if (!this.canInitializeChartHost() || !this.chartController) return false;
       if (typeof this.chartController.get === "function" && this.chartController.get(key))
         return false;
@@ -1466,6 +1504,10 @@ Component({
       Object.values(this._chartInitTimers || {}).forEach((timer) => clearTimeout(timer));
       this._chartInitTimers = {};
       this._chartInitRetries = {};
+      if (this._chartObserver && typeof this._chartObserver.disconnect === "function") {
+        this._chartObserver.disconnect();
+        this._chartObserver = null;
+      }
       const generation = (this.analysisNodeGeneration || 0) + 1;
       this.analysisNodeGeneration = generation;
       if (this.isAttached && typeof this.setData === "function") {
@@ -1565,6 +1607,38 @@ Component({
       this.secondaryCharts[key] = chart;
       if (this._chartInitRetries) this._chartInitRetries[key] = 0;
       this.chartController.update(key);
+    },
+
+    activateDashboardChart() {
+      if (this.data.categoryChartActivated || !this.canInitializeChartHost()) return;
+      this.setData({ categoryChartActivated: true }, () => {
+        this.ensureChartHostInitialized("dashboardCategory", "#dashboard-category-chart");
+      });
+    },
+
+    setupChartVisibilityObserver() {
+      if (this._chartObserver || !this.createIntersectionObserver) return;
+      try {
+        const observer = this.createIntersectionObserver({
+          thresholds: [0, 0.05, 1],
+        });
+        this._chartObserver = observer;
+        observer.relativeTo(".analysis-scroll").observe("#dashboard-category-chart-wrap", (res) => {
+          if (!this.isAttached || this._chartObserver !== observer) return;
+          if (res.intersectionRatio > 0) this.activateDashboardChart();
+          const isOccluded =
+            res.intersectionRatio <= 0 &&
+            res.boundingClientRect &&
+            res.relativeRect &&
+            res.boundingClientRect.top < res.relativeRect.top;
+          if (Boolean(this.data.categoryChartHidden) !== Boolean(isOccluded)) {
+            this.setData({ categoryChartHidden: Boolean(isOccluded) });
+          }
+        });
+      } catch (_err) {
+        this._chartObserver = null;
+        // Safe fallback to scroll measurement
+      }
     },
 
     scheduleChartInitRetry(key, componentId, immediate = false) {

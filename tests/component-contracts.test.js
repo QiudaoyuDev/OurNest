@@ -168,11 +168,18 @@ test("analysis dashboard exposes loading, error and category detail actions", ()
   assert.match(template, /bind:tap="openDashboardCategoryRecords"/);
 });
 
+test("analysis has no unused ratio section outside the page root", () => {
+  const template = fs.readFileSync("miniprogram/components/tl-tab-analysis/index.wxml", "utf8");
+  assert.match(template.trimStart(), /^<view class="tab-panel analysis-page">/);
+  assert.doesNotMatch(template, /<template\s+name="ratio-section"/);
+});
+
 test("analysis uses the 2D-capable canvas path and record icons", () => {
   const template = fs.readFileSync("miniprogram/components/tl-tab-analysis/index.wxml", "utf8");
   const chart = template.match(/<ec-canvas\b[^>]*id="dashboard-category-chart"[^>]*>/);
   assert.ok(chart);
   assert.doesNotMatch(chart[0], /force-use-old-canvas/);
+  assert.match(chart[0], /wx:if="\{\{categoryChartActivated\}\}"/);
   assert.match(template, /item\.displayIcon/);
   assert.match(template, /<tl-analysis-record/);
 });
@@ -434,4 +441,88 @@ test("returning to the index refreshes the home dashboard when the current ledge
   page.selectComponent = () => null;
   page.onShow();
   assert.equal(refreshes, 2);
+});
+
+test("tl-navbar supports ledger brand flow and fires switchledger event", () => {
+  const { definition, instance, events } = component("tl-navbar");
+  assert.equal(definition.properties.ledgerName.type.name, "String");
+  assert.equal(definition.properties.showLedger.type.name, "Boolean");
+  instance.handleSwitchLedger();
+  assert.equal(events.length, 1);
+  assert.equal(events[0].name, "switchledger");
+
+  const template = fs.readFileSync("miniprogram/components/tl-navbar/index.wxml", "utf8");
+  assert.match(template, /class="nav-brand-ledger-flow"/);
+  assert.match(template, /class="brand-ledger-name"/);
+  assert.match(template, /bindtap="handleSwitchLedger"/);
+});
+
+test("tl-tab-records and tl-tab-analysis remove overcrowded ledger chips from toolbar", () => {
+  const recordsTemplate = fs.readFileSync(
+    "miniprogram/components/tl-tab-records/index.wxml",
+    "utf8"
+  );
+  assert.doesNotMatch(recordsTemplate, /class="ledger-chip"/);
+  assert.match(recordsTemplate, /class="month-switcher"/);
+
+  const analysisTemplate = fs.readFileSync(
+    "miniprogram/components/tl-tab-analysis/index.wxml",
+    "utf8"
+  );
+  assert.doesNotMatch(analysisTemplate, /class="context-ledger"/);
+  assert.match(analysisTemplate, /class="context-period"/);
+});
+
+test("index page manages showNavbarLedger and triggers tab ledger switchers", () => {
+  const filename = path.resolve("miniprogram/pages/index/index.js");
+  const requireFromIndex = createRequire(filename);
+  let definition;
+  const app = { globalData: { currentLedger: { _id: "ledger-1", name: "我们的小窝" } } };
+  vm.runInNewContext(fs.readFileSync(filename, "utf8"), {
+    require: (name) =>
+      name.includes("ledger.store")
+        ? { subscribeSync: () => () => {}, syncLedgers: () => Promise.resolve({}) }
+        : requireFromIndex(name),
+    Page: (value) => {
+      definition = value;
+    },
+    getApp: () => app,
+    console,
+  });
+  let switchedTarget = "";
+  const page = {
+    ...definition,
+    data: structuredClone(definition.data),
+    setData(patch) {
+      Object.assign(this.data, patch);
+    },
+    selectComponent(selector) {
+      switchedTarget = selector;
+      return {
+        switchLedger: () => {},
+      };
+    },
+  };
+  page.onLoad();
+  assert.equal(page.data.activeTab, "index");
+  assert.equal(page.data.showNavbarLedger, false);
+
+  page.switchTab({ detail: { tab: "records" } });
+  assert.equal(page.data.activeTab, "records");
+  assert.equal(page.data.showNavbarLedger, true);
+  assert.equal(page.data.currentLedgerName, "我们的小窝");
+
+  page.onNavbarSwitchLedger();
+  assert.equal(switchedTarget, "#tab-records");
+
+  page.switchTab({ detail: { tab: "analysis" } });
+  assert.equal(page.data.activeTab, "analysis");
+  assert.equal(page.data.showNavbarLedger, true);
+
+  page.onNavbarSwitchLedger();
+  assert.equal(switchedTarget, "#tab-analysis");
+
+  page.switchTab({ detail: { tab: "profile" } });
+  assert.equal(page.data.activeTab, "profile");
+  assert.equal(page.data.showNavbarLedger, false);
 });

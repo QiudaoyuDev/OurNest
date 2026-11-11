@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OurNest - 方案A优化提案：Logo + 账本名称融合导航栏</title>
+  <style>
+    :root {
+      --primary: #F0442F;
+      --primary-pressed: #D9483B;
+      --primary-soft: #FFF0EA;
+      --page-bg: #FFF7F2;
+      --surface: #FFFDFC;
+      --surface-soft: #FFF0EA;
+      --surface-muted: #F7EEE8;
+      --text: #312522;
+      --text-secondary: #6F625D;
+      --text-tertiary: #9A8278;
+      --income: #25A66A;
+      --income-soft: #EDF9F2;
+      --expense: #F0442F;
+      --border: rgba(240, 68, 47, 0.08);
+      --border-accent: rgba(240, 68, 47, 0.16);
+      --divider: rgba(49, 37, 34, 0.08);
+      --shadow-tabbar: 0 -4px 16px rgba(49, 37, 34, 0.05);
+      --shadow-sheet: 0 -10px 30px rgba(49, 37, 34, 0.12);
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-pill: 999px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+
+    body {
+      background: #1E1715;
+      color: #E6DCD6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* 顶栏总控台 */
+    header.dashboard-header {
+      background: #271E1C;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 16px 28px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-badge {
+      background: var(--primary);
+      color: #FFF;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #FFF;
+    }
+
+    .controls-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .ctrl-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #181210;
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 13px;
+    }
+
+    .ctrl-label {
+      color: #A89B95;
+      font-weight: 500;
+    }
+
+    .seg-btn-group {
+      display: flex;
+      background: #0E0A09;
+      padding: 2px;
+      border-radius: var(--radius-pill);
+      gap: 2px;
+    }
+
+    .seg-btn {
+      border: none;
+      background: transparent;
+      color: #A89B95;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .seg-btn.active {
+      background: var(--primary);
+      color: #FFF;
+      font-weight: 600;
+    }
+
+    /* 核心提示卡 */
+    main.stage-container {
+      flex: 1;
+      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .summary-card {
+      max-width: 1260px;
+      width: 100%;
+      background: #271E1C;
+      border: 1px solid rgba(240, 68, 47, 0.28);
+      border-radius: 16px;
+      padding: 16px 20px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #D3C7C0;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .summary-card svg {
+      flex-shrink: 0;
+      margin-top: 3px;
+      color: var(--primary);
+    }
+
+    .summary-card strong {
+      color: #FFF;
+    }
+
+    .summary-card .highlight {
+      color: #FF8573;
+      font-weight: 600;
+    }
+
+    /* 手机展示区 */
+    .devices-viewport {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 32px;
+      width: 100%;
+      max-width: 1360px;
+    }
+
+    .device-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .column-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 4px;
+    }
+
+    .column-title-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .opt-left-pill {
+      background: rgba(240, 68, 47, 0.2);
+      color: #FF8573;
+      border: 1px solid rgba(240, 68, 47, 0.45);
+    }
+
+    .opt-center-pill {
+      background: rgba(232, 111, 48, 0.2);
+      color: #FFAA7D;
+      border: 1px solid rgba(232, 111, 48, 0.45);
+    }
+
+    .original-pill {
+      background: rgba(154, 130, 120, 0.2);
+      color: #BDB0A8;
+      border: 1px solid rgba(154, 130, 120, 0.35);
+    }
+
+    .column-desc {
+      font-size: 12px;
+      color: #A89B95;
+      max-width: 350px;
+    }
+
+    /* 手机框架 */
+    .phone-shell {
+      width: 375px;
+      height: 790px;
+      background: var(--page-bg);
+      border-radius: 46px;
+      box-shadow: 0 0 0 10px #342B28, 0 20px 50px rgba(0, 0, 0, 0.65);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+      color: var(--text);
+    }
+
+    /* 手机状态栏 */
+    .status-bar {
+      height: 44px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      color: #000;
+      flex-shrink: 0;
+      z-index: 50;
+    }
+
+    .notch-island {
+      width: 104px;
+      height: 22px;
+      background: #000;
+      border-radius: 20px;
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+    }
+
+    /* 微信导航栏 */
+    .wechat-navbar {
+      height: 44px;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      position: relative;
+      flex-shrink: 0;
+      z-index: 40;
+    }
+
+    /* 微信胶囊按钮 */
+    .wechat-capsule {
+      position: absolute;
+      right: 14px;
+      width: 87px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.68);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: var(--radius-pill);
+      display: flex;
+      align-items: center;
+      justify-content: space-evenly;
+      padding: 0 4px;
+      z-index: 2;
+    }
+
+    .capsule-dots {
+      display: flex;
+      gap: 2.5px;
+    }
+
+    .capsule-dot {
+      width: 3.5px;
+      height: 3.5px;
+      background: #000;
+      border-radius: 50%;
+    }
+
+    .capsule-divider {
+      width: 1px;
+      height: 16px;
+      background: rgba(0, 0, 0, 0.12);
+    }
+
+    .capsule-circle {
+      width: 13px;
+      height: 13px;
+      border: 2px solid #000;
+      border-radius: 50%;
+    }
+
+    /* ======================================================== */
+    /* 核心变体 1：左侧 Logo + 账本全称（空间极大，直通胶囊）       */
+    /* ======================================================== */
+    .navbar-opt-left {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      padding-right: 94px; /* 避开右侧 87px 胶囊 + 7px 间距 */
+    }
+
+    .brand-ledger-flow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 100%;
+      cursor: pointer;
+      padding: 4px 8px 4px 2px;
+      border-radius: var(--radius-pill);
+      transition: background 0.15s ease;
+    }
+
+    .brand-ledger-flow:active {
+      background: rgba(240, 68, 47, 0.1);
+    }
+
+    .brand-mini-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #F0442F, #FF6854);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFF;
+      flex-shrink: 0;
+      box-shadow: 0 2px 5px rgba(240, 68, 47, 0.25);
+    }
+
+    .brand-mini-avatar svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    .brand-ledger-name {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: -0.3px;
+    }
+
+    .brand-ledger-arrow {
+      color: var(--primary);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    /* ======================================================== */
+    /* 核心变体 2：居中对称 Logo + 账本胶囊                       */
+    /* ======================================================== */
+    .navbar-opt-center {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-right: 94px;
+      padding-left: 14px;
+    }
+
+    .center-brand-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(240, 68, 47, 0.15);
+      border-radius: var(--radius-pill);
+      padding: 4px 10px 4px 4px;
+      cursor: pointer;
+      max-width: 230px;
+      box-shadow: 0 1px 4px rgba(240, 68, 47, 0.05);
+      transition: all 0.15s ease;
+    }
+
+    .center-brand-pill:active {
+      background: var(--primary-soft);
+    }
+
+    .center-brand-pill .brand-mini-avatar {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+    }
+
+    .center-brand-pill .brand-mini-avatar svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .center-brand-pill .name {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ======================================================== */
+    /* 对照组：方案 A 原版（左侧保留 OurNest 文字 + 中间账本）     */
+    /* ======================================================== */
+    .navbar-original-a {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .orig-brand-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 90px;
+    }
+
+    .orig-center-ledger {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: rgba(240, 68, 47, 0.08);
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(240, 68, 47, 0.15);
+      max-width: 160px;
+    }
+
+    .orig-center-ledger .name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* 滚动主体内容区 */
+    .page-scroll-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+
+    .page-scroll-body::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* 全宽月份控制器（明细页） */
+    .toolbar-full-month {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 44px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid var(--border-accent);
+      padding: 0 4px;
+      box-shadow: 0 2px 8px rgba(240, 68, 47, 0.04);
+    }
+
+    .nav-arrow-huge {
+      width: 46px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      cursor: pointer;
+      border-radius: var(--radius-pill);
+      transition: background 0.15s ease;
+    }
+
+    .nav-arrow-huge:active {
+      background: var(--primary-soft);
+    }
+
+    .month-center-display {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      padding: 4px 14px;
+      border-radius: var(--radius-pill);
+    }
+
+    .month-center-display:hover {
+      background: var(--primary-soft);
+    }
+
+    .month-center-display .year-month-text {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.2px;
+    }
+
+    .month-center-display .indicator-chip {
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+    }
+
+    /* 筛选与汇总面板 */
+    .filter-panel {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 2px;
+    }
+
+    .segmented-tabs {
+      display: flex;
+      background: rgba(240, 68, 47, 0.06);
+      padding: 3px;
+      border-radius: var(--radius-pill);
+      gap: 2px;
+    }
+
+    .seg-tab-btn {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .seg-tab-btn.active {
+      background: #FFF;
+      color: var(--primary);
+      font-weight: 700;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    .month-summary-stat {
+      display: flex;
+      gap: 10px;
+      font-size: 11px;
+    }
+
+    .month-summary-stat .item {
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+    }
+
+    .month-summary-stat .label {
+      color: var(--text-tertiary);
+    }
+
+    .month-summary-stat .val-expense {
+      color: var(--expense);
+      font-weight: 700;
+    }
+
+    .month-summary-stat .val-income {
+      color: var(--income);
+      font-weight: 700;
+    }
+
+    /* 列表卡片 */
+    .records-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .day-group-card {
+      background: #FFF;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .day-header {
+      background: #FFFAF7;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      border-bottom: 1px solid rgba(240, 68, 47, 0.05);
+    }
+
+    .day-header .left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+
+    .day-header .right {
+      color: var(--text-tertiary);
+    }
+
+    .record-row {
+      display: flex;
+      align-items: center;
+      padding: 11px 12px;
+      border-bottom: 1px solid rgba(0,0,0,0.03);
+      gap: 10px;
+    }
+
+    .record-row:last-child {
+      border-bottom: none;
+    }
+
+    .record-icon-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--primary-soft);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .record-icon-circle.income {
+      background: var(--income-soft);
+      color: var(--income);
+    }
+
+    .record-main-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .record-top-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .record-category {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .record-amount {
+      font-size: 15px;
+      font-weight: 700;
+      font-feature-settings: "tnum";
+    }
+
+    .record-amount.expense {
+      color: var(--text);
+    }
+
+    .record-amount.income {
+      color: var(--income);
+    }
+
+    .record-sub-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-top: 2px;
+    }
+
+    /* 分析页面元素 */
+    .analysis-cycle-tabs {
+      display: flex;
+      justify-content: space-around;
+      border-bottom: 1px solid var(--divider);
+      padding-bottom: 2px;
+    }
+
+    .cycle-tab-item {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      padding: 6px 12px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .cycle-tab-item.active {
+      color: var(--primary);
+    }
+
+    .cycle-tab-item.active::after {
+      content: "";
+      position: absolute;
+      bottom: -3px;
+      left: 15%;
+      width: 70%;
+      height: 3px;
+      background: var(--primary);
+      border-radius: var(--radius-pill);
+    }
+
+    .context-bar-optimized {
+      display: flex;
+      height: 44px;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.88);
+      padding: 0 4px;
+      box-shadow: 0 2px 8px rgba(240, 68, 47, 0.04);
+    }
+
+    .period-navigator-wide {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .chart-card-preview {
+      background: #FFF;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .chart-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chart-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .chart-total {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .chart-total b {
+      color: var(--expense);
+      font-size: 15px;
+      margin-left: 2px;
+    }
+
+    .chart-mock-graphic {
+      height: 120px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 0 4px;
+      border-bottom: 1px dashed var(--divider);
+    }
+
+    .bar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .bar-fill {
+      width: 16px;
+      background: linear-gradient(180deg, var(--primary), #FF8268);
+      border-radius: 4px 4px 0 0;
+      transition: height 0.3s ease;
+    }
+
+    .bar-label {
+      font-size: 10px;
+      color: var(--text-tertiary);
+    }
+
+    /* 底部导航栏 */
+    .wechat-tabbar {
+      height: 58px;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(49, 37, 34, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      position: relative;
+      flex-shrink: 0;
+      padding-bottom: 8px;
+      box-shadow: var(--shadow-tabbar);
+    }
+
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      font-size: 10px;
+      color: #9A8278;
+      cursor: pointer;
+      width: 50px;
+    }
+
+    .tab-item.active {
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .tab-center-record {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), #FF715B);
+      color: #FFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(240, 68, 47, 0.35);
+      margin-top: -16px;
+      cursor: pointer;
+    }
+
+    .home-indicator {
+      width: 134px;
+      height: 5px;
+      background: #000;
+      border-radius: var(--radius-pill);
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    /* 抽屉 Sheet */
+    .modal-sheet-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(49, 37, 34, 0.45);
+      z-index: 90;
+      display: none;
+      flex-direction: column;
+      justify-content: flex-end;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-sheet-overlay.show {
+      display: flex;
+      opacity: 1;
+    }
+
+    .modal-sheet-panel {
+      background: #FFF;
+      border-radius: 24px 24px 0 0;
+      padding: 20px 18px 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: var(--shadow-sheet);
+      transform: translateY(100%);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-sheet-overlay.show .modal-sheet-panel {
+      transform: translateY(0);
+    }
+
+    .sheet-handle {
+      width: 36px;
+      height: 4px;
+      background: #E8DDD8;
+      border-radius: var(--radius-pill);
+      align-self: center;
+    }
+
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sheet-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .sheet-close-btn {
+      color: var(--text-tertiary);
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .ledger-picker-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .ledger-picker-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: var(--surface-soft);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .ledger-picker-item.active {
+      border-color: var(--primary);
+      background: #FFF;
+      box-shadow: 0 2px 8px rgba(240, 68, 47, 0.08);
+    }
+
+    .ledger-picker-item .item-main {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ledger-picker-item .item-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .ledger-picker-item .tag {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: #FFE9E4;
+      color: var(--primary);
+    }
+
+    /* 详细分析卡片 */
+    .deep-dive-card {
+      width: 100%;
+      max-width: 1260px;
+      background: #271E1C;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .deep-dive-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #FFF;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .grid-three-col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 18px;
+    }
+
+    .concept-box {
+      background: #1D1614;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .concept-box.featured {
+      border-color: rgba(240, 68, 47, 0.4);
+      background: #221614;
+    }
+
+    .concept-box h3 {
+      font-size: 15px;
+      color: #FFF;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tag-highlight {
+      font-size: 11px;
+      background: var(--primary);
+      color: #FFF;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    .width-ruler {
+      background: #140E0D;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #FF8573;
+      border-left: 3px solid var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 顶栏总控台 -->
+  <header class="dashboard-header">
+    <div class="brand-title-wrap">
+      <span class="brand-badge">方案A 进阶优化原型</span>
+      <div>
+        <h1 class="brand-title">Navbar【Logo 图标 + 账本名称】融合交互提案</h1>
+      </div>
+    </div>
+
+    <!-- 交互控制器 -->
+    <div class="controls-group">
+      <!-- 账本名称长短模拟 -->
+      <div class="ctrl-item">
+        <span class="ctrl-label">账本名称模拟：</span>
+        <div class="seg-btn-group">
+          <button class="seg-btn active" id="btn-name-long" onclick="setLedgerName('long')">超长名称 (13字)</button>
+          <button class="seg-btn" id="btn-name-short" onclick="setLedgerName('short')">常规名称 (4字)</button>
+        </div>
+      </div>
+
+      <!-- 视图 Tab 切换 -->
+      <div class="ctrl-item">
+        <span class="ctrl-label">当前视图：</span>
+        <div class="seg-btn-group">
+          <button class="seg-btn active" id="btn-tab-records" onclick="setScreenTab('records')">明细 Tab</button>
+          <button class="seg-btn" id="btn-tab-analysis" onclick="setScreenTab('analysis')">分析 Tab</button>
+        </div>
+      </div>
+
+      <!-- 对比布局 -->
+      <div class="ctrl-item">
+        <span class="ctrl-label">对比模式：</span>
+        <div class="seg-btn-group">
+          <button class="seg-btn active" id="btn-view-two" onclick="setViewMode('two')">双变体对比 (左对齐 vs 居中)</button>
+          <button class="seg-btn" id="btn-view-three" onclick="setViewMode('three')">三机对比 (含原版对比)</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主舞台 -->
+  <main class="stage-container">
+    
+    <!-- 优化设计说明卡片 -->
+    <div class="summary-card">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M12 16v-4"></path>
+        <path d="M12 8h.01"></path>
+      </svg>
+      <div>
+        <strong>用户提议采纳与设计升级：</strong>
+        去掉导航栏冗余的“OurNest”固定英文，直接以<strong>【品牌 Logo 图标 + 账本名称 ▾】</strong>作为全局 Header！
+        <br>
+        <strong>带来的绝佳收益：</strong>
+        <span class="highlight">横向展示空间直接扩大了近 100px (约 200rpx)！</span>
+        右侧微信胶囊前有高达 **240px+** 的通畅区域。13 字超长名称（如：`我们的小窝·三口温馨生活账本`）完全不需要换行或被省略号拦腰截断，视觉利落大气，且点击整块区域均可秒级切换账本！
+      </div>
+    </div>
+
+    <!-- 手机模型展示区 -->
+    <div class="devices-viewport" id="viewport">
+
+      <!-- ==================================================== -->
+      <!-- 变体 1（极力推荐）：左侧通栏式 Logo + 账本名称 (空间最大) -->
+      <!-- ==================================================== -->
+      <div class="device-column" id="col-opt-left">
+        <div class="column-header">
+          <span class="column-title-pill opt-left-pill">变体 1：左侧通栏融合式 <span class="tag-highlight">最推荐·空间最大</span></span>
+          <p class="column-desc">Logo 紧随账本全称，直通右侧微信胶囊，13字超长账本名完全不截断</p>
+        </div>
+
+        <div class="phone-shell">
+          <!-- 状态栏 -->
+          <div class="status-bar">
+            <span>09:41</span>
+            <div class="notch-island"></div>
+            <div class="status-icons">5G 100%</div>
+          </div>
+
+          <!-- 导航栏：变体 1 左侧通栏排版 -->
+          <div class="wechat-navbar">
+            <div class="navbar-opt-left">
+              <!-- 点击整体直接弹出切换账本抽屉 -->
+              <div class="brand-ledger-flow" onclick="openLedgerSheet('left')" title="点击切换账本">
+                <!-- 品牌 Logo 迷你徽章 (替代原 OurNest 英文) -->
+                <div class="brand-mini-avatar">
+                  <svg viewBox="0 0 24 24">
+                    <!-- 钱币 + 小窝极简图形 -->
+                    <circle cx="12" cy="12" r="9" fill="none" stroke="#FFF" stroke-width="2"/>
+                    <path d="M12 7v10M9 9h6M9 15h6" stroke="#FFF" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <!-- 账本名称 -->
+                <span class="brand-ledger-name ledger-name-bind">我们的小窝·三口温馨生活账本</span>
+                <!-- 下拉指示器 -->
+                <div class="brand-ledger-arrow">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- 右侧固定微信胶囊 -->
+            <div class="wechat-capsule">
+              <div class="capsule-dots">
+                <span class="capsule-dot"></span><span class="capsule-dot"></span><span class="capsule-dot"></span>
+              </div>
+              <div class="capsule-divider"></div>
+              <div class="capsule-circle"></div>
+            </div>
+          </div>
+
+          <!-- 滚动主体 (明细 / 分析) -->
+          <div class="page-scroll-body">
+            
+            <!-- 明细模式 -->
+            <div class="view-records-content" style="display: flex; flex-direction: column; gap: 12px;">
+              <!-- 全宽舒适月份切换器 -->
+              <div class="toolbar-full-month">
+                <div class="nav-arrow-huge" onclick="shiftMonth(-1)" title="上一月">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+                </div>
+                
+                <div class="month-center-display" onclick="shiftMonth(0)">
+                  <span class="year-month-text month-display-bind">2026年 11月</span>
+                  <span class="indicator-chip">本月</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 16l-6-6h12z"/></svg>
+                </div>
+
+                <div class="nav-arrow-huge" onclick="shiftMonth(1)" title="下一月">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+                </div>
+              </div>
+
+              <!-- 分类与统计 -->
+              <div class="filter-panel">
+                <div class="segmented-tabs">
+                  <div class="seg-tab-btn active">全部</div>
+                  <div class="seg-tab-btn">支出</div>
+                  <div class="seg-tab-btn">收入</div>
+                </div>
+                <div class="month-summary-stat">
+                  <div class="item"><span class="label">支</span><span class="val-expense">¥5,420</span></div>
+                  <div class="item"><span class="label">收</span><span class="val-income">¥18,000</span></div>
+                  <div class="item"><span class="label">共</span><span style="font-weight:700;">28笔</span></div>
+                </div>
+              </div>
+
+              <!-- 记录列表 -->
+              <div class="records-list" id="opt-left-records-list"></div>
+            </div>
+
+            <!-- 分析模式 -->
+            <div class="view-analysis-content" style="display: none; flex-direction: column; gap: 12px;">
+              <div class="analysis-cycle-tabs">
+                <div class="cycle-tab-item">周度</div>
+                <div class="cycle-tab-item active">月度</div>
+                <div class="cycle-tab-item">年度</div>
+              </div>
+
+              <!-- 分析周期条 -->
+              <div class="context-bar-optimized">
+                <div class="period-navigator-wide">
+                  <div class="nav-arrow-huge" onclick="shiftMonth(-1)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+                  </div>
+                  <div class="month-center-display">
+                    <span class="year-month-text month-display-bind">2026年 11月</span>
+                    <span class="indicator-chip">月度分析</span>
+                  </div>
+                  <div class="nav-arrow-huge" onclick="shiftMonth(1)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+                  </div>
+                </div>
+              </div>
+
+              <div class="chart-card-preview">
+                <div class="chart-header-row">
+                  <span class="chart-title">支出分类分布</span>
+                  <span class="chart-total">当月总支出<b>¥5,420</b></span>
+                </div>
+                <div class="chart-mock-graphic">
+                  <div class="bar-col"><div class="bar-fill" style="height: 80px;"></div><span class="bar-label">餐饮</span></div>
+                  <div class="bar-col"><div class="bar-fill" style="height: 50px; background: #FF8268;"></div><span class="bar-label">购物</span></div>
+                  <div class="bar-col"><div class="bar-fill" style="height: 105px; background: #E86F30;"></div><span class="bar-label">居家</span></div>
+                  <div class="bar-col"><div class="bar-fill" style="height: 35px; background: #25A66A;"></div><span class="bar-label">医疗</span></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Tabbar -->
+          <div class="wechat-tabbar">
+            <div class="tab-item"><span>🏠</span><span>首页</span></div>
+            <div class="tab-item active" id="tabbar-left-rec"><span>📋</span><span>明细</span></div>
+            <div class="tab-center-record">＋</div>
+            <div class="tab-item" id="tabbar-left-ana"><span>📊</span><span>分析</span></div>
+            <div class="tab-item"><span>👤</span><span>我的</span></div>
+            <div class="home-indicator"></div>
+          </div>
+
+          <!-- BottomSheet 抽屉 -->
+          <div class="modal-sheet-overlay" id="sheet-overlay-left" onclick="closeLedgerSheet('left')">
+            <div class="modal-sheet-panel" onclick="event.stopPropagation()">
+              <div class="sheet-handle"></div>
+              <div class="sheet-header">
+                <span class="sheet-title">切换账本</span>
+                <span class="sheet-close-btn" onclick="closeLedgerSheet('left')">✕</span>
+              </div>
+              <div class="ledger-picker-list">
+                <div class="ledger-picker-item active" onclick="selectLedger('我们的小窝·三口温馨生活账本')">
+                  <div class="item-main">
+                    <span class="tag">当前</span>
+                    <span class="item-name">我们的小窝·三口温馨生活账本</span>
+                  </div>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div class="ledger-picker-item" onclick="selectLedger('日常个人账本')">
+                  <div class="item-main">
+                    <span class="item-name">日常个人账本</span>
+                  </div>
+                </div>
+                <div class="ledger-picker-item" onclick="selectLedger('装修专项基金账')">
+                  <div class="item-main">
+                    <span class="item-name">装修专项基金账</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================================================== -->
+      <!-- 变体 2：居中精致 Logo 账本胶囊                       -->
+      <!-- ==================================================== -->
+      <div class="device-column" id="col-opt-center">
+        <div class="column-header">
+          <span class="column-title-pill opt-center-pill">变体 2：居中精致胶囊式</span>
+          <p class="column-desc">Logo 与账本装入居中精致胶囊，左右对称，视觉秩序感极强</p>
+        </div>
+
+        <div class="phone-shell">
+          <!-- 状态栏 -->
+          <div class="status-bar">
+            <span>09:41</span>
+            <div class="notch-island"></div>
+            <div class="status-icons">5G 100%</div>
+          </div>
+
+          <!-- 导航栏：变体 2 居中胶囊排版 -->
+          <div class="wechat-navbar">
+            <div class="navbar-opt-center">
+              <div class="center-brand-pill" onclick="openLedgerSheet('center')" title="点击切换账本">
+                <div class="brand-mini-avatar">
+                  <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" fill="none" stroke="#FFF" stroke-width="2"/>
+                    <path d="M12 7v10M9 9h6M9 15h6" stroke="#FFF" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <span class="name ledger-name-bind">我们的小窝·三口温馨生活账本</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
+            </div>
+
+            <!-- 右侧固定微信胶囊 -->
+            <div class="wechat-capsule">
+              <div class="capsule-dots">
+                <span class="capsule-dot"></span><span class="capsule-dot"></span><span class="capsule-dot"></span>
+              </div>
+              <div class="capsule-divider"></div>
+              <div class="capsule-circle"></div>
+            </div>
+          </div>
+
+          <!-- 滚动主体 (明细 / 分析) -->
+          <div class="page-scroll-body">
+            
+            <!-- 明细模式 -->
+            <div class="view-records-content" style="display: flex; flex-direction: column; gap: 12px;">
+              <div class="toolbar-full-month">
+                <div class="nav-arrow-huge" onclick="shiftMonth(-1)">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+                </div>
+                
+                <div class="month-center-display">
+                  <span class="year-month-text month-display-bind">2026年 11月</span>
+                  <span class="indicator-chip">本月</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 16l-6-6h12z"/></svg>
+                </div>
+
+                <div class="nav-arrow-huge" onclick="shiftMonth(1)">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+                </div>
+              </div>
+
+              <!-- 分类与统计 -->
+              <div class="filter-panel">
+                <div class="segmented-tabs">
+                  <div class="seg-tab-btn active">全部</div>
+                  <div class="seg-tab-btn">支出</div>
+                  <div class="seg-tab-btn">收入</div>
+                </div>
+                <div class="month-summary-stat">
+                  <div class="item"><span class="label">支</span><span class="val-expense">¥5,420</span></div>
+                  <div class="item"><span class="label">收</span><span class="val-income">¥18,000</span></div>
+                </div>
+              </div>
+
+              <!-- 记录列表 -->
+              <div class="records-list" id="opt-center-records-list"></div>
+            </div>
+
+            <!-- 分析模式 -->
+            <div class="view-analysis-content" style="display: none; flex-direction: column; gap: 12px;">
+              <div class="analysis-cycle-tabs">
+                <div class="cycle-tab-item">周度</div>
+                <div class="cycle-tab-item active">月度</div>
+                <div class="cycle-tab-item">年度</div>
+              </div>
+
+              <div class="context-bar-optimized">
+                <div class="period-navigator-wide">
+                  <div class="nav-arrow-huge" onclick="shiftMonth(-1)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+                  </div>
+                  <div class="month-center-display">
+                    <span class="year-month-text month-display-bind">2026年 11月</span>
+                    <span class="indicator-chip">月度分析</span>
+                  </div>
+                  <div class="nav-arrow-huge" onclick="shiftMonth(1)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+                  </div>
+                </div>
+              </div>
+
+              <div class="chart-card-preview">
+                <div class="chart-header-row">
+                  <span class="chart-title">支出分类分布</span>
+                  <span class="chart-total">当月总支出<b>¥5,420</b></span>
+                </div>
+                <div class="chart-mock-graphic">
+                  <div class="bar-col"><div class="bar-fill" style="height: 80px;"></div><span class="bar-label">餐饮</span></div>
+                  <div class="bar-col"><div class="bar-fill" style="height: 50px; background: #FF8268;"></div><span class="bar-label">购物</span></div>
+                  <div class="bar-col"><div class="bar-fill" style="height: 105px; background: #E86F30;"></div><span class="bar-label">居家</span></div>
+                  <div class="bar-col"><div class="bar-fill" style="height: 35px; background: #25A66A;"></div><span class="bar-label">医疗</span></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Tabbar -->
+          <div class="wechat-tabbar">
+            <div class="tab-item"><span>🏠</span><span>首页</span></div>
+            <div class="tab-item active" id="tabbar-center-rec"><span>📋</span><span>明细</span></div>
+            <div class="tab-center-record">＋</div>
+            <div class="tab-item" id="tabbar-center-ana"><span>📊</span><span>分析</span></div>
+            <div class="tab-item"><span>👤</span><span>我的</span></div>
+            <div class="home-indicator"></div>
+          </div>
+
+          <!-- BottomSheet 抽屉 -->
+          <div class="modal-sheet-overlay" id="sheet-overlay-center" onclick="closeLedgerSheet('center')">
+            <div class="modal-sheet-panel" onclick="event.stopPropagation()">
+              <div class="sheet-handle"></div>
+              <div class="sheet-header">
+                <span class="sheet-title">切换账本</span>
+                <span class="sheet-close-btn" onclick="closeLedgerSheet('center')">✕</span>
+              </div>
+              <div class="ledger-picker-list">
+                <div class="ledger-picker-item active" onclick="selectLedger('我们的小窝·三口温馨生活账本')">
+                  <div class="item-main">
+                    <span class="tag">当前</span>
+                    <span class="item-name">我们的小窝·三口温馨生活账本</span>
+                  </div>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div class="ledger-picker-item" onclick="selectLedger('日常个人账本')">
+                  <div class="item-main">
+                    <span class="item-name">日常个人账本</span>
+                  </div>
+                </div>
+                <div class="ledger-picker-item" onclick="selectLedger('装修专项基金账')">
+                  <div class="item-main">
+                    <span class="item-name">装修专项基金账</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================================================== -->
+      <!-- 对照组：方案 A 原版 (左侧有 OurNest 文字)             -->
+      <!-- ==================================================== -->
+      <div class="device-column" id="col-original-a" style="display: none;">
+        <div class="column-header">
+          <span class="column-title-pill original-pill">对照：方案 A 原版 (保留 OurNest 文字)</span>
+          <p class="column-desc">左侧占用 90px，导致中间账本可用宽度仅 160px，长名字稍受限</p>
+        </div>
+
+        <div class="phone-shell">
+          <div class="status-bar">
+            <span>09:41</span>
+            <div class="notch-island"></div>
+            <div class="status-icons">5G 100%</div>
+          </div>
+
+          <!-- 导航栏：原版两段式 -->
+          <div class="wechat-navbar">
+            <div class="navbar-original-a">
+              <div class="orig-brand-left">
+                <div class="brand-mini-avatar" style="width:20px;height:20px;">
+                  <svg viewBox="0 0 24 24" style="width:12px;height:12px;"><circle cx="12" cy="12" r="9" fill="none" stroke="#FFF" stroke-width="2"/></svg>
+                </div>
+                <span style="font-size:13px;font-weight:700;color:var(--text);">OurNest</span>
+              </div>
+              <div class="orig-center-ledger">
+                <span class="name ledger-name-bind">我们的小窝·三口温馨生活账本</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
+              <div style="width: 87px;"></div>
+            </div>
+
+            <div class="wechat-capsule">
+              <div class="capsule-dots">
+                <span class="capsule-dot"></span><span class="capsule-dot"></span><span class="capsule-dot"></span>
+              </div>
+              <div class="capsule-divider"></div>
+              <div class="capsule-circle"></div>
+            </div>
+          </div>
+
+          <div class="page-scroll-body">
+            <div class="view-records-content" style="display: flex; flex-direction: column; gap: 12px;">
+              <div class="toolbar-full-month">
+                <div class="nav-arrow-huge" onclick="shiftMonth(-1)">‹</div>
+                <div class="month-center-display">
+                  <span class="year-month-text month-display-bind">2026年 11月</span>
+                </div>
+                <div class="nav-arrow-huge" onclick="shiftMonth(1)">›</div>
+              </div>
+              <div class="records-list" id="orig-a-records-list"></div>
+            </div>
+          </div>
+
+          <div class="wechat-tabbar">
+            <div class="tab-item"><span>🏠</span><span>首页</span></div>
+            <div class="tab-item active"><span>📋</span><span>明细</span></div>
+            <div class="tab-center-record">＋</div>
+            <div class="tab-item"><span>📊</span><span>分析</span></div>
+            <div class="tab-item"><span>👤</span><span>我的</span></div>
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 方案设计细则剖析 -->
+    <section class="deep-dive-card">
+      <h2 class="deep-dive-title">
+        <span>📐</span> 优化方案横向宽度与空间效率深度解析
+      </h2>
+
+      <div class="grid-three-col">
+        <div class="concept-box featured">
+          <h3>变体 1：左侧通栏式 (最推荐) <span class="tag-highlight">推荐首选</span></h3>
+          <p>从屏幕左侧安全边距起步：<code>[Logo 26px] + [账本名称] + [小箭头 ▾]</code>，一直延伸至微信官方胶囊左侧边界。</p>
+          <div class="width-ruler">
+            可用横向宽度：~250px (约 500rpx)<br>
+            最大容纳汉字：13~14 字完全不换行/不截断
+          </div>
+          <p style="color: #A89B95;">
+            <strong>优点：</strong>空间最大，符合人的从左到右阅读习惯；用户一眼先看到品牌 Logo，紧接着是当前账本名称，结构极度自然，而且点击整行任意位置都可秒切账本。
+          </p>
+        </div>
+
+        <div class="concept-box">
+          <h3>变体 2：居中精致胶囊式</h3>
+          <p>将 Logo 图标嵌在药丸胶囊内部作为前缀图标，与账本名称居中对称展示。</p>
+          <div class="width-ruler">
+            可用横向宽度：~210px (约 420rpx)<br>
+            最大容纳汉字：10~11 字
+          </div>
+          <p style="color: #A89B95;">
+            <strong>优点：</strong>符合微信小程序传统的标题居中审美习惯；<br>
+            <strong>轻微局限：</strong>由于要保证左右对称避让胶囊，超长名字（超过 12 字）尾部仍会轻度出现省略号。
+          </p>
+        </div>
+
+        <div class="concept-box">
+          <h3>原版方案 A 对比 (保留 OurNest)</h3>
+          <p>左侧展示固定英文 <code>OurNest</code>，中间单独放账本名。</p>
+          <div class="width-ruler">
+            可用横向宽度：~160px (约 320rpx)<br>
+            最大容纳汉字：仅 7~8 字
+          </div>
+          <p style="color: #A89B95;">
+            <strong>痛点重现：</strong>左侧占了 90px，右侧占了 87px，中间可用区域被严重挤压。一旦账本名稍长，就不得不频繁显示 <code>...</code>。
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const state = {
+      ledgerName: "我们的小窝·三口温馨生活账本",
+      monthOffset: 0,
+      currentTab: "records",
+      viewMode: "two"
+    };
+
+    const mockRecords = [
+      {
+        date: "11月11日 今天",
+        weekday: "星期三",
+        items: [
+          { icon: "🍜", category: "餐饮外卖", amount: "-36.50", type: "expense", member: "爸爸", time: "12:30" },
+          { icon: "🛒", category: "盒马生鲜", amount: "-188.00", type: "expense", member: "妈妈", time: "10:15" },
+          { icon: "💰", category: "理财收益", amount: "+450.00", type: "income", member: "家庭账户", time: "09:00" }
+        ]
+      },
+      {
+        date: "11月10日 昨天",
+        weekday: "星期二",
+        items: [
+          { icon: "⚡", category: "生活水电", amount: "-120.00", type: "expense", member: "爸爸", time: "19:40" },
+          { icon: "☕", category: "日常咖啡", amount: "-18.00", type: "expense", member: "妈妈", time: "14:20" }
+        ]
+      }
+    ];
+
+    function renderRecordsList() {
+      const html = mockRecords.map(group => `
+        <div class="day-group-card">
+          <div class="day-header">
+            <div class="left">
+              <span>${group.date}</span>
+              <span style="font-weight: normal; color: var(--text-tertiary);">${group.weekday}</span>
+            </div>
+            <div class="right">支 ¥${(344.5).toFixed(2)}</div>
+          </div>
+          ${group.items.map(item => `
+            <div class="record-row">
+              <div class="record-icon-circle ${item.type}">
+                ${item.icon}
+              </div>
+              <div class="record-main-info">
+                <div class="record-top-line">
+                  <span class="record-category">${item.category}</span>
+                  <span class="record-amount ${item.type}">${item.amount}</span>
+                </div>
+                <div class="record-sub-line">
+                  <span>${item.time}</span>
+                  <span>·</span>
+                  <span>${item.member}</span>
+                </div>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      `).join("");
+
+      document.getElementById("opt-left-records-list").innerHTML = html;
+      document.getElementById("opt-center-records-list").innerHTML = html;
+      const orig = document.getElementById("orig-a-records-list");
+      if (orig) orig.innerHTML = html;
+    }
+
+    function setLedgerName(type) {
+      document.getElementById("btn-name-long").classList.toggle("active", type === "long");
+      document.getElementById("btn-name-short").classList.toggle("active", type === "short");
+
+      state.ledgerName = type === "long" ? "我们的小窝·三口温馨生活账本" : "日常小账本";
+
+      document.querySelectorAll(".ledger-name-bind").forEach(el => {
+        el.textContent = state.ledgerName;
+      });
+    }
+
+    function setScreenTab(tab) {
+      state.currentTab = tab;
+      document.getElementById("btn-tab-records").classList.toggle("active", tab === "records");
+      document.getElementById("btn-tab-analysis").classList.toggle("active", tab === "analysis");
+
+      const isRec = tab === "records";
+      document.querySelectorAll(".view-records-content").forEach(el => el.style.display = isRec ? "flex" : "none");
+      document.querySelectorAll(".view-analysis-content").forEach(el => el.style.display = isRec ? "none" : "flex");
+
+      document.getElementById("tabbar-left-rec").classList.toggle("active", isRec);
+      document.getElementById("tabbar-left-ana").classList.toggle("active", !isRec);
+      document.getElementById("tabbar-center-rec").classList.toggle("active", isRec);
+      document.getElementById("tabbar-center-ana").classList.toggle("active", !isRec);
+    }
+
+    function setViewMode(mode) {
+      state.viewMode = mode;
+      document.getElementById("btn-view-two").classList.toggle("active", mode === "two");
+      document.getElementById("btn-view-three").classList.toggle("active", mode === "three");
+
+      document.getElementById("col-original-a").style.display = mode === "three" ? "flex" : "none";
+    }
+
+    function shiftMonth(delta) {
+      state.monthOffset += delta;
+      const baseYear = 2026;
+      const baseMonth = 11;
+      
+      let curMonth = baseMonth + state.monthOffset;
+      let curYear = baseYear;
+      while (curMonth > 12) {
+        curMonth -= 12;
+        curYear += 1;
+      }
+      while (curMonth < 1) {
+        curMonth += 12;
+        curYear -= 1;
+      }
+
+      const display = `${curYear}年 ${curMonth < 10 ? '0' + curMonth : curMonth}月`;
+      document.querySelectorAll(".month-display-bind").forEach(el => {
+        el.textContent = display;
+      });
+    }
+
+    function openLedgerSheet(target) {
+      const sheet = document.getElementById("sheet-overlay-" + target);
+      if (sheet) sheet.classList.add("show");
+    }
+
+    function closeLedgerSheet(target) {
+      const sheet = document.getElementById("sheet-overlay-" + target);
+      if (sheet) sheet.classList.remove("show");
+    }
+
+    function selectLedger(name) {
+      state.ledgerName = name;
+      document.querySelectorAll(".ledger-name-bind").forEach(el => {
+        el.textContent = name;
+      });
+      closeLedgerSheet("left");
+      closeLedgerSheet("center");
+    }
+
+    renderRecordsList();
+  </script>
+</body>
+</html>

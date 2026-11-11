@@ -2,7 +2,14 @@
   <view class="status-space" style="height: {{statusBarHeight}}px;">
   </view>
   <view class="nav-row" style="height: {{navHeight}}px;">
-    <view class="nav-brand {{showBack ? 'back-only' : ''}}">
+    <view wx:if="{{showLedger && ledgerName && !showBack}}" class="nav-brand-ledger-flow" bindtap="handleSwitchLedger">
+      <image class="brand-mark" src="/images/brand/our-nest-logo-256-transparent.png" mode="aspectFit">
+      </image>
+      <text class="brand-ledger-name">{{ledgerName}}</text>
+      <tl-icon name="arrow-down-s-line" size="32" colorKey="primary" class="brand-ledger-arrow">
+      </tl-icon>
+    </view>
+    <view wx:else class="nav-brand {{showBack ? 'back-only' : ''}}">
       <view wx:if="{{showBack}}" class="back-button" bindtap="handleBack">
         <tl-icon name="arrow-left-s-line" size="42" colorKey="primary">
         </tl-icon>
@@ -13,7 +20,7 @@
         <text class="brand-name">OurNest</text>
       </block>
     </view>
-    <view wx:if="{{!hideTitle}}" class="nav-center">{{title}}</view>
+    <view wx:if="{{!hideTitle && (!showLedger || !ledgerName || showBack)}}" class="nav-center">{{title}}</view>
     <view class="nav-right">
     </view>
   </view>

@@ -14,6 +14,8 @@ Page({
   data: {
     activeTab: "index",
     navbarTitle: TAB_TITLES.index,
+    currentLedgerName: "",
+    showNavbarLedger: false,
     recordsMonth: "",
     recordDisabledReason: "noLedger",
     visitedTabs: { index: true },
@@ -28,9 +30,15 @@ Page({
       feedback.showToast({ type: "warning", message: "账本同步失败，请稍后手动同步" });
     on("ledger:sync-failed", this.onLedgerSyncFailed);
     const activeTab = TAB_TITLES.hasOwnProperty(options.tab) ? options.tab : "index";
+    const currentLedger = (getApp().globalData || {}).currentLedger;
+    const currentLedgerName = (currentLedger && currentLedger.name) || "";
+    const showNavbarLedger =
+      (activeTab === "records" || activeTab === "analysis") && !!currentLedgerName;
     this.setData({
       activeTab,
       navbarTitle: TAB_TITLES[activeTab],
+      currentLedgerName,
+      showNavbarLedger,
       recordsMonth: /^\d{4}-\d{2}$/.test(options.month || "") ? options.month : "",
       visitedTabs: { [activeTab]: true },
     });
@@ -90,8 +98,36 @@ Page({
         : ledger.readonly || ledger.role === "readonly"
           ? "readonly"
           : "";
-    if (recordDisabledReason !== this.data.recordDisabledReason)
-      this.setData({ recordDisabledReason });
+    const currentLedgerName = (ledger && ledger.name) || "";
+    const showNavbarLedger =
+      (this.data.activeTab === "records" || this.data.activeTab === "analysis") &&
+      !!currentLedgerName;
+    const patch = {};
+    if (recordDisabledReason !== this.data.recordDisabledReason) {
+      patch.recordDisabledReason = recordDisabledReason;
+    }
+    if (currentLedgerName !== this.data.currentLedgerName) {
+      patch.currentLedgerName = currentLedgerName;
+    }
+    if (showNavbarLedger !== this.data.showNavbarLedger) {
+      patch.showNavbarLedger = showNavbarLedger;
+    }
+    if (Object.keys(patch).length > 0) {
+      this.setData(patch);
+    }
+  },
+
+  onNavbarSwitchLedger() {
+    const targets = {
+      records: "#tab-records",
+      analysis: "#tab-analysis",
+    };
+    const selector = targets[this.data.activeTab];
+    if (!selector) return;
+    const component = typeof this.selectComponent === "function" && this.selectComponent(selector);
+    if (component && typeof component.switchLedger === "function") {
+      component.switchLedger();
+    }
   },
 
   refreshActiveTab(syncResult) {
@@ -111,9 +147,15 @@ Page({
     const tab = event.detail.tab || event.detail.key;
     if (!TAB_TITLES.hasOwnProperty(tab) || tab === this.data.activeTab) return;
     const visitedTabs = { ...this.data.visitedTabs, [tab]: true };
+    const currentLedger = (getApp().globalData || {}).currentLedger;
+    const currentLedgerName =
+      (currentLedger && currentLedger.name) || this.data.currentLedgerName || "";
+    const showNavbarLedger = (tab === "records" || tab === "analysis") && !!currentLedgerName;
     this.setData({
       activeTab: tab,
       navbarTitle: TAB_TITLES[tab],
+      currentLedgerName,
+      showNavbarLedger,
       recordsMonth: "",
       visitedTabs,
     });
