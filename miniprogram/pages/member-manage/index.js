@@ -46,6 +46,15 @@ Page({
     inviteExpiresAt: "",
     invites: [],
     ownerTransfer: null,
+    revokingId: "",
+    confirmDialogVisible: false,
+    confirmDialogTitle: "",
+    confirmDialogContent: "",
+    confirmDialogIcon: "",
+    confirmDialogColor: "",
+    confirmDialogConfirmText: "",
+    confirmDialogDanger: false,
+    confirmDialogLoading: false,
   },
   onShow() {
     this.loadMembers();
@@ -72,17 +81,45 @@ Page({
       this.setData({ loading: false, error: true });
     }
   },
+  openConfirmDialog({ title, content, icon, color, confirmText, danger, onConfirm }) {
+    this._onConfirmAction = onConfirm;
+    this.setData({
+      confirmDialogVisible: true,
+      confirmDialogTitle: title,
+      confirmDialogContent: content,
+      confirmDialogIcon: icon || "question-line",
+      confirmDialogColor: color || "#f0442f",
+      confirmDialogConfirmText: confirmText || "确认",
+      confirmDialogDanger: Boolean(danger),
+      confirmDialogLoading: false,
+    });
+  },
+  closeConfirmDialog() {
+    this._onConfirmAction = null;
+    this.setData({ confirmDialogVisible: false });
+  },
+  async onConfirmDialogAction() {
+    if (!this._onConfirmAction) return;
+    this.setData({ confirmDialogLoading: true });
+    try {
+      await this._onConfirmAction();
+    } finally {
+      this.setData({ confirmDialogLoading: false, confirmDialogVisible: false });
+      this._onConfirmAction = null;
+    }
+  },
   removeMember(event) {
     const openid = event.currentTarget.dataset.openid;
     const name = event.currentTarget.dataset.name || "该成员";
     if (!openid || !this.data.canManage) return;
-    wx.showModal({
+    this.openConfirmDialog({
       title: "移除成员",
-      content: `确认将${name}移出当前账本吗？权限立即失效，历史记录会保留。`,
-      confirmText: "移除",
-      confirmColor: "#f0442f",
-      success: async (result) => {
-        if (!result.confirm) return;
+      content: `确认将“${name}”移出当前账本吗？其权限将立即失效，历史记录会保留。`,
+      icon: "user-unfollow-line",
+      color: "#f0442f",
+      confirmText: "确认移除",
+      danger: true,
+      onConfirm: async () => {
         const loadingId = feedback.showLoading({ message: "正在移除" });
         try {
           await ledgerStore.removeLedgerMember(openid, this.data.ledgerId);
@@ -196,57 +233,72 @@ Page({
   changeRole(event) {
     const { openid, role, name } = event.currentTarget.dataset;
     const next = role === "member" ? "visitor" : "member";
-    wx.showModal({
+    this.openConfirmDialog({
       title: "调整权限",
-      content: `将${name}设为${next === "member" ? "成员，可记账并编辑自己的记录" : "只读访客，不能再编辑记录"}？历史记录保留。`,
-      success: (result) => {
-        if (result.confirm)
-          this.runMembershipAction("changeLedgerMemberRole", this.data.ledgerId, openid, next);
+      content: `将“${name}”设为${next === "member" ? "成员（可共同记账并编辑自己的记录）" : "只读访客（仅查账，不可编辑）"}？历史记录将完整保留。`,
+      icon: "shield-user-line",
+      color: "#0284c7",
+      confirmText: "确认调整",
+      onConfirm: async () => {
+        await this.runMembershipAction("changeLedgerMemberRole", this.data.ledgerId, openid, next);
       },
     });
   },
   leaveLedger() {
-    wx.showModal({
+    this.openConfirmDialog({
       title: "退出账本",
-      content: "退出后将无法访问该账本，历史记录及创建者信息保留。确认退出？",
-      success: (result) => {
-        if (result.confirm) this.runMembershipAction("leaveLedger", this.data.ledgerId);
+      content: "退出后将无法再访问该账本，历史记录及创建者信息保留。确认退出？",
+      icon: "logout-box-r-line",
+      color: "#f0442f",
+      confirmText: "确认退出",
+      danger: true,
+      onConfirm: async () => {
+        await this.runMembershipAction("leaveLedger", this.data.ledgerId);
       },
     });
   },
   transferOwner(event) {
     const { openid, name } = event.currentTarget.dataset;
-    wx.showModal({
-      title: "转移账本",
-      content: `向${name}发起转移？对方确认后成为拥有者，你将成为成员。`,
-      success: (result) => {
-        if (result.confirm)
-          this.runMembershipAction("requestOwnerTransfer", this.data.ledgerId, openid);
+    this.openConfirmDialog({
+      title: "转移账本所有权",
+      content: `确认向“${name}”发起转移？对方确认后将成为新拥有者，你将成为普通成员。`,
+      icon: "swap-line",
+      color: "#d97706",
+      confirmText: "发起转移",
+      onConfirm: async () => {
+        await this.runMembershipAction("requestOwnerTransfer", this.data.ledgerId, openid);
       },
     });
   },
   respondTransfer(event) {
     const accept = event.currentTarget.dataset.accept;
-    wx.showModal({
-      title: accept ? "接受账本" : "取消转移",
-      content: accept ? "确认成为账本拥有者？原拥有者将成为成员。" : "确认取消这次所有权转移？",
-      success: (result) => {
-        if (result.confirm)
-          this.runMembershipAction(
-            accept ? "acceptOwnerTransfer" : "cancelOwnerTransfer",
-            this.data.ledgerId
-          );
+    this.openConfirmDialog({
+      title: accept ? "接受账本所有权" : "取消转移",
+      content: accept ? "确认成为账本拥有者？原拥有者将成为普通成员。" : "确认取消这次所有权转移？",
+      icon: accept ? "check-line" : "close-line",
+      color: accept ? "#0ea569" : "#6f5a52",
+      confirmText: accept ? "确认接收" : "确认取消",
+      onConfirm: async () => {
+        await this.runMembershipAction(
+          accept ? "acceptOwnerTransfer" : "cancelOwnerTransfer",
+          this.data.ledgerId
+        );
       },
     });
   },
   revokeInvite(event) {
     const inviteId = event.currentTarget.dataset.id;
-    wx.showModal({
+    this.openConfirmDialog({
       title: "撤销邀请",
-      content: "撤销后该邀请码及分享链接将无法使用。",
-      success: (result) => {
-        if (result.confirm)
-          this.runMembershipAction("revokeLedgerInvite", this.data.ledgerId, inviteId);
+      content: "撤销后该邀请码及微信分享链接将立即失效，不可再次使用。",
+      icon: "delete-bin-line",
+      color: "#f0442f",
+      confirmText: "撤销邀请",
+      danger: true,
+      onConfirm: async () => {
+        this.setData({ revokingId: inviteId });
+        await this.runMembershipAction("revokeLedgerInvite", this.data.ledgerId, inviteId);
+        this.setData({ revokingId: "" });
       },
     });
   },

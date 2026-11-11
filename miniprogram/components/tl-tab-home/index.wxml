@@ -4,18 +4,15 @@
       <tl-skeleton wx:if="{{isLoading}}" variant="home">
       </tl-skeleton>
       <block wx:else>
-        <view wx:if="{{showLedgerInfo}}" class="hero fade-up">
-          <view class="hero-main">
-            <view class="ledger-switch" bindtap="switchLedger">
-              <text class="ledger-title">{{ledgerName}}</text>
-              <view class="ledger-type-tag">{{ledgerTypeText}}</view>
-              <tl-icon name="arrow-down-s-line" size="38" colorKey="primary">
+        <view wx:if="{{showLedgerInfo}}" class="home-date-bar fade-up">
+          <view class="home-date-main">
+            <text class="home-month-text">{{monthLabel}}</text>
+            <view class="ledger-type-tag" bindtap="switchLedger">
+              <text>{{ledgerTypeText}}</text>
+              <tl-icon name="arrow-down-s-line" size="24" colorKey="primary">
               </tl-icon>
             </view>
-            <view class="month-line">{{monthLabel}}</view>
           </view>
-          <image class="hero-logo soft-pop" src="/images/brand/our-nest-logo-256-transparent.png" mode="aspectFit">
-          </image>
         </view>
         <view wx:if="{{isNoLedger}}" class="state-card card fade-up">
           <tl-empty-state variant="no-ledger" title="还没有账本" description="创建第一个账本，开始记录生活中的每一笔收支">
@@ -98,11 +95,79 @@
           <tl-button variant="secondary" bind:tap="bootstrap">重新加载</tl-button>
         </view>
         <block wx:else>
-          <view class="summary-card card fade-up">
-            <view class="summary-glow">
+          <view wx:if="{{showBudget && budgetEnabled}}" class="budget-card card fade-up">
+            <view class="budget-card-header">
+              <view class="budget-card-heading">
+                <text class="budget-card-title">本月预算</text>
+                <view class="budget-status-tag {{isOverBudget ? 'danger' : budgetRate >= 90 ? 'danger' : budgetRate >= 70 ? 'warning' : budgetRate >= 50 ? 'attention' : 'safe'}}">{{isOverBudget ? '已超支' : budgetRate >= 90 ? '预算预警' : budgetRate >= 70 ? '消费偏快' : budgetRate >= 50 ? '已用过半' : '预算充足'}}</view>
+              </view>
+              <view class="budget-actions">
+                <view class="budget-action-btn" bindtap="goBudgetRecords">
+                  <text>支出明细</text>
+                  <tl-icon name="arrow-right-s-line" size="24" colorKey="tertiary">
+                  </tl-icon>
+                </view>
+                <view wx:if="{{canManageBudget}}" class="budget-action-btn" bindtap="goBudgetSettings">
+                  <text>设置</text>
+                </view>
+              </view>
             </view>
+            <view class="budget-hero-row">
+              <view class="budget-hero-main">
+                <text class="budget-hero-label">{{isOverBudget ? '已超支' : '剩余可用'}}</text>
+                <view class="budget-hero-amount {{isOverBudget ? 'is-danger' : ''}}">
+                  <text class="currency">{{isOverBudget ? '-¥' : '¥'}}</text>
+                  <text class="amount-num">{{budgetLeftInteger || budgetLeftAbs}}</text>
+                  <text wx:if="{{budgetLeftDecimal}}" class="amount-decimal">{{budgetLeftDecimal}}</text>
+                </view>
+              </view>
+              <view class="budget-hero-aside">
+                <text class="budget-rate-badge">已用 {{budgetRateText}}%</text>
+              </view>
+            </view>
+            <view class="budget-progress-wrap">
+              <tl-budget-progress enabled="{{budgetEnabled}}" rate="{{budgetRate}}">
+              </tl-budget-progress>
+            </view>
+            <view class="budget-metrics-row">
+              <view class="budget-metric-item">
+                <text class="budget-metric-label">总预算</text>
+                <text class="budget-metric-value">¥{{budget}}</text>
+              </view>
+              <view class="budget-metric-divider">
+              </view>
+              <view class="budget-metric-item is-right">
+                <text class="budget-metric-label">已支出</text>
+                <text class="budget-metric-value expense">¥{{monthExpense}}</text>
+              </view>
+            </view>
+          </view>
+          <view class="twin-capsules fade-up">
+            <view class="capsule-card card" bindtap="goRecords">
+              <view class="capsule-icon expense">
+                <tl-icon name="arrow-right-up-line" size="32" colorKey="primary">
+                </tl-icon>
+              </view>
+              <view class="capsule-data">
+                <text class="capsule-label">本月支出</text>
+                <text class="capsule-amount expense">¥{{monthExpenseCompact}}</text>
+              </view>
+            </view>
+            <view class="capsule-card card" bindtap="goRecords">
+              <view class="capsule-icon income">
+                <tl-icon name="arrow-left-down-line" size="32" colorKey="income">
+                </tl-icon>
+              </view>
+              <view class="capsule-data">
+                <text class="capsule-label">本月收入</text>
+                <text class="capsule-amount income">¥{{monthIncomeCompact}}</text>
+              </view>
+            </view>
+          </view>
+          <view wx:if="{{!showBudget || !budgetEnabled}}" class="summary-card card fade-up">
             <view class="summary-head">
               <view class="summary-title">本月概览</view>
+              <view wx:if="{{canManageBudget}}" class="summary-action" bindtap="goBudgetSettings">设置预算</view>
             </view>
             <view class="overview-grid">
               <view class="overview-item">
@@ -119,93 +184,28 @@
               </view>
             </view>
           </view>
-          <view wx:if="{{showBudget}}" class="budget-card card fade-up">
-            <block wx:if="{{budgetEnabled}}">
-              <view class="budget-card-header">
-                <view class="budget-card-heading">
-                  <text class="budget-card-title">本月预算</text>
-                  <view class="budget-status-tag {{isOverBudget ? 'danger' : budgetRate >= 90 ? 'danger' : budgetRate >= 70 ? 'warning' : budgetRate >= 50 ? 'attention' : 'safe'}}">{{isOverBudget ? '已超支' : budgetRate >= 90 ? '预算预警' : budgetRate >= 70 ? '消费偏快' : budgetRate >= 50 ? '已用过半' : '预算充足'}}</view>
-                </view>
-                <view class="budget-actions">
-                  <view class="budget-action-btn" bindtap="goBudgetRecords">
-                    <text>支出明细</text>
-                    <tl-icon name="arrow-right-s-line" size="24" colorKey="tertiary">
-                    </tl-icon>
-                  </view>
-                  <view wx:if="{{canManageBudget}}" class="budget-action-btn" bindtap="goBudgetSettings">
-                    <text>设置</text>
-                  </view>
-                </view>
-              </view>
-              <view class="budget-hero-row">
-                <view class="budget-hero-main">
-                  <text class="budget-hero-label">{{isOverBudget ? '已超支' : '剩余可用'}}</text>
-                  <view class="budget-hero-amount {{isOverBudget ? 'is-danger' : ''}}">
-                    <text class="currency">{{isOverBudget ? '-¥' : '¥'}}</text>
-                    <text class="amount-num">{{budgetLeftAbs}}</text>
-                  </view>
-                </view>
-                <view class="budget-hero-aside">
-                  <text class="budget-rate-badge">已用 {{budgetRateText}}%</text>
-                </view>
-              </view>
-              <view class="budget-progress-wrap">
-                <tl-budget-progress enabled="{{budgetEnabled}}" rate="{{budgetRate}}">
-                </tl-budget-progress>
-              </view>
-              <view class="budget-metrics-row">
-                <view class="budget-metric-item">
-                  <text class="budget-metric-label">总预算</text>
-                  <text class="budget-metric-value">¥{{budget}}</text>
-                </view>
-                <view class="budget-metric-divider">
-                </view>
-                <view class="budget-metric-item is-right">
-                  <text class="budget-metric-label">已支出</text>
-                  <text class="budget-metric-value expense">¥{{monthExpense}}</text>
-                </view>
-              </view>
-            </block>
-            <view wx:else class="budget-empty-state">
-              <view class="budget-empty-info">
-                <view class="budget-empty-icon">
-                  <tl-icon name="wallet-3-line" size="38" colorKey="primary">
-                  </tl-icon>
-                </view>
-                <view class="budget-empty-texts">
-                  <text class="budget-empty-title">本月预算未开启</text>
-                  <text class="budget-empty-desc">设定月度支出预算，随时掌控消费节奏</text>
-                </view>
-              </view>
-              <view wx:if="{{canManageBudget}}" class="budget-empty-action">
-                <tl-button size="small" variant="secondary" bind:tap="goBudgetSettings">设置预算</tl-button>
-              </view>
-            </view>
-          </view>
           <view class="records-card card fade-up">
             <view class="section-head">
               <view class="section-title">最近记录</view>
               <view class="section-link" bindtap="goRecords">全部</view>
             </view>
             <view class="record-item" wx:for="{{recentRecords}}" wx:key="id" data-id="{{item.id}}" bindtap="goRecordDetail">
-              <view class="category-dot {{item.type}}">
+              <view class="category-dot {{item.chipClass || item.type}}">
                 <tl-icon name="{{item.categoryIcon}}" size="34" color="{{item.typeIconColor}}">
                 </tl-icon>
               </view>
               <view class="record-main">
                 <view class="record-line">
-                  <view class="record-title">{{item.categoryText}}</view>
+                  <view class="record-title-row">
+                    <text class="record-title">{{item.categoryText}}</text>
+                    <text class="record-member-pill">{{item.memberName}}</text>
+                  </view>
                   <view class="record-amount {{item.type}}">{{item.type === 'income' ? '+' : '-'}}¥{{item.amountText}}</view>
                 </view>
                 <view class="record-line record-subline">
                   <view class="record-meta">{{item.selectedTimeText}}</view>
-                  <view class="record-member">
-                    <image class="record-avatar" src="{{item.memberAvatar}}" mode="aspectFill">
-                    </image>
-                    <text class="record-member-name">{{item.memberName}}</text>
-                  </view>
+                  <view wx:if="{{item.hasNote}}" class="record-note">{{item.noteText}}</view>
                 </view>
-                <view wx:if="{{item.hasNote}}" class="record-note">{{item.noteText}}</view>
               </view>
             </view>
             <view class="record-limit-tip">—仅展示账本最近10笔—</view>

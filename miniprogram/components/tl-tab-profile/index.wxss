@@ -169,14 +169,34 @@
 
 .tool-icon,
 .function-icon {
-  width: 66rpx;
-  height: 66rpx;
-  border-radius: var(--tl-radius-control);
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: var(--tl-radius-md);
   color: var(--tl-color-primary);
   background: var(--tl-color-primary-soft);
+  box-shadow: var(--tl-shadow-sm);
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.icon-chip-orange {
+  background: var(--tl-color-chip-orange) !important;
+}
+.icon-chip-blue {
+  background: var(--tl-color-chip-blue) !important;
+}
+.icon-chip-amber {
+  background: var(--tl-color-chip-amber) !important;
+}
+.icon-chip-purple {
+  background: var(--tl-color-chip-purple) !important;
+}
+.icon-chip-sky {
+  background: var(--tl-color-chip-sky) !important;
+}
+.icon-chip-green {
+  background: var(--tl-color-chip-green) !important;
 }
 
 .tool-title {
@@ -305,4 +325,44 @@
   width: 100%;
   min-height: 100%;
   padding-bottom: 24px;
+}
+
+/* 退出登录 Dialog 样式 */
+.custom-dialog-panel {
+  padding: 36rpx 28rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14rpx;
+}
+.dialog-icon-wrap {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: var(--tl-color-primary-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8rpx;
+}
+.dialog-icon-wrap.danger-wrap {
+  background: var(--tl-color-danger-soft);
+}
+.dialog-title {
+  font-size: var(--tl-font-heading);
+  font-weight: var(--tl-font-weight-bold);
+  color: var(--tl-color-text);
+}
+.dialog-desc {
+  font-size: var(--tl-font-body-sm);
+  color: var(--tl-color-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 16rpx;
+}
+.dialog-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+  width: 100%;
 }

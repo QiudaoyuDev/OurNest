@@ -1,9 +1,10 @@
 .tl-record-form {
   padding: 30rpx;
-  border: 1rpx solid rgba(240, 68, 47, 0.08);
+  border: var(--tl-border-width) solid var(--tl-color-border-subtle);
   border-radius: var(--tl-radius-card);
   box-sizing: border-box;
   background: var(--tl-color-surface);
+  box-shadow: var(--tl-shadow-sm);
 }
 .tl-record-form__amount {
   display: flex;
@@ -198,21 +199,25 @@
 }
 
 .keypad-key {
-  height: 74rpx;
-  border: var(--tl-border-width) solid var(--tl-color-border);
+  height: 78rpx;
+  border: var(--tl-border-width) solid var(--tl-color-border-subtle);
   border-radius: var(--tl-radius-control);
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--tl-color-surface);
+  box-shadow: var(--tl-shadow-sm);
   color: var(--tl-color-text);
   font-size: var(--tl-font-heading);
   font-weight: var(--tl-font-weight-bold);
+  transition:
+    transform var(--tl-duration-fast) ease,
+    background var(--tl-duration-fast) ease;
 }
 
 .keypad-key:active {
   background: var(--tl-color-primary-soft);
-  transform: scale(0.97);
+  transform: scale(0.94);
 }
 
 .tl-record-form--quick {

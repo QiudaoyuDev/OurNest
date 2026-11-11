@@ -79,8 +79,16 @@ function collectViolations() {
 
     for (const match of source.matchAll(/(?:box-shadow|filter\s*:\s*drop-shadow)\s*:[^;]+;/gi)) {
       if (/box-shadow\s*:\s*none/i.test(match[0])) continue;
-      if (!isTabbar)
-        addViolation(violations, "shadow", file, source, match.index, "仅 tl-tabbar 允许阴影");
+      const usesToken = /var\(--tl-shadow-[\w-]+\)/i.test(match[0]);
+      if (!usesToken && !isTabbar)
+        addViolation(
+          violations,
+          "shadow",
+          file,
+          source,
+          match.index,
+          "投影必须使用 --tl-shadow-* 标准 Token，禁止硬编码阴影"
+        );
     }
 
     if (isPage) {

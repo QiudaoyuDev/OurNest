@@ -20,10 +20,12 @@
 }
 
 .type-mark.expense {
-  background: var(--tl-color-primary-soft);
+  background: var(--tl-color-chip-orange);
+  box-shadow: var(--tl-shadow-sm);
 }
 .type-mark.income {
-  background: var(--tl-color-income-soft);
+  background: var(--tl-color-chip-green);
+  box-shadow: var(--tl-shadow-sm);
 }
 
 .category-name {

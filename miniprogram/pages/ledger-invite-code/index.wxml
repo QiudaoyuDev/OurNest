@@ -1,48 +1,95 @@
 <view class="page plain-page invite-page">
-  <tl-navbar title="输入邀请码" showBack="{{true}}">
+  <tl-navbar title="加入账本" showBack="{{true}}">
   </tl-navbar>
   <tl-container>
     <scroll-view class="page-scroll" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}" enable-flex="{{true}}">
       <view class="page-content invite-content">
-        <view wx:if="{{status === 'input'}}" class="invite-card card">
-          <view class="invite-title">加入已有账本</view>
-          <view class="invite-tip">输入账本拥有者发给你的邀请码，确认信息后即可加入。</view>
-          <view class="invite-field">
-            <view class="invite-label">邀请码</view>
-            <input class="invite-input" value="{{code}}" maxlength="32" placeholder="请输入 8 位邀请码" placeholder-class="invite-placeholder" disabled="{{busy}}" confirm-type="done" bindinput="onInput" bindconfirm="previewInvite" />
-            <view class="invite-field-tip">支持粘贴邀请码，字母不区分大小写。</view>
+        <!-- 头部品牌温暖标语 -->
+        <view class="brand-hero">
+          <view class="brand-hero-icon-box">
+            <tl-icon name="home-heart-line" size="64" color="#f0442f">
+            </tl-icon>
           </view>
-          <tl-button block="{{true}}" loading="{{busy}}" loading-text="正在查看" bind:tap="previewInvite">查看邀请</tl-button>
+          <view class="brand-hero-title">加入小家账本</view>
+          <view class="brand-hero-desc">与家人、伴侣或伙伴共同记账，记录生活温暖点滴</view>
         </view>
-        <view wx:elif="{{status === 'preview'}}" class="invite-card card">
-          <view class="invite-title">邀请你加入账本</view>
-          <view class="invite-tip">请确认以下账本和权限信息。</view>
-          <view class="invite-details">
-            <view class="invite-row">
-              <text class="invite-row-label">账本</text>
-              <text class="invite-row-value">{{preview.ledgerName}}</text>
-            </view>
-            <view class="invite-row">
-              <text class="invite-row-label">邀请人</text>
-              <text class="invite-row-value">{{preview.ownerName}}</text>
-            </view>
-            <view class="invite-row">
-              <text class="invite-row-label">权限</text>
-              <text class="invite-row-value">{{preview.currentRole === 'owner' ? '拥有者' : preview.mode === 'member' ? '成员' : '只读访客'}}</text>
+        <!-- 状态 1：输入邀请码 -->
+        <view wx:if="{{status === 'input'}}" class="invite-card card fade-up">
+          <view class="card-head">
+            <view class="card-title">输入专属邀请码</view>
+            <view class="paste-trigger" bindtap="pasteCode">
+              <tl-icon name="file-copy-line" size="28" colorKey="primary">
+              </tl-icon>
+              <text>从剪贴板粘贴</text>
             </view>
           </view>
-          <view class="invite-tip">{{preview.currentRole === 'owner' ? '你是这个账本的拥有者' : preview.mode === 'member' ? '可记账、查看账目，并编辑或删除自己录入的记录' : '可查看账本数据，不能记账或修改'}}</view>
-          <view wx:if="{{preview.already}}" class="invite-tip">你已加入该账本，此操作不会改变现有角色；未使用的新邀请码不会被消耗。需要调整权限请联系拥有者。</view>
+          <view class="invite-code-input-container">
+            <input
+              class="invite-code-input"
+              value="{{code}}"
+              maxlength="32"
+              placeholder="请输入 8 位邀请码"
+              placeholder-class="invite-placeholder"
+              disabled="{{busy}}"
+              confirm-type="done"
+              bindinput="onInput"
+              bindconfirm="previewInvite"
+            />
+            <view wx:if="{{code.length > 0}}" class="code-clear-btn" bindtap="clearCode">
+              <tl-icon name="close-circle-fill" size="32" colorKey="muted">
+              </tl-icon>
+            </view>
+          </view>
+          <view class="invite-helper-text">
+            <tl-icon name="information-line" size="24" colorKey="muted">
+            </tl-icon>
+            <text>邀请码不区分大小写，连字符与空格自动过滤</text>
+          </view>
+          <tl-button block="{{true}}" loading="{{busy}}" loading-text="正在查询邀请信息" bind:tap="previewInvite">验证并查看邀请</tl-button>
+        </view>
+        <!-- 状态 2：预览邀请信息 -->
+        <view wx:elif="{{status === 'preview'}}" class="invite-card card fade-up">
+          <view class="ticket-header-row">
+            <view class="ticket-badge">OurNest · 账本共享邀请</view>
+            <view class="role-pill {{preview.mode === 'member' ? 'role-member' : 'role-visitor'}}">{{preview.currentRole === 'owner' ? '拥有者' : preview.mode === 'member' ? '协作成员' : '只读访客'}}</view>
+          </view>
+          <view class="ledger-preview-box">
+            <view class="ledger-preview-icon">
+              <tl-icon name="book-3-line" size="48" colorKey="primary">
+              </tl-icon>
+            </view>
+            <view class="ledger-preview-name">{{preview.ledgerName}}</view>
+            <view class="ledger-preview-inviter">
+              <tl-icon name="user-received-line" size="26" colorKey="muted">
+              </tl-icon>
+              <text>由 {{preview.ownerName}} 邀请你加入</text>
+            </view>
+          </view>
+          <view class="permission-notice-box">
+            <view class="permission-title-row">
+              <tl-icon name="shield-check-line" size="28" colorKey="primary">
+              </tl-icon>
+              <text class="permission-title">权限说明</text>
+            </view>
+            <view class="permission-desc">{{preview.currentRole === 'owner' ? '你已是该账本的拥有者，可直接进入管理全部账目与成员。' : preview.mode === 'member' ? '加入后双方账目实时同步，你可以共同记账、查看全部收支明细，并自由管理自己录入的记录。' : '加入后可实时查看该账本的全部收支明细与财务分析，不可录入或修改账目。'}}</view>
+            <view wx:if="{{preview.already}}" class="already-joined-desc">温馨提示：你已在当前账本中，本次操作不会改变现有角色；未使用的新邀请码不会被消耗。</view>
+          </view>
           <view class="invite-actions">
-            <tl-button block="{{true}}" loading="{{busy}}" loading-text="正在加入" bind:tap="join">{{preview.already ? '查看账本' : '确认加入'}}</tl-button>
+            <tl-button block="{{true}}" loading="{{busy}}" loading-text="正在加入..." bind:tap="join">{{preview.already ? '直接进入账本' : '同意邀请并加入'}}</tl-button>
             <tl-button variant="secondary" block="{{true}}" disabled="{{busy}}" bind:tap="editCode">修改邀请码</tl-button>
           </view>
         </view>
-        <view wx:else class="invite-card card">
-          <view class="invite-title">{{already ? '你已加入该账本' : '加入成功'}}</view>
-          <view class="invite-tip">{{preview.ledgerName}}</view>
+        <!-- 状态 3：加入成功 -->
+        <view wx:else class="invite-card card success-card fade-up">
+          <view class="success-icon-wrap">
+            <tl-icon name="checkbox-circle-fill" size="76" color="#25a66a">
+            </tl-icon>
+          </view>
+          <view class="success-title">{{already ? '你已是该账本成员' : '成功加入家庭账本！'}}</view>
+          <view class="success-ledger-name">{{preview.ledgerName}}</view>
+          <view class="success-desc">从今天起，和重要的人一起记录日常温馨点滴</view>
           <view class="invite-actions">
-            <tl-button block="{{true}}" loading="{{opening}}" loading-text="正在打开" bind:tap="openLedger">进入这个账本</tl-button>
+            <tl-button block="{{true}}" loading="{{opening}}" loading-text="正在进入账本..." bind:tap="openLedger">立即开始共同记账</tl-button>
             <tl-button variant="secondary" block="{{true}}" disabled="{{opening}}" bind:tap="goBack">稍后再说</tl-button>
           </view>
         </view>

@@ -20,7 +20,7 @@
                 </tl-icon>
               </view>
               <text class="account-name">{{item}}</text>
-              <text wx:if="{{!readonly}}" class="delete-text" data-index="{{index}}" bindtap="removeAccount">删除</text>
+              <text wx:if="{{!readonly}}" class="delete-text" data-index="{{index}}" bindtap="openDeleteDialog">删除</text>
             </view>
           </view>
         </view>
@@ -29,10 +29,58 @@
     </scroll-view>
   </tl-container>
   <tl-page-actions wx:if="{{!readonly}}">
-    <tl-button block="{{true}}" loading="{{saving}}" loading-text="保存中..." bind:tap="addAccount">
+    <tl-button block="{{true}}" loading="{{saving}}" loading-text="保存中..." bind:tap="openAddDialog">
       <tl-icon name="add-line" size="32" colorKey="white">
       </tl-icon>
       <text>新增账户</text>
     </tl-button>
   </tl-page-actions>
+  <!-- 新增账户 Dialog -->
+  <tl-dialog visible="{{addDialogVisible}}" bind:close="closeAddDialog">
+    <view class="custom-dialog-panel">
+      <view class="dialog-icon-wrap">
+        <tl-icon name="bank-card-line" size="48" color="#f0442f">
+        </tl-icon>
+      </view>
+      <view class="dialog-title">新增支付账户</view>
+      <view class="dialog-desc">记一笔时可按此账户归类（如信用卡、微信等）</view>
+      <view class="dialog-input-box">
+        <input
+          class="dialog-input-field"
+          value="{{accountDraft}}"
+          placeholder="例如：招商银行信用卡"
+          placeholder-class="dialog-input-placeholder"
+          maxlength="12"
+          confirm-type="done"
+          bindinput="onDraftInput"
+          bindconfirm="confirmAddAccount"
+          focus="{{addDialogVisible}}"
+        />
+        <view wx:if="{{accountDraft.length > 0}}" class="dialog-input-clear" bindtap="clearDraft">
+          <tl-icon name="close-circle-fill" size="32" colorKey="muted">
+          </tl-icon>
+        </view>
+      </view>
+      <view class="dialog-counter">{{accountDraft.length}}/12</view>
+      <view class="dialog-actions">
+        <tl-button variant="secondary" block="{{true}}" bind:tap="closeAddDialog">取消</tl-button>
+        <tl-button block="{{true}}" loading="{{saving}}" bind:tap="confirmAddAccount">添加</tl-button>
+      </view>
+    </view>
+  </tl-dialog>
+  <!-- 删除账户确认 Dialog -->
+  <tl-dialog visible="{{deleteDialogVisible}}" bind:close="closeDeleteDialog">
+    <view class="custom-dialog-panel">
+      <view class="dialog-icon-wrap danger-wrap">
+        <tl-icon name="delete-bin-line" size="48" color="#f0442f">
+        </tl-icon>
+      </view>
+      <view class="dialog-title">删除支付账户</view>
+      <view class="dialog-desc">确认删除“{{deletingAccount}}”吗？删除后，已有记账记录仍会保留该账户名称。</view>
+      <view class="dialog-actions">
+        <tl-button variant="secondary" block="{{true}}" bind:tap="closeDeleteDialog">取消</tl-button>
+        <tl-button block="{{true}}" loading="{{saving}}" bind:tap="confirmDeleteAccount">确认删除</tl-button>
+      </view>
+    </view>
+  </tl-dialog>
 </view>

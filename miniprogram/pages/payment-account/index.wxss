@@ -57,3 +57,83 @@
 .payment-account-page .page-content {
   padding-bottom: var(--tl-page-content-bottom);
 }
+
+/* 自定义 Dialog 样式 */
+.custom-dialog-panel {
+  padding: 36rpx 28rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14rpx;
+}
+.dialog-icon-wrap {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: var(--tl-color-primary-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8rpx;
+}
+.dialog-icon-wrap.danger-wrap {
+  background: var(--tl-color-danger-soft);
+}
+.dialog-title {
+  font-size: var(--tl-font-heading);
+  font-weight: var(--tl-font-weight-bold);
+  color: var(--tl-color-text);
+}
+.dialog-desc {
+  font-size: var(--tl-font-body-sm);
+  color: var(--tl-color-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 12rpx;
+}
+.dialog-input-box {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  background: var(--tl-color-page);
+  border: 2rpx solid var(--tl-color-border-warm);
+  border-radius: var(--tl-radius-control);
+  padding: 0 20rpx;
+  height: var(--tl-control-height-md);
+  margin-bottom: 6rpx;
+}
+.dialog-input-box:focus-within {
+  border-color: var(--tl-color-primary);
+}
+.dialog-input-field {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  font-size: var(--tl-font-body);
+  color: var(--tl-color-text);
+  text-align: left;
+}
+.dialog-input-placeholder {
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-body-sm);
+}
+.dialog-input-clear {
+  padding: 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dialog-counter {
+  width: 100%;
+  text-align: right;
+  font-size: var(--tl-font-caption);
+  color: var(--tl-color-text-tertiary);
+  margin-bottom: 16rpx;
+}
+.dialog-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+  width: 100%;
+}

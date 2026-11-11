@@ -21,8 +21,8 @@ const rightTabs = [
   {
     key: "analysis",
     text: "分析",
-    icon: "pie-chart-2-line",
-    activeIcon: "pie-chart-2-fill",
+    icon: "bar-chart-2-line",
+    activeIcon: "bar-chart-2-fill",
   },
   {
     key: "profile",
@@ -70,6 +70,11 @@ Component({
     switchTab(e) {
       const { key } = e.currentTarget.dataset;
       if (!key || key === this.data.active) return;
+      try {
+        if (typeof wx !== "undefined" && typeof wx.vibrateShort === "function") {
+          wx.vibrateShort({ type: "light" });
+        }
+      } catch (_err) {}
       this.triggerEvent("change", { key });
     },
 
@@ -90,6 +95,11 @@ Component({
     },
 
     handleRecord() {
+      try {
+        if (typeof wx !== "undefined" && typeof wx.vibrateShort === "function") {
+          wx.vibrateShort({ type: "light" });
+        }
+      } catch (_err) {}
       const reason = this.getRecordDisabledReason();
       if (reason === "noLedger") {
         feedback.showToast({

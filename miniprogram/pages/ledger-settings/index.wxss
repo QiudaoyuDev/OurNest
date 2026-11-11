@@ -233,3 +233,41 @@
   gap: 18rpx;
   margin-top: 32rpx;
 }
+
+/* 删除账本 Dialog */
+.ledger-delete-dialog {
+  padding: 36rpx 28rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14rpx;
+}
+.delete-icon-wrap {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: var(--tl-color-danger-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8rpx;
+}
+.delete-dialog-title {
+  font-size: var(--tl-font-heading);
+  font-weight: var(--tl-font-weight-bold);
+  color: var(--tl-color-text);
+}
+.delete-dialog-desc {
+  font-size: var(--tl-font-body-sm);
+  color: var(--tl-color-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 16rpx;
+  white-space: pre-line;
+}
+.delete-dialog-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+  width: 100%;
+}

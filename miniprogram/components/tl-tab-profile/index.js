@@ -38,6 +38,7 @@ Component({
     recordCount: 0,
     ledgerCount: 0,
     readonly: false,
+    logoutDialogVisible: false,
     syncing: false,
     lastSyncedText: "尚未同步",
     version: APP_VERSION,
@@ -150,18 +151,16 @@ Component({
     },
 
     logout() {
-      wx.showModal({
-        title: "退出账号",
-        content: "退出后，本机将不再显示当前微信登录状态。",
-        confirmText: "退出",
-        confirmColor: "#f0442f",
-        success: (res) => {
-          if (!res.confirm) return;
-          app.logout();
-          wx.reLaunch({ url: "/pages/login/index" });
-          feedback.showToast({ type: "info", message: "已退出" });
-        },
-      });
+      this.setData({ logoutDialogVisible: true });
+    },
+    closeLogoutDialog() {
+      this.setData({ logoutDialogVisible: false });
+    },
+    confirmLogout() {
+      this.setData({ logoutDialogVisible: false });
+      app.logout();
+      wx.reLaunch({ url: "/pages/login/index" });
+      feedback.showToast({ type: "info", message: "已退出" });
     },
 
     createLedger() {

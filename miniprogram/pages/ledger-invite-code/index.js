@@ -4,9 +4,41 @@ const ledgerStore = require("../../services/ledger.store");
 const feedback = require("../../services/feedback-ui");
 
 Page({
-  data: { code: "", preview: null, status: "input", busy: false, ledgerId: "" },
+  data: {
+    code: "",
+    preview: null,
+    status: "input",
+    busy: false,
+    ledgerId: "",
+    opening: false,
+    already: false,
+  },
   onInput(event) {
     this.setData({ code: event.detail.value, preview: null, status: "input" });
+  },
+  clearCode() {
+    this.setData({ code: "", preview: null, status: "input" });
+  },
+  async pasteCode() {
+    try {
+      const res = await new Promise((resolve, reject) => {
+        wx.getClipboardData({ success: resolve, fail: reject });
+      });
+      const raw = String(res.data || "").trim();
+      const code = raw.toUpperCase().replace(/[\s-]/g, "");
+      const match = code.match(/[A-HJ-NP-Z2-9]{8}/);
+      if (match) {
+        this.setData({ code: match[0], preview: null, status: "input" });
+        feedback.showToast({ type: "success", message: "已粘贴邀请码" });
+      } else if (code) {
+        this.setData({ code, preview: null, status: "input" });
+        feedback.showToast({ type: "info", message: "已粘贴内容" });
+      } else {
+        feedback.showToast({ type: "warning", message: "剪贴板无有效内容" });
+      }
+    } catch (_error) {
+      // clipboard access declined or empty
+    }
   },
   async previewInvite() {
     if (this.data.busy) return;

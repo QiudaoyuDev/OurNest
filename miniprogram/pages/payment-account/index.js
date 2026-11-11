@@ -10,6 +10,11 @@ Page({
     accounts: [],
     readonly: false,
     saving: false,
+    addDialogVisible: false,
+    accountDraft: "",
+    deleteDialogVisible: false,
+    deletingIndex: -1,
+    deletingAccount: "",
   },
   onShow() {
     this.loadCurrentLedger();
@@ -54,7 +59,7 @@ Page({
       this.setData({ saving: false });
     }
   },
-  async removeAccount(event) {
+  openDeleteDialog(event) {
     if (this.data.readonly || this.data.saving) return;
     const index = Number(event.currentTarget.dataset.index);
     const account = this.data.accounts[index];
@@ -63,35 +68,78 @@ Page({
       feedback.showToast({ type: "warning", message: "请至少保留一个账户" });
       return;
     }
-    const result = await new Promise((resolve) => {
-      wx.showModal({
-        title: "删除账户",
-        content: `删除“${account}”后，已有记录仍会保留该账户名称。`,
-        confirmText: "删除",
-        confirmColor: "#f0442f",
-        success: (res) => resolve(Boolean(res.confirm)),
-        fail: () => resolve(false),
-      });
+    this.setData({
+      deleteDialogVisible: true,
+      deletingIndex: index,
+      deletingAccount: account,
     });
-    if (result)
-      await this.saveAccounts(this.data.accounts.filter((_, itemIndex) => itemIndex !== index));
   },
-  addAccount() {
-    if (this.data.readonly || this.data.saving) return;
-    wx.showModal({
-      title: "新增账户",
-      editable: true,
-      placeholderText: "例如：招商银行信用卡",
-      success: async (res) => {
-        if (!res.confirm) return;
-        const name = String(res.content || "").trim();
-        if (!name) return feedback.showToast({ type: "warning", message: "请输入账户名称" });
-        if (Array.from(name).length > 12)
-          return feedback.showToast({ type: "warning", message: "账户名称最多 12 个字符" });
-        if (this.data.accounts.includes(name))
-          return feedback.showToast({ type: "warning", message: "该账户已存在" });
-        await this.saveAccounts([...this.data.accounts, name]);
-      },
+  closeDeleteDialog() {
+    if (this.data.saving) return;
+    this.setData({
+      deleteDialogVisible: false,
+      deletingIndex: -1,
+      deletingAccount: "",
     });
+  },
+  async confirmDeleteAccount() {
+    const index = this.data.deletingIndex;
+    if (index < 0 || index >= this.data.accounts.length) return;
+    const nextAccounts = this.data.accounts.filter((_, itemIndex) => itemIndex !== index);
+    const ok = await this.saveAccounts(nextAccounts);
+    if (ok) {
+      this.setData({
+        deleteDialogVisible: false,
+        deletingIndex: -1,
+        deletingAccount: "",
+      });
+      feedback.showToast({ type: "success", message: "账户已删除" });
+    }
+  },
+  openAddDialog() {
+    if (this.data.readonly || this.data.saving) return;
+    this.setData({
+      addDialogVisible: true,
+      accountDraft: "",
+    });
+  },
+  closeAddDialog() {
+    if (this.data.saving) return;
+    this.setData({
+      addDialogVisible: false,
+      accountDraft: "",
+    });
+  },
+  onDraftInput(event) {
+    const value = String(event.detail.value || "");
+    const accountDraft = Array.from(value).slice(0, 12).join("");
+    this.setData({ accountDraft });
+  },
+  clearDraft() {
+    this.setData({ accountDraft: "" });
+  },
+  async confirmAddAccount() {
+    if (this.data.readonly || this.data.saving) return;
+    const name = String(this.data.accountDraft || "").trim();
+    if (!name) {
+      feedback.showToast({ type: "warning", message: "请输入账户名称" });
+      return;
+    }
+    if (Array.from(name).length > 12) {
+      feedback.showToast({ type: "warning", message: "账户名称最多 12 个字符" });
+      return;
+    }
+    if (this.data.accounts.includes(name)) {
+      feedback.showToast({ type: "warning", message: "该账户已存在" });
+      return;
+    }
+    const ok = await this.saveAccounts([...this.data.accounts, name]);
+    if (ok) {
+      this.setData({
+        addDialogVisible: false,
+        accountDraft: "",
+      });
+      feedback.showToast({ type: "success", message: "账户添加成功" });
+    }
   },
 });

@@ -37,6 +37,10 @@ Page({
     editName: "",
     editRemark: "",
     editSaving: false,
+    deleteDialogVisible: false,
+    deletingLedgerId: "",
+    deletingLedgerName: "",
+    deleting: false,
   },
   onShow() {
     this.loadLedgers();
@@ -172,28 +176,41 @@ Page({
     const ledgerId = event.currentTarget.dataset.id || "";
     const name = event.currentTarget.dataset.name || "该账本";
     if (!ledgerId) return;
-    wx.showModal({
-      title: "删除账本",
-      content: `确认删除“${name}”吗？其中的全部记录也会一并删除。`,
-      confirmText: "删除",
-      confirmColor: "#d9483b",
-      success: async (result) => {
-        if (!result.confirm) return;
-        const loadingId = feedback.showLoading({ message: "正在删除" });
-        try {
-          const data = await ledgerStore.deleteLedger(ledgerId);
-          if (app.globalData.user) app.globalData.user.currentLedgerId = data.currentLedgerId || "";
-          app.globalData.currentLedger = data.currentLedger || null;
-          app.persistAuthState();
-          await this.loadLedgers();
-          feedback.showToast({ type: "success", message: "已删除" });
-        } catch (error) {
-          feedback.showToast({ type: "error", message: error.message || "删除失败" });
-        } finally {
-          feedback.hideLoading(loadingId);
-        }
-      },
+    this.setData({
+      deleteDialogVisible: true,
+      deletingLedgerId: ledgerId,
+      deletingLedgerName: name,
     });
+  },
+  closeDeleteDialog() {
+    if (this.data.deleting) return;
+    this.setData({
+      deleteDialogVisible: false,
+      deletingLedgerId: "",
+      deletingLedgerName: "",
+    });
+  },
+  async confirmDeleteLedger() {
+    const ledgerId = this.data.deletingLedgerId;
+    if (!ledgerId || this.data.deleting) return;
+    this.setData({ deleting: true });
+    try {
+      const data = await ledgerStore.deleteLedger(ledgerId);
+      if (app.globalData.user) app.globalData.user.currentLedgerId = data.currentLedgerId || "";
+      app.globalData.currentLedger = data.currentLedger || null;
+      app.persistAuthState();
+      this.setData({
+        deleteDialogVisible: false,
+        deletingLedgerId: "",
+        deletingLedgerName: "",
+      });
+      await this.loadLedgers();
+      feedback.showToast({ type: "success", message: "已删除账本" });
+    } catch (error) {
+      feedback.showToast({ type: "error", message: error.message || "删除失败" });
+    } finally {
+      this.setData({ deleting: false });
+    }
   },
   createLedger() {
     wx.navigateTo({ url: "/pages/ledger-create/index" });

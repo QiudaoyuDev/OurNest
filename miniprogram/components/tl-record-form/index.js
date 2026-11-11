@@ -5,6 +5,14 @@ const {
   limitAmountPrecision,
 } = require("../../utils/amount-expression");
 
+function triggerHaptic() {
+  try {
+    if (typeof wx !== "undefined" && typeof wx.vibrateShort === "function") {
+      wx.vibrateShort({ type: "light" });
+    }
+  } catch (_err) {}
+}
+
 Component({
   options: { styleIsolation: "apply-shared" },
   properties: {
@@ -44,6 +52,7 @@ Component({
       this.triggerEvent("amountinput", { value: limitAmountPrecision(value) });
     },
     pressNumber(event) {
+      triggerHaptic();
       const digit = String(event.currentTarget.dataset.digit);
       const amount = String(this.data.amount || "");
       const next = /(^|[+-])0$/.test(amount)
@@ -52,12 +61,14 @@ Component({
       this.updateAmount(next);
     },
     pressDecimal() {
+      triggerHaptic();
       const amount = String(this.data.amount || "");
       const currentPart = amount.split(/[+-]/).pop() || "";
       if (currentPart.includes(".")) return;
       this.updateAmount(`${amount}${currentPart ? "." : "0."}`);
     },
     pressOperator(event) {
+      triggerHaptic();
       const operator = event.currentTarget.dataset.operator;
       const amount = String(this.data.amount || "");
       if (!amount) {
@@ -71,6 +82,7 @@ Component({
       this.updateAmount(`${amount}${operator}`);
     },
     backspace() {
+      triggerHaptic();
       this.updateAmount(String(this.data.amount || "").slice(0, -1));
     },
     clearAmount() {

@@ -17,8 +17,8 @@
                 </tl-icon>
                 <text>{{typeLabel}}</text>
               </view>
-              <view class="selected-icon {{type}}">
-                <tl-icon name="{{categoryIcon}}" size="34" colorKey="{{type === 'income' ? 'income' : 'primary'}}">
+              <view class="selected-icon {{selectedChipClass || type}}">
+                <tl-icon name="{{categoryIcon}}" size="34" color="{{selectedIconColor || (type === 'income' ? '#25a66a' : '#f0442f')}}">
                 </tl-icon>
               </view>
               <view class="selected-text">
@@ -47,8 +47,8 @@
               </tl-empty-state>
               <view wx:else class="category-grid">
                 <view wx:for="{{flatCategories}}" wx:key="id" class="category-grid-item {{categoryId === item.id ? 'is-selected' : ''}}" data-category-id="{{item.id}}" bindtap="chooseCategory">
-                  <view class="category-grid-icon">
-                    <tl-icon name="{{item.icon}}" size="36" colorKey="primary">
+                  <view class="category-grid-icon {{item.chipClass}}">
+                    <tl-icon name="{{item.icon}}" size="36" color="{{item.iconColor || '#f0442f'}}">
                     </tl-icon>
                   </view>
                   <text class="category-grid-name">{{item.name}}</text>
@@ -91,7 +91,11 @@
           <tl-record-form quick-entry="{{!isEditing}}" entry-visible="{{!!categoryId}}" note-focused="{{noteFocused}}" saving="{{saving}}" bind:submit="saveAndLeave" bind:submitcontinue="saveAndContinue" type="{{type}}" amount="{{amount}}" amount-result="{{amountResult}}" show-amount-result="{{showAmountResult}}" quick-amounts="{{quickAmounts}}" ledger-name="{{ledgerName}}" accounts="{{accounts}}" account-index="{{accountIndex}}" date="{{date}}" note="{{note}}" tag-input="{{tagInput}}" tags="{{tags}}" bind:amountinput="onAmountInput" bind:quickamount="setQuickAmount" bind:accountchange="onAccountChange" bind:datechange="onDateChange" bind:noteinput="onNoteInput" bind:taginput="onTagInput" bind:addtag="addTag" bind:removetag="removeTag" bind:keypadchange="onKeypadChange">
             <view wx:if="{{!isEditing && categoryId}}" class="entry-panel-info">
               <view class="entry-panel-heading">
-                <text class="entry-panel-category">{{categoryHeading}}</text>
+                <view class="entry-panel-category-pill {{selectedChipClass}}">
+                  <tl-icon name="{{categoryIcon}}" size="28" color="{{selectedIconColor || '#f0442f'}}">
+                  </tl-icon>
+                  <text class="entry-panel-category">{{categoryHeading}}</text>
+                </view>
                 <view class="entry-panel-amount">
                   ¥{{amount || '0.00'}}
                   <text wx:if="{{showAmountResult && amountResult}}" class="entry-panel-result">= ¥{{amountResult}}</text>

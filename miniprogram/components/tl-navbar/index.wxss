@@ -19,24 +19,41 @@
 }
 
 .nav-brand-ledger-flow {
-  flex: 1 1 auto;
-  min-width: 0;
-  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  max-width: 440rpx;
+  height: 68rpx;
+  padding: 0 18rpx 0 12rpx;
+  background: rgba(255, 255, 255, 0.85);
+  border: var(--tl-border-width) solid var(--tl-color-border-subtle);
+  border-radius: var(--tl-radius-pill);
+  box-shadow: var(--tl-shadow-sm);
   cursor: pointer;
+  transition:
+    transform var(--tl-duration-fast) ease,
+    opacity var(--tl-duration-fast) ease;
 }
 
 .nav-brand-ledger-flow:active {
-  opacity: 0.8;
+  transform: scale(0.96);
+  opacity: 0.92;
 }
 
 .brand-ledger-name {
   color: var(--tl-color-text);
-  font-size: var(--tl-font-heading, 32rpx);
+  font-size: var(--tl-font-body);
   font-weight: var(--tl-font-weight-bold);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+}
+
+.nav-brand-ledger-flow .brand-mark {
+  width: 44rpx;
+  height: 44rpx;
+  flex: 0 0 44rpx;
+  margin-right: 10rpx;
 }
 
 .brand-ledger-arrow {
@@ -70,11 +87,19 @@
 }
 
 .back-button {
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.85);
+  border: var(--tl-border-width) solid var(--tl-color-border-subtle);
+  border-radius: var(--tl-radius-pill);
+  box-shadow: var(--tl-shadow-sm);
   color: var(--tl-color-primary);
   font-size: var(--tl-font-data);
   font-weight: var(--tl-font-weight-bold);
   line-height: 1;
+  transition: transform var(--tl-duration-fast) ease;
+}
+
+.back-button:active {
+  transform: scale(0.92);
 }
 
 .brand-name {

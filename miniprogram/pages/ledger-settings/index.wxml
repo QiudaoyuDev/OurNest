@@ -77,4 +77,19 @@
       </view>
     </view>
   </tl-dialog>
+  <!-- 删除账本确认 Dialog -->
+  <tl-dialog visible="{{deleteDialogVisible}}" bind:close="closeDeleteDialog">
+    <view class="ledger-delete-dialog">
+      <view class="delete-icon-wrap">
+        <tl-icon name="delete-bin-line" size="48" color="#f0442f">
+        </tl-icon>
+      </view>
+      <view class="delete-dialog-title">删除账本</view>
+      <view class="delete-dialog-desc">确认删除“{{deletingLedgerName}}”吗？\n其中的全部记账记录也会一并删除，且不可恢复。</view>
+      <view class="delete-dialog-actions">
+        <tl-button variant="secondary" block="{{true}}" disabled="{{deleting}}" bind:tap="closeDeleteDialog">取消</tl-button>
+        <tl-button block="{{true}}" loading="{{deleting}}" loading-text="正在删除..." bind:tap="confirmDeleteLedger">确认删除</tl-button>
+      </view>
+    </view>
+  </tl-dialog>
 </view>

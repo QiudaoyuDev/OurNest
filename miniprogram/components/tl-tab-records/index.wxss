@@ -12,8 +12,9 @@
   width: 100%;
   height: 76rpx;
   border-radius: var(--tl-radius-pill);
-  border: 1rpx solid rgba(240, 68, 47, 0.12);
-  background: rgba(255, 255, 255, 0.78);
+  border: var(--tl-border-width) solid var(--tl-color-border-subtle);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: var(--tl-shadow-sm);
   overflow: hidden;
 }
 
@@ -78,7 +79,9 @@
   gap: 10rpx;
   padding: 8rpx;
   border-radius: var(--tl-radius-pill);
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.88);
+  border: var(--tl-border-width) solid var(--tl-color-border-subtle);
+  box-shadow: var(--tl-shadow-sm);
 }
 
 .seg-item {
@@ -101,8 +104,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 16rpx;
-  padding: 0 8rpx;
+  margin-top: 18rpx;
+  padding: 16rpx 24rpx;
+  background: var(--tl-color-surface);
+  border-radius: var(--tl-radius-md);
+  border: var(--tl-border-width) solid var(--tl-color-border-subtle);
+  box-shadow: var(--tl-shadow-sm);
 }
 
 .month-brief > view {
@@ -141,8 +148,9 @@
 .day-section {
   margin-bottom: 26rpx;
   border-radius: var(--tl-radius-md);
-  background: rgba(255, 255, 255, 0.88);
-
+  background: rgba(255, 255, 255, 0.92);
+  border: var(--tl-border-width) solid var(--tl-color-border-subtle);
+  box-shadow: var(--tl-shadow-sm);
   overflow: visible;
 }
 
@@ -211,16 +219,17 @@
   justify-content: center;
   font-size: var(--tl-font-caption);
   font-weight: var(--tl-font-weight-bold);
+  box-shadow: var(--tl-shadow-sm);
 }
 
 .category-mark.expense {
   color: var(--tl-color-primary);
-  background: var(--tl-color-primary-soft);
+  background: var(--tl-color-chip-orange);
 }
 
 .category-mark.income {
   color: var(--tl-color-income);
-  background: var(--tl-color-surface-income);
+  background: var(--tl-color-chip-green);
 }
 
 .record-main {

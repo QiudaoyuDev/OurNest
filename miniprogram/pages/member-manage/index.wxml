@@ -34,16 +34,37 @@
           </tl-button>
           <view wx:else class="readonly-tip">仅账本拥有者可以邀请或移除成员</view>
           <tl-button wx:if="{{!canManage}}" variant="secondary" block="{{true}}" bind:tap="leaveLedger">退出账本</tl-button>
-          <view wx:if="{{ownerTransfer}}" class="card">
-            <view>账本所有权转移待确认</view>
-            <tl-button wx:if="{{!canManage}}" block="{{true}}" data-accept="{{true}}" bind:tap="respondTransfer">确认接收</tl-button>
-            <tl-button variant="secondary" block="{{true}}" data-accept="{{false}}" bind:tap="respondTransfer">{{canManage ? '取消转移' : '拒绝接收'}}</tl-button>
+          <view wx:if="{{ownerTransfer}}" class="card fade-up">
+            <view class="transfer-title">账本所有权转移待确认</view>
+            <view class="transfer-actions">
+              <tl-button wx:if="{{!canManage}}" block="{{true}}" data-accept="{{true}}" bind:tap="respondTransfer">确认接收</tl-button>
+              <tl-button variant="secondary" block="{{true}}" data-accept="{{false}}" bind:tap="respondTransfer">{{canManage ? '取消转移' : '拒绝接收'}}</tl-button>
+            </view>
           </view>
-          <view wx:if="{{canManage && invites.length}}" class="card">
-            <view>有效邀请</view>
-            <view wx:for="{{invites}}" wx:key="id" class="member-row">
-              <view class="member-info">{{item.mode === 'member' ? '成员' : '访客'}} · 创建于 {{item.createdText}} · {{item.expiresText}} 到期</view>
-              <view class="member-remove" data-id="{{item.id}}" bindtap="revokeInvite">撤销</view>
+          <view wx:if="{{canManage && invites.length}}" class="invites-card card fade-up">
+            <view class="invites-header">
+              <view class="invites-header-left">
+                <view class="invites-header-icon">
+                  <tl-icon name="mail-send-line" size="28" color="#e86a33">
+                  </tl-icon>
+                </view>
+                <text class="invites-title">进行中的有效邀请</text>
+              </view>
+              <text class="invites-count-badge">{{invites.length}} 条有效</text>
+            </view>
+            <view class="invites-list">
+              <view wx:for="{{invites}}" wx:key="id" class="invite-item {{revokingId === item.id ? 'is-revoking' : ''}}">
+                <view class="invite-item-left">
+                  <view class="invite-mode-badge {{item.mode === 'member' ? 'member' : 'visitor'}}">{{item.mode === 'member' ? '成员' : '访客'}}</view>
+                  <view class="invite-item-meta">
+                    <view class="invite-item-title">{{item.mode === 'member' ? '家庭共同记账成员' : '只读查看访客'}}</view>
+                    <view class="invite-item-time">有效至 {{item.expiresText}} · 创建于 {{item.createdText}}</view>
+                  </view>
+                </view>
+                <view class="invite-revoke-btn" data-id="{{item.id}}" bindtap="revokeInvite">
+                  <text>撤销</text>
+                </view>
+              </view>
             </view>
           </view>
         </block>
@@ -51,27 +72,65 @@
     </scroll-view>
     <tl-bottom-sheet visible="{{shareSheetVisible}}" bind:close="closeShareSheet">
       <view class="share-sheet">
-        <view class="sheet-title">选择邀请方式</view>
-        <view wx:for="{{shareOptions}}" wx:key="mode" class="share-option {{shareMode === item.mode ? 'is-selected' : ''}}" data-mode="{{item.mode}}" bindtap="selectShareMode" role="radio" aria-checked="{{shareMode === item.mode}}" aria-label="{{item.title}}，{{item.desc}}">
-          <tl-icon name="{{item.icon}}" size="34" colorKey="primaryDark">
-          </tl-icon>
-          <view class="share-option-content">
-            <view>{{item.title}}</view>
-            <text>{{item.desc}}</text>
-          </view>
-          <view class="share-option-indicator {{shareMode === item.mode ? 'is-selected' : ''}}">
-            <tl-icon wx:if="{{shareMode === item.mode}}" name="check-line" size="24" colorKey="white">
-            </tl-icon>
+        <view class="sheet-title">邀请新成员</view>
+        <view class="sheet-desc">选择成员在账本中的权限身份，生成专属邀请码</view>
+        <view class="share-options-group">
+          <view wx:for="{{shareOptions}}" wx:key="mode" class="share-option-card {{shareMode === item.mode ? 'is-selected' : ''}}" data-mode="{{item.mode}}" bindtap="selectShareMode">
+            <view class="share-option-icon {{item.mode === 'member' ? 'icon-member' : 'icon-visitor'}}">
+              <tl-icon name="{{item.icon}}" size="36" color="{{item.mode === 'member' ? '#0ea569' : '#0284c7'}}">
+              </tl-icon>
+            </view>
+            <view class="share-option-content">
+              <view class="share-option-title">{{item.title}}</view>
+              <text class="share-option-desc">{{item.desc}}</text>
+            </view>
+            <view class="share-option-radio {{shareMode === item.mode ? 'is-selected' : ''}}">
+              <tl-icon wx:if="{{shareMode === item.mode}}" name="check-line" size="24" colorKey="white">
+              </tl-icon>
+            </view>
           </view>
         </view>
         <tl-button wx:if="{{!inviteCode}}" block="{{true}}" loading="{{generating}}" bind:tap="generateInvite">生成邀请码</tl-button>
-        <view wx:if="{{inviteCode}}" class="invite-code-display">{{displayCode}}</view>
-        <view wx:if="{{inviteCode}}" class="invite-code-hint">有效期至 {{inviteExpiresAt}}，仅可使用一次，请只发送给信任的人。</view>
-        <view wx:if="{{inviteCode}}" class="invite-actions">
-          <tl-button block="{{true}}" bind:tap="copyInviteCode">复制邀请码</tl-button>
-          <tl-button variant="secondary" block="{{true}}" open-type="share">发送分享卡片</tl-button>
-        </view>
+        <block wx:if="{{inviteCode}}">
+          <view class="invite-ticket-card">
+            <view class="ticket-header">
+              <text class="ticket-badge">OurNest · 专属邀请码</text>
+              <text class="ticket-status">待使用</text>
+            </view>
+            <view class="ticket-code-row" bindtap="copyInviteCode">
+              <text class="ticket-code-val">{{displayCode}}</text>
+              <view class="ticket-copy-pill">
+                <tl-icon name="file-copy-line" size="28" colorKey="primary">
+                </tl-icon>
+                <text>点击复制</text>
+              </view>
+            </view>
+            <view class="ticket-footer">
+              <tl-icon name="time-line" size="24" colorKey="muted">
+              </tl-icon>
+              <text>有效期至 {{inviteExpiresAt}} · 仅限单人使用一次</text>
+            </view>
+          </view>
+          <view class="invite-actions-row">
+            <tl-button class="action-btn" variant="secondary" block="{{true}}" bind:tap="copyInviteCode">复制邀请码</tl-button>
+            <tl-button class="action-btn" block="{{true}}" open-type="share">发送分享卡片</tl-button>
+          </view>
+        </block>
       </view>
     </tl-bottom-sheet>
+    <tl-dialog visible="{{confirmDialogVisible}}" bind:close="closeConfirmDialog">
+      <view class="custom-dialog-panel">
+        <view class="dialog-icon-wrap">
+          <tl-icon name="{{confirmDialogIcon || 'question-line'}}" size="48" color="{{confirmDialogColor || '#f0442f'}}">
+          </tl-icon>
+        </view>
+        <view class="dialog-title">{{confirmDialogTitle}}</view>
+        <view class="dialog-desc">{{confirmDialogContent}}</view>
+        <view class="dialog-actions">
+          <tl-button variant="secondary" block="{{true}}" bind:tap="closeConfirmDialog">取消</tl-button>
+          <tl-button block="{{true}}" loading="{{confirmDialogLoading}}" bind:tap="onConfirmDialogAction">{{confirmDialogConfirmText || '确认'}}</tl-button>
+        </view>
+      </view>
+    </tl-dialog>
   </tl-container>
 </view>

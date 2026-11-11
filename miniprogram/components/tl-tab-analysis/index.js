@@ -9,6 +9,7 @@ const dataRefresh = require("../../services/data-refresh.service");
 const { createChartController } = require("./chart-controller");
 const { validateAnalysisResponse } = require("../../services/analysis-contract");
 const { formatDisplayMoney, formatMoney } = require("../../utils/money");
+const { resolveCategoryScheme } = require("../../utils/category-color");
 const { makeDashboardView, dayAdd, categoryDisplayIcon } = require("./dashboard");
 const {
   monthAnchor,
@@ -849,10 +850,20 @@ Component({
             rangeCategories: (request.analysisType === "income"
               ? result.incomeCategories
               : result.categories
-            ).map((item) => ({
-              ...item,
-              displayIcon: categoryDisplayIcon(item, request.analysisType || "expense"),
-            })),
+            ).map((item) => {
+              const icon = categoryDisplayIcon(item, request.analysisType || "expense");
+              const scheme = resolveCategoryScheme(
+                item.name,
+                request.analysisType || "expense",
+                icon
+              );
+              return {
+                ...item,
+                displayIcon: icon,
+                chipClass: scheme.chipClass,
+                iconColor: scheme.iconColor,
+              };
+            }),
             hasDetailRows: activeDetailRows.length > 0,
             hasInsights:
               Object.values(result.insightGroups || {}).some((items) => items.length) ||

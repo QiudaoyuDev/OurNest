@@ -20,8 +20,9 @@
   flex: 0 0 72rpx;
   align-items: center;
   justify-content: center;
-  border-radius: var(--tl-radius-sm);
+  border-radius: var(--tl-radius-md);
   background: var(--tl-color-primary-soft);
+  box-shadow: var(--tl-shadow-sm);
 }
 .analysis-record__icon.income {
   background: var(--tl-color-surface-income);

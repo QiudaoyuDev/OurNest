@@ -1,4 +1,5 @@
 const { formatMoney: formatDisplayMoney } = require("../../utils/money");
+const { resolveCategoryScheme } = require("../../utils/category-color");
 const ICON_GLYPHS = require("../tl-icon/glyphs");
 const CATEGORY_ICONS = require("../tl-icon/category-icons");
 
@@ -39,24 +40,38 @@ function makeDashboardView(result, mode, type, today) {
   const total = Number(dashboard.total || 0);
   const comparison = (result.comparison || {})[type] || {};
   const delta = Number(comparison.delta || 0);
-  const categories = (dashboard.categories || []).map((item) => ({
-    ...item,
-    displayIcon: categoryDisplayIcon(item, type),
-    amountText: formatDisplayMoney(item.amount),
-    previousText: formatDisplayMoney(item.previousAmount),
-    deltaText: formatDisplayMoney(
-      Math.abs(Number(item.amount || 0) - Number(item.previousAmount || 0))
-    ),
-    deltaDirection: Number(item.amount || 0) >= Number(item.previousAmount || 0) ? "增加" : "减少",
-  }));
+  const categories = (dashboard.categories || []).map((item) => {
+    const icon = categoryDisplayIcon(item, type);
+    const scheme = resolveCategoryScheme(item.name, type, icon);
+    return {
+      ...item,
+      displayIcon: icon,
+      chipClass: scheme.chipClass,
+      iconColor: scheme.iconColor,
+      amountText: formatDisplayMoney(item.amount),
+      previousText: formatDisplayMoney(item.previousAmount),
+      deltaText: formatDisplayMoney(
+        Math.abs(Number(item.amount || 0) - Number(item.previousAmount || 0))
+      ),
+      deltaDirection:
+        Number(item.amount || 0) >= Number(item.previousAmount || 0) ? "增加" : "减少",
+    };
+  });
   const accounts = (dashboard.accounts || []).map((item) => ({
     ...item,
     amountText: formatDisplayMoney(item.amount),
   }));
-  const topRecords = (dashboard.topRecords || []).map((item) => ({
-    ...item,
-    amountText: formatDisplayMoney(item.amount),
-  }));
+  const topRecords = (dashboard.topRecords || []).map((item) => {
+    const icon = item.categoryIcon || categoryDisplayIcon(item, type);
+    const scheme = resolveCategoryScheme(item.categoryName || item.note || "", type, icon);
+    return {
+      ...item,
+      categoryIcon: icon,
+      chipClass: scheme.chipClass,
+      iconColor: scheme.iconColor,
+      amountText: formatDisplayMoney(item.amount),
+    };
+  });
   const label = type === "income" ? "收入" : "支出";
   const previousLabel = mode === "week" ? "上周" : mode === "year" ? "去年" : "上月";
   const partial = result.trendMeta && result.trendMeta.isPartial;

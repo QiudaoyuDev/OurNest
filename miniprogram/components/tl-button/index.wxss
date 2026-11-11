@@ -75,8 +75,8 @@
 }
 
 .tl-button:active {
-  opacity: 0.82;
-  transform: scale(0.985);
+  opacity: 0.88;
+  transform: scale(0.965);
 }
 
 .tl-button[disabled] {

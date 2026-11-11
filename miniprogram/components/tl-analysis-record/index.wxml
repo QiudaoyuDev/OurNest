@@ -1,7 +1,7 @@
 <view class="analysis-record" bindtap="open">
   <text wx:if="{{rank}}" class="analysis-record__rank">{{rank}}</text>
-  <view class="analysis-record__icon {{type}}">
-    <tl-icon name="{{record.categoryIcon || (type === 'income' ? 'funds-line' : 'price-tag-3-line')}}" size="32" colorKey="{{type === 'income' ? 'income' : 'primary'}}">
+  <view class="analysis-record__icon {{record.chipClass || type}}">
+    <tl-icon name="{{record.categoryIcon || (type === 'income' ? 'funds-line' : 'price-tag-3-line')}}" size="32" color="{{record.iconColor || (type === 'income' ? '#25a66a' : '#f0442f')}}">
     </tl-icon>
   </view>
   <view class="analysis-record__content">

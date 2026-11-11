@@ -202,9 +202,10 @@
   width: 100%;
   height: 76rpx;
   align-items: center;
-  border: 1rpx solid rgba(240, 68, 47, 0.12);
+  border: var(--tl-border-width) solid var(--tl-color-border-subtle);
   border-radius: var(--tl-radius-pill);
   background: var(--tl-palette-white, #ffffff);
+  box-shadow: var(--tl-shadow-sm);
   overflow: hidden;
 }
 
@@ -552,6 +553,21 @@
   color: var(--tl-color-text-tertiary);
   font-size: var(--tl-font-caption);
   font-weight: var(--tl-font-weight-bold);
+}
+
+.category-ranking-row:nth-child(1) .category-index {
+  background: var(--tl-color-chip-amber);
+  color: var(--tl-color-warning);
+}
+
+.category-ranking-row:nth-child(2) .category-index {
+  background: var(--tl-color-surface-soft);
+  color: var(--tl-color-text-secondary);
+}
+
+.category-ranking-row:nth-child(3) .category-index {
+  background: var(--tl-color-chip-orange);
+  color: var(--tl-color-primary);
 }
 
 .category-main {
@@ -1089,6 +1105,7 @@
   width: 24rpx;
   border-radius: var(--tl-radius-xs) var(--tl-radius-xs) 0 0;
   background: var(--tl-color-primary);
+  transition: height var(--tl-duration-normal) ease;
 }
 
 .dashboard-bar.is-previous {
@@ -1164,12 +1181,33 @@
 }
 
 .dashboard-rank {
-  width: 28rpx;
-  flex: 0 0 28rpx;
+  width: 36rpx;
+  height: 36rpx;
+  flex: 0 0 36rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--tl-radius-pill);
   color: var(--tl-color-text-tertiary);
   font-size: var(--tl-font-caption);
   text-align: center;
 }
+.dashboard-rank.top-1 {
+  background: var(--tl-color-chip-orange);
+  color: var(--tl-color-chip-orange-text);
+  font-weight: var(--tl-font-weight-bold);
+}
+.dashboard-rank.top-2 {
+  background: var(--tl-color-chip-blue);
+  color: var(--tl-color-chip-blue-text);
+  font-weight: var(--tl-font-weight-bold);
+}
+.dashboard-rank.top-3 {
+  background: var(--tl-color-chip-sky);
+  color: var(--tl-color-chip-sky-text);
+  font-weight: var(--tl-font-weight-bold);
+}
+
 .dashboard-category-icon {
   display: flex;
   width: 72rpx;
@@ -1177,8 +1215,9 @@
   flex: 0 0 72rpx;
   align-items: center;
   justify-content: center;
-  border-radius: var(--tl-radius-sm);
+  border-radius: var(--tl-radius-md);
   background: var(--tl-color-primary-soft);
+  box-shadow: var(--tl-shadow-sm);
 }
 .dashboard-category-icon.income {
   background: var(--tl-color-surface-income);

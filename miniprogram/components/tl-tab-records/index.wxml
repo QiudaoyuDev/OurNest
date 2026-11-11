@@ -61,8 +61,8 @@
             </view>
           </view>
           <view class="record-row" wx:for="{{item.records}}" wx:for-item="record" wx:key="id" data-id="{{record.id}}" bindtap="openRecord">
-            <view class="category-mark {{record.type}}">
-              <tl-icon name="{{record.categoryIcon}}" size="32" colorKey="{{record.type === 'income' ? 'incomeOld' : 'primary'}}">
+            <view class="category-mark {{record.chipClass || record.type}}">
+              <tl-icon name="{{record.categoryIcon}}" size="32" color="{{record.categoryColor || (record.type === 'income' ? '#25a66a' : '#f0442f')}}">
               </tl-icon>
             </view>
             <view class="record-main">

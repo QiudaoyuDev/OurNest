@@ -33,6 +33,11 @@ Component({
   methods: {
     handleTap() {
       if (this.data.disabled || this.data.loading) return;
+      try {
+        if (typeof wx !== "undefined" && typeof wx.vibrateShort === "function") {
+          wx.vibrateShort({ type: "light" });
+        }
+      } catch (_e) {}
       this.triggerEvent("tap");
     },
   },

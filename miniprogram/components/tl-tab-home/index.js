@@ -7,6 +7,7 @@ const { getId, getLedgerRole } = require("../../utils/mapper");
 const { resolveAvatarUrls } = require("../../utils/avatar");
 const { on: onEvent, off: offEvent } = require("../../utils/event-bus");
 const { startNavigation } = require("../../utils/navigation-timing");
+const { resolveCategoryScheme } = require("../../utils/category-color");
 
 function getMonthLabel() {
   const now = new Date();
@@ -42,12 +43,14 @@ function normalizeRecord(item = {}) {
   const type = item.type === "income" ? "income" : "expense";
   const categoryText = item.categoryName || item.categoryLabel || "其他";
   const selectedTimeText = item.date || "未选择日期";
+  const scheme = resolveCategoryScheme(categoryText, type, item.categoryIcon);
   return {
     ...item,
     id: getId(item),
     type,
     categoryIcon: item.categoryIcon || (type === "income" ? "funds-line" : "price-tag-3-line"),
-    typeIconColor: type === "income" ? "#25a66a" : "#f0442f",
+    typeIconColor: scheme.iconColor,
+    chipClass: scheme.chipClass,
     amountText: formatDisplayMoney(item.amount),
     noteText: item.note || "未填写备注",
     hasNote: Boolean(String(item.note || "").trim()),
@@ -89,6 +92,10 @@ function normalizeDashboard(data = {}) {
     monthRange: data.monthRange || null,
     budgetLeft: formatDisplayMoney(data.budgetLeft),
     budgetLeftAbs: formatDisplayMoney(budgetLeftAbs),
+    budgetLeftInteger: formatDisplayMoney(budgetLeftAbs).split(".")[0],
+    budgetLeftDecimal: formatDisplayMoney(budgetLeftAbs).includes(".")
+      ? `.${formatDisplayMoney(budgetLeftAbs).split(".")[1]}`
+      : "",
     isOverBudget,
     budgetRate: Number(data.budgetRate || 0),
     budgetRateText: Number(data.budgetRate || 0).toFixed(1),

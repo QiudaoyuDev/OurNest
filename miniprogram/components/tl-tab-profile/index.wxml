@@ -31,65 +31,96 @@
         </view>
       </view>
       <view class="tools-panel card fade-up">
-        <view class="section-title">账本设置</view>
-        <view class="tool-grid common-grid">
-          <view class="tool-tile" bindtap="ledgerSettings">
-            <view class="tool-icon">
-              <tl-icon name="settings-3-line" size="32" colorKey="primary">
+        <view class="section-title">账本与协作</view>
+        <view class="function-list">
+          <view class="function-row" bindtap="ledgerSettings">
+            <view class="function-icon icon-chip-orange">
+              <tl-icon name="settings-3-line" size="32" color="#e86a33">
               </tl-icon>
             </view>
-            <view class="tool-title">账本管理</view>
+            <view class="function-main">
+              <view class="function-title">账本管理</view>
+              <view class="function-tip">管理与切换当前使用账本</view>
+            </view>
+            <view class="function-arrow">
+              <tl-icon name="arrow-right-s-line" size="32" colorKey="tertiary">
+              </tl-icon>
+            </view>
           </view>
-          <view class="tool-tile" bindtap="manageMembers">
-            <view class="tool-icon">
-              <tl-icon name="team-line" size="32" colorKey="primary">
+          <view class="function-row" bindtap="manageMembers">
+            <view class="function-icon icon-chip-blue">
+              <tl-icon name="team-line" size="32" color="#4f46e5">
               </tl-icon>
             </view>
-            <view class="tool-title">成员管理</view>
+            <view class="function-main">
+              <view class="function-title">成员管理</view>
+              <view class="function-tip">查看家庭与共享协作者</view>
+            </view>
+            <view class="function-arrow">
+              <tl-icon name="arrow-right-s-line" size="32" colorKey="tertiary">
+              </tl-icon>
+            </view>
           </view>
-          <view class="tool-tile" bindtap="manageCategories">
-            <view class="tool-icon">
-              <tl-icon name="price-tag-3-line" size="32" colorKey="primary">
+          <view class="function-row" bindtap="joinLedger">
+            <view class="function-icon icon-chip-amber">
+              <tl-icon name="coupon-3-line" size="32" color="#d97706">
               </tl-icon>
             </view>
-            <view class="tool-title">分类管理</view>
+            <view class="function-main">
+              <view class="function-title">邀请码</view>
+              <view class="function-tip">凭邀请码加入对方的小窝账本</view>
+            </view>
+            <view class="function-arrow">
+              <tl-icon name="arrow-right-s-line" size="32" colorKey="tertiary">
+              </tl-icon>
+            </view>
           </view>
-          <view class="tool-tile" bindtap="manageAccounts">
-            <view class="tool-icon">
-              <tl-icon name="bank-card-line" size="32" colorKey="primary">
+        </view>
+      </view>
+      <view class="tools-panel card fade-up">
+        <view class="section-title">记账偏好配置</view>
+        <view class="function-list">
+          <view class="function-row" bindtap="manageCategories">
+            <view class="function-icon icon-chip-purple">
+              <tl-icon name="price-tag-3-line" size="32" color="#9333ea">
               </tl-icon>
             </view>
-            <view class="tool-title">支付账户</view>
+            <view class="function-main">
+              <view class="function-title">分类管理</view>
+              <view class="function-tip">自定义支出与收入类目</view>
+            </view>
+            <view class="function-arrow">
+              <tl-icon name="arrow-right-s-line" size="32" colorKey="tertiary">
+              </tl-icon>
+            </view>
           </view>
-          <view class="tool-tile" bindtap="manageQuickAmounts">
-            <view class="tool-icon">
-              <tl-icon name="wallet-3-line" size="32" colorKey="primary">
+          <view class="function-row" bindtap="manageAccounts">
+            <view class="function-icon icon-chip-sky">
+              <tl-icon name="bank-card-line" size="32" color="#0284c7">
               </tl-icon>
             </view>
-            <view class="tool-title">快捷金额</view>
+            <view class="function-main">
+              <view class="function-title">支付账户</view>
+              <view class="function-tip">配置微信、支付宝与常用银行卡</view>
+            </view>
+            <view class="function-arrow">
+              <tl-icon name="arrow-right-s-line" size="32" colorKey="tertiary">
+              </tl-icon>
+            </view>
           </view>
-          <!-- 暂时隐藏账单文件导入和导出入口，恢复时移除显示条件。 -->
-          <view wx:if="{{false}}" class="tool-tile" bindtap="importBill">
-            <view class="tool-icon">
-              <tl-icon name="upload-2-line" size="32" colorKey="primary">
+          <view class="function-row" bindtap="manageQuickAmounts">
+            <view class="function-icon icon-chip-green">
+              <tl-icon name="wallet-3-line" size="32" color="#0ea569">
               </tl-icon>
             </view>
-            <view class="tool-title">导入账单</view>
-          </view>
-          <view wx:if="{{false}}" class="tool-tile" bindtap="exportBill">
-            <view class="tool-icon">
-              <tl-icon name="download-2-line" size="32" colorKey="primary">
+            <view class="function-main">
+              <view class="function-title">快捷金额</view>
+              <view class="function-tip">设置数字键盘上的高频金额</view>
+            </view>
+            <view class="function-arrow">
+              <tl-icon name="arrow-right-s-line" size="32" colorKey="tertiary">
               </tl-icon>
             </view>
-            <view class="tool-title">导出账单</view>
-            <text class="tool-badge">规划中</text>
-          </view>
-          <view class="tool-tile" bindtap="joinLedger">
-            <view class="tool-icon">
-              <tl-icon name="coupon-3-line" size="32" colorKey="primary">
-              </tl-icon>
-            </view>
-            <view class="tool-title">邀请码</view>
           </view>
         </view>
       </view>
@@ -97,8 +128,8 @@
         <view class="section-title">其他</view>
         <view class="function-list">
           <view class="function-row" bindtap="syncData">
-            <view class="function-icon">
-              <tl-icon name="refresh-line" size="30" colorKey="primary">
+            <view class="function-icon icon-chip-blue">
+              <tl-icon name="refresh-line" size="30" color="#3b82f6">
               </tl-icon>
             </view>
             <view class="function-main">
@@ -108,20 +139,20 @@
             <view class="function-arrow">
               <tl-icon name="loader-4-line" size="32" colorKey="primary" wx:if="{{syncing}}">
               </tl-icon>
-              <tl-icon name="arrow-right-s-line" size="32" colorKey="primary" wx:else>
+              <tl-icon name="arrow-right-s-line" size="32" colorKey="tertiary" wx:else>
               </tl-icon>
             </view>
           </view>
           <view class="function-row" bindtap="clearCategoryCache">
-            <view class="function-icon">
-              <tl-icon name="delete-bin-line" size="30" colorKey="primary" />
+            <view class="function-icon icon-chip-amber">
+              <tl-icon name="delete-bin-line" size="30" color="#d97706" />
             </view>
             <view class="function-main">
               <view class="function-title">清除分类缓存</view>
               <view class="function-tip">重新加载当前账本的分类</view>
             </view>
             <view class="function-arrow">
-              <tl-icon name="arrow-right-s-line" size="32" colorKey="primary" />
+              <tl-icon name="arrow-right-s-line" size="32" colorKey="tertiary" />
             </view>
           </view>
           <!-- 暂时隐藏意见反馈和更新日志入口。 -->
@@ -172,4 +203,18 @@
       <tl-button class="logout-button" variant="danger" block="{{true}}" bind:tap="logout">退出账号</tl-button>
     </view>
   </scroll-view>
+  <tl-dialog visible="{{logoutDialogVisible}}" bind:close="closeLogoutDialog">
+    <view class="custom-dialog-panel">
+      <view class="dialog-icon-wrap danger-wrap">
+        <tl-icon name="logout-box-r-line" size="48" color="#f0442f">
+        </tl-icon>
+      </view>
+      <view class="dialog-title">退出账号</view>
+      <view class="dialog-desc">退出后，本机将清除当前微信登录态，下次打开需重新点击微信授权登录。</view>
+      <view class="dialog-actions">
+        <tl-button variant="secondary" block="{{true}}" bind:tap="closeLogoutDialog">取消</tl-button>
+        <tl-button block="{{true}}" bind:tap="confirmLogout">退出账号</tl-button>
+      </view>
+    </view>
+  </tl-dialog>
 </view>

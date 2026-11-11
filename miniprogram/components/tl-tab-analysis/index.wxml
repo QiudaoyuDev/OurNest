@@ -162,9 +162,9 @@
               <text wx:if="{{dashboardChartError}}" class="dashboard-meta">图表加载失败，可查看下方分类列表。</text>
               <view wx:for="{{dashboardView.categories}}" wx:key="key">
                 <view wx:if="{{showAllCategories || index < 5}}" class="dashboard-row dashboard-category-row {{selectedCategory && selectedCategory.key === item.key ? 'is-expanded' : ''}}" data-index="{{index}}" bindtap="selectDashboardCategory">
-                  <text class="dashboard-rank">{{index + 1}}</text>
-                  <view class="dashboard-category-icon {{analysisType}}">
-                    <tl-icon name="{{item.displayIcon}}" size="32" colorKey="{{analysisType === 'income' ? 'income' : 'primary'}}">
+                  <text class="dashboard-rank {{index === 0 ? 'top-1' : index === 1 ? 'top-2' : index === 2 ? 'top-3' : ''}}">{{index + 1}}</text>
+                  <view class="dashboard-category-icon {{item.chipClass || analysisType}}">
+                    <tl-icon name="{{item.displayIcon}}" size="32" color="{{item.iconColor || (analysisType === 'income' ? '#25a66a' : '#f0442f')}}">
                     </tl-icon>
                   </view>
                   <view class="dashboard-row-content">

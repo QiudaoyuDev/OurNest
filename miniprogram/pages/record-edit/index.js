@@ -4,6 +4,7 @@ const recordService = require("../../services/record.service");
 const categoryService = require("../../services/category.service");
 const categoryStore = require("../../services/category.store");
 const { getId } = require("../../utils/mapper");
+const { resolveCategoryScheme } = require("../../utils/category-color");
 const ledgerService = require("../../services/ledger.service");
 const { getPaymentAccounts } = require("../../services/payment-account.service");
 const { markNavigation } = require("../../utils/navigation-timing");
@@ -239,12 +240,17 @@ Page({
         });
       this.setData({
         groups: [],
-        flatCategories: flat.map((item) => ({
-          id: getId(item),
-          name: item.name,
-          icon: item.icon || "price-tag-3-line",
-          parentHint: "",
-        })),
+        flatCategories: flat.map((item) => {
+          const scheme = resolveCategoryScheme(item.name, this.data.type, item.icon);
+          return {
+            id: getId(item),
+            name: item.name,
+            icon: item.icon || "price-tag-3-line",
+            parentHint: "",
+            chipClass: scheme.chipClass,
+            iconColor: scheme.iconColor,
+          };
+        }),
         expandedGroupId: "",
         categoryLoading: false,
         categoryError: false,
@@ -288,10 +294,15 @@ Page({
       result[child.name] = (result[child.name] || 0) + 1;
       return result;
     }, Object.create(null));
-    const flatCategories = children.map((child) => ({
-      ...child,
-      parentHint: counts[child.name] > 1 ? child.parentName : "",
-    }));
+    const flatCategories = children.map((child) => {
+      const scheme = resolveCategoryScheme(child.name, this.data.type, child.icon);
+      return {
+        ...child,
+        parentHint: counts[child.name] > 1 ? child.parentName : "",
+        chipClass: scheme.chipClass,
+        iconColor: scheme.iconColor,
+      };
+    });
     this.setData({
       groups,
       flatCategories,
@@ -326,6 +337,8 @@ Page({
       categoryLabel: "请选择分类",
       categoryHeading: "",
       categoryIcon: "price-tag-3-line",
+      selectedChipClass: "",
+      selectedIconColor: "",
       parentCategory: "",
       parentIcon: "",
       quickAmounts: resolveQuickAmounts(this._currentLedger, "", ""),
@@ -352,6 +365,11 @@ Page({
 
   chooseCategory(event) {
     if (this.data.readonly || this.data.saving) return;
+    try {
+      if (typeof wx !== "undefined" && typeof wx.vibrateShort === "function") {
+        wx.vibrateShort({ type: "light" });
+      }
+    } catch (_err) {}
     const categoryId = event.detail.categoryId || event.currentTarget.dataset.categoryId;
     const child = (this._categories || []).find(
       (item) =>
@@ -417,6 +435,13 @@ Page({
         new Set([...getPaymentAccounts(ledgerInfo), record.account].filter(Boolean))
       );
       const accountIndex = Math.max(0, recordAccounts.indexOf(record.account));
+      const recordCategoryName = record.categoryName || "其他";
+      const recordCategoryIcon = record.categoryIcon || "price-tag-3-line";
+      const recordScheme = resolveCategoryScheme(
+        recordCategoryName,
+        recordType,
+        recordCategoryIcon
+      );
       this._currentLedger = ledgerInfo;
       this.setData({
         recordId,
@@ -427,9 +452,11 @@ Page({
         typeLabel: recordType === "income" ? "收入" : "支出",
         typeIcon: recordType === "income" ? "funds-line" : "price-tag-3-line",
         categoryId: record.categoryId || "",
-        categoryName: record.categoryName || "其他",
-        categoryLabel: record.categoryLabel || record.categoryName || "其他",
-        categoryIcon: record.categoryIcon || "price-tag-3-line",
+        categoryName: recordCategoryName,
+        categoryLabel: record.categoryLabel || recordCategoryName,
+        categoryIcon: recordCategoryIcon,
+        selectedChipClass: recordScheme.chipClass,
+        selectedIconColor: recordScheme.iconColor,
         parentCategory: record.parentCategory || "",
         parentIcon: record.parentIcon || "",
         amount: String(record.amount || ""),
@@ -561,6 +588,8 @@ Page({
     const parentCategory =
       selection.parentCategory !== undefined ? selection.parentCategory : this.data.parentCategory;
     const categoryLabel = selection.categoryLabel || categoryName || this.data.categoryLabel;
+    const categoryIcon = selection.categoryIcon || this.data.categoryIcon;
+    const scheme = resolveCategoryScheme(categoryName, type, categoryIcon);
     this.setData({
       type,
       typeLabel: type === "income" ? "收入" : "支出",
@@ -569,7 +598,9 @@ Page({
       categoryName,
       categoryLabel,
       categoryHeading: categoryLabel,
-      categoryIcon: selection.categoryIcon || this.data.categoryIcon,
+      categoryIcon,
+      selectedChipClass: scheme.chipClass,
+      selectedIconColor: scheme.iconColor,
       parentCategory,
       parentIcon: selection.parentIcon !== undefined ? selection.parentIcon : this.data.parentIcon,
       quickAmounts: resolveQuickAmounts(this._currentLedger, selection.systemKey || ""),

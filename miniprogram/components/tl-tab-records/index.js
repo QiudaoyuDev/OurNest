@@ -7,6 +7,7 @@ const ledgerStore = require("../../services/ledger.store");
 const recordService = require("../../services/record.service");
 const { resolveAvatarUrls } = require("../../utils/avatar");
 const { on: onEvent, off: offEvent } = require("../../utils/event-bus");
+const { resolveCategoryScheme } = require("../../utils/category-color");
 
 const weekdayMap = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 
@@ -43,14 +44,18 @@ function getCurrentRange() {
 function normalizeRecord(record = {}) {
   const type = record.type === "income" ? "income" : "expense";
   const note = String(record.note || "").trim();
+  const categoryText = record.categoryName || record.categoryLabel || "其他";
+  const scheme = resolveCategoryScheme(categoryText, type, record.categoryIcon);
   return {
     ...record,
     id: getId(record),
     type,
     categoryIcon: record.categoryIcon || (type === "income" ? "funds-line" : "price-tag-3-line"),
+    categoryColor: scheme.iconColor,
+    chipClass: scheme.chipClass,
     amountText: formatDisplayMoney(record.amount),
     sign: type === "income" ? "+" : "-",
-    categoryText: record.categoryName || record.categoryLabel || "其他",
+    categoryText,
     noteText: note,
     hasNote: Boolean(note),
     dateLabel: formatDateLabel(record.date),
