@@ -112,6 +112,18 @@
               </tl-icon>
             </view>
           </view>
+          <view class="function-row" bindtap="clearCategoryCache">
+            <view class="function-icon">
+              <tl-icon name="delete-bin-line" size="30" colorKey="primary" />
+            </view>
+            <view class="function-main">
+              <view class="function-title">清除分类缓存</view>
+              <view class="function-tip">重新加载当前账本的分类</view>
+            </view>
+            <view class="function-arrow">
+              <tl-icon name="arrow-right-s-line" size="32" colorKey="primary" />
+            </view>
+          </view>
           <!-- 暂时隐藏意见反馈和更新日志入口。 -->
           <view wx:if="{{false}}" class="function-row" bindtap="feedback">
             <view class="function-icon">

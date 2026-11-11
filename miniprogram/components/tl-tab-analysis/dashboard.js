@@ -1,5 +1,6 @@
 const { formatMoney: formatDisplayMoney } = require("../../utils/money");
 const ICON_GLYPHS = require("../tl-icon/glyphs");
+const CATEGORY_ICONS = require("../tl-icon/category-icons");
 
 function categoryDisplayIcon(item, type) {
   const fallback = type === "income" ? "funds-line" : "price-tag-3-line";
@@ -9,7 +10,10 @@ function categoryDisplayIcon(item, type) {
     item.recordCategoryIcon,
     fallback,
   ].find(
-    (icon) => typeof icon === "string" && Object.prototype.hasOwnProperty.call(ICON_GLYPHS, icon)
+    (icon) =>
+      typeof icon === "string" &&
+      (Object.prototype.hasOwnProperty.call(ICON_GLYPHS, icon) ||
+        Object.prototype.hasOwnProperty.call(CATEGORY_ICONS, icon))
   );
 }
 

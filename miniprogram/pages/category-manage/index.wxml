@@ -14,11 +14,11 @@
           <block wx:for="{{currentRows}}" wx:key="id" wx:for-item="row">
             <view class="parent-grid">
               <block wx:for="{{row.items}}" wx:key="_id" wx:for-item="item">
-                <view wx:if="{{item.isManager}}" class="category-item add {{type==='income'?'income-add':''}}" data-level="parent" bindtap="openManager">
+                <view wx:if="{{item.isManager}}" class="category-item add {{type==='income'?'income-add':''}}" bindtap="openManager">
                   <view class="add-icon">+</view>
                   <text>{{item.name}}</text>
                 </view>
-                <view wx:else class="category-item {{activeParentId === item._id ? 'selected' : ''}} {{type==='income'?'income':''}}" data-id="{{item._id}}" bindtap="selectParent">
+                <view wx:else class="category-item {{activeParentId === item._id ? 'selected' : ''}} {{type==='income'?'income':''}}" bindtap="openManager">
                   <view class="category-icon {{type==='income'?'income':'expense'}}">
                     <tl-icon name="{{item.icon}}" size="42" colorKey="{{type==='income'?'income':'primary'}}">
                     </tl-icon>
@@ -26,22 +26,6 @@
                   <text>{{item.name}}</text>
                 </view>
               </block>
-            </view>
-            <view wx:if="{{row.isActive}}" class="children-panel">
-              <view class="children-title">{{activeParentName}}的二级分类</view>
-              <view class="children-grid">
-                <view wx:for="{{activeChildren}}" wx:key="_id" wx:for-item="item" class="category-item">
-                  <view class="category-icon {{type==='income'?'income':'expense'}}">
-                    <tl-icon name="{{item.icon}}" size="38" colorKey="{{type==='income'?'income':'primary'}}">
-                    </tl-icon>
-                  </view>
-                  <text>{{item.name}}</text>
-                </view>
-                <view wx:if="{{canCreate}}" class="category-item add {{type==='income'?'income-add':''}}" data-level="child" data-parent-id="{{activeParentId}}" bindtap="openManager">
-                  <view class="add-icon">+</view>
-                  <text>管理</text>
-                </view>
-              </view>
             </view>
           </block>
         </view>

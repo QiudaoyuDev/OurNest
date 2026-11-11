@@ -1,3 +1,4 @@
+const { assertLedgerActive } = require("../shared/ledger-state");
 // Settings 域：快捷金额与支付账户配置。
 const {
   db,
@@ -20,8 +21,7 @@ function normalizeQuickAmounts(values) {
 
 async function updateQuickAmounts(openid, data = {}) {
   const ledger = await getLedgerForUser(openid, data.ledgerId);
-  const role = getLedgerRole(openid, ledger);
-  if (role === "readonly") throw new Error("READONLY_LEDGER");
+  assertWritable(getLedgerRole(openid, ledger));
   const quickAmountsEnabled = Boolean(data.quickAmountsEnabled);
   const quickAmounts = quickAmountsEnabled ? normalizeQuickAmounts(data.quickAmounts) : [];
   if (quickAmountsEnabled && !quickAmounts)
@@ -29,7 +29,8 @@ async function updateQuickAmounts(openid, data = {}) {
   const updatedLedger = await db.runTransaction(async (transaction) => {
     const ledgerRef = transaction.collection("ledgers").doc(ledger._id);
     const currentLedger = (await ledgerRef.get()).data;
-    if (getLedgerRole(openid, currentLedger) === "readonly") throw new Error("READONLY_LEDGER");
+    assertLedgerActive(currentLedger);
+    assertWritable(getLedgerRole(openid, currentLedger));
     await ledgerRef.update({
       data: {
         quickAmountsEnabled,
@@ -64,6 +65,7 @@ async function updateAccounts(openid, data = {}) {
   const updatedLedger = await db.runTransaction(async (transaction) => {
     const ledgerRef = transaction.collection("ledgers").doc(ledger._id);
     const currentLedger = (await ledgerRef.get()).data;
+    assertLedgerActive(currentLedger);
     assertWritable(getLedgerRole(openid, currentLedger));
     await ledgerRef.update({
       data: {

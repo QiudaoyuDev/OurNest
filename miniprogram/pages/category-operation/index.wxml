@@ -12,7 +12,6 @@
             </view>
             <view>
               <text>{{item.name}}</text>
-              <text wx:if="{{item.isDefaultChild}}" class="default-tag">默认</text>
             </view>
           </view>
           <view wx:if="{{role==='owner' && !item.isProtected}}" class="operation-actions">

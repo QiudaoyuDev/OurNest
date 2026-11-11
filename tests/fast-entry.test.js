@@ -167,6 +167,20 @@ test("flat category choices include all children and disambiguate duplicate name
   assert.equal(page.data.parentCategory, "旅行");
 });
 
+test("flat category records can be selected without a parent", async () => {
+  const list = [
+    { _id: "flat-food", type: "expense", name: "餐饮", icon: "restaurant-line" },
+    { _id: "flat-income", type: "income", name: "工资", icon: "wallet-line" },
+  ];
+  const { page } = pageFixture({ listCategories: async () => list });
+  await page.onShow();
+  assert.deepEqual(plain(page.data.flatCategories.map((item) => item.id)), ["flat-food"]);
+  page.chooseCategory({ detail: { categoryId: "flat-food" } });
+  assert.equal(page.data.categoryId, "flat-food");
+  assert.equal(page.data.categoryName, "餐饮");
+  assert.equal(page.data.parentCategory, "");
+});
+
 test("entry category heading omits a repeated parent name", async () => {
   const list = [
     { _id: "food", type: "expense", level: "parent", name: "餐饮" },
@@ -232,21 +246,32 @@ test("system income categories show distinct icons without overriding custom ico
   ]);
 });
 
-test("train uses dedicated quick amounts while taxi uses ledger configuration", async () => {
-  const traffic = [
-    { _id: "traffic", type: "expense", level: "parent", name: "交通" },
-    { _id: "train", type: "expense", level: "child", parentId: "traffic", name: "火车高铁" },
-    { _id: "taxi", type: "expense", level: "child", parentId: "traffic", name: "打车" },
+test("train quick amounts require the system category identity", async () => {
+  const items = [
+    { _id: "rail", type: "expense", name: "高铁动车", systemKey: "high_speed_rail" },
+    { _id: "custom", type: "expense", name: "高铁餐饮", source: "custom" },
   ];
   const { page } = pageFixture({
     ledger: { quickAmountsEnabled: true, quickAmounts: [18, 32] },
-    listCategories: async () => traffic,
+    listCategories: async () => items,
   });
   await page.onShow();
-  page.chooseCategory({ detail: { categoryId: "train" } });
+  page.chooseCategory({ detail: { categoryId: "rail" } });
   assert.deepEqual(plain(page.data.quickAmounts), [373.5, 356.5, 265, 432.5]);
-  page.chooseCategory({ detail: { categoryId: "taxi" } });
+  page.chooseCategory({ detail: { categoryId: "custom" } });
   assert.deepEqual(plain(page.data.quickAmounts), [18, 32]);
+});
+
+test("disabled quick amounts are hidden for the train category", async () => {
+  const { page } = pageFixture({
+    ledger: { quickAmountsEnabled: false },
+    listCategories: async () => [
+      { _id: "rail", type: "expense", name: "高铁动车", systemKey: "high_speed_rail" },
+    ],
+  });
+  await page.onShow();
+  page.chooseCategory({ detail: { categoryId: "rail" } });
+  assert.deepEqual(plain(page.data.quickAmounts), []);
 });
 
 test("stale category failures cannot overwrite a newer successful load", async () => {

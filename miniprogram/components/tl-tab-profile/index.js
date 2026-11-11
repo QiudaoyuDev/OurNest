@@ -1,10 +1,11 @@
 const app = getApp();
 const { syncData } = require("../../services/data-sync.service");
 const ledgerStore = require("../../services/ledger.store");
+const categoryStore = require("../../services/category.store");
 const feedback = require("../../services/feedback-ui");
 const { getId } = require("../../utils/mapper");
 
-const APP_VERSION = "V0.0.1";
+const APP_VERSION = "v26.11.11.01";
 
 function normalizeCreatedAt(value) {
   if (!value) return null;
@@ -181,6 +182,21 @@ Component({
 
     manageCategories() {
       wx.navigateTo({ url: "/pages/category-manage/index" });
+    },
+
+    async clearCategoryCache() {
+      if (this.data.syncing) return;
+      this.setData({ syncing: true });
+      try {
+        categoryStore.clearAll();
+        const ledgerId = getId(app.globalData.currentLedger || {});
+        if (ledgerId) await categoryStore.refreshCategories(ledgerId, { force: true });
+        feedback.showToast({ type: "success", message: "分类缓存已清除并刷新" });
+      } catch (error) {
+        feedback.showToast({ type: "error", message: error.message || "分类刷新失败，请重试" });
+      } finally {
+        this.setData({ syncing: false });
+      }
     },
 
     manageQuickAmounts() {

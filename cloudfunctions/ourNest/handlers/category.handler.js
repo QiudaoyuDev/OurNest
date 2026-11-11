@@ -1,10 +1,10 @@
+const { assertLedgerActive } = require("../shared/ledger-state");
 // 分类域：分类树查询、新建/编辑、可恢复删除（迁移到"其他"）。
 const {
   db,
   _,
   ok,
   now,
-  bumpLedgerSyncRevision,
   getLedgerForUser,
   getLedgerRole,
   assertReadable,
@@ -13,17 +13,12 @@ const {
   saveOperation,
   getCategoryById,
 } = require("../shared/helpers");
-const { ensureLedgerCategoryTree, addDefaultChild } = require("./category-tree");
 const { assertCategoryInput } = require("../validators/schemas");
 
 async function listCategories(openid, data = {}) {
   const ledger = await getLedgerForUser(openid, data.ledgerId);
   const role = getLedgerRole(openid, ledger);
   assertReadable(role);
-  const repaired = ledger.categoryDeletionId
-    ? false
-    : await ensureLedgerCategoryTree(ledger._id, ledger.ownerOpenid);
-  if (repaired) await bumpLedgerSyncRevision(ledger._id);
   const result = await db
     .collection("categories")
     .where({ ledgerId: ledger._id })
@@ -33,133 +28,53 @@ async function listCategories(openid, data = {}) {
   return ok({ categories: result.data || [], role });
 }
 
-async function isProtectedOtherCategory(category) {
-  if (category.isOther && category.level === "parent") return true;
-  if (category.level !== "child" || !category.isDefaultChild || !category.parentId) return false;
-  const parent = await getCategoryById(category.parentId);
-  return Boolean(parent && parent.isOther);
-}
-
 async function saveCategory(openid, data = {}) {
   const ledger = await getLedgerForUser(openid, data.ledgerId);
-  const role = getLedgerRole(openid, ledger);
-  const editing = Boolean(data.categoryId);
-  if (editing && role !== "owner") throw new Error("ONLY_OWNER_CAN_EDIT_CATEGORY");
-  if (!editing && !["owner", "member"].includes(role)) throw new Error("NO_CATEGORY_PERMISSION");
-  if (ledger.categoryDeletionId) throw new Error("CATEGORY_DELETION_IN_PROGRESS");
   const { name } = assertCategoryInput({ name: data.name });
-  if (editing) {
-    const category = await getCategoryById(data.categoryId);
-    if (!category || category.ledgerId !== ledger._id) throw new Error("CATEGORY_NOT_FOUND");
-    if (category.deletionState === "deleting") throw new Error("CATEGORY_DELETION_IN_PROGRESS");
-    if (category.level === "child") {
-      const parent = await getCategoryById(category.parentId);
-      if (!parent || parent.deletionState === "deleting")
-        throw new Error("CATEGORY_DELETION_IN_PROGRESS");
-    }
-    if (await isProtectedOtherCategory(category)) throw new Error("SYSTEM_CATEGORY_PROTECTED");
-    await db.runTransaction(async (transaction) => {
-      const ledgerRef = transaction.collection("ledgers").doc(ledger._id);
-      const currentLedger = (await ledgerRef.get()).data;
-      if (getLedgerRole(openid, currentLedger) !== "owner")
-        throw new Error("ONLY_OWNER_CAN_EDIT_CATEGORY");
-      if (currentLedger.categoryDeletionId) throw new Error("CATEGORY_DELETION_IN_PROGRESS");
-      const categoryRef = transaction.collection("categories").doc(category._id);
-      const currentCategory = (await categoryRef.get()).data;
-      if (
-        !currentCategory ||
-        currentCategory.ledgerId !== ledger._id ||
-        currentCategory.deletionState === "deleting"
-      )
-        throw new Error("CATEGORY_NOT_FOUND");
-      if (currentCategory.level === "child") {
-        const currentParent = (
-          await transaction.collection("categories").doc(currentCategory.parentId).get()
-        ).data;
-        if (
-          !currentParent ||
-          currentParent.deletionState === "deleting" ||
-          (currentCategory.isDefaultChild && currentParent.isOther)
-        )
-          throw new Error("CATEGORY_DELETION_IN_PROGRESS");
-      }
-      if (currentCategory.level === "parent" && currentCategory.isOther)
-        throw new Error("SYSTEM_CATEGORY_PROTECTED");
-      await categoryRef.update({
-        data: { name, icon: data.icon || currentCategory.icon, updatedAt: now() },
-      });
-      await ledgerRef.update({ data: { syncRevision: _.inc(1), updatedAt: now() } });
-    });
-    if (category.level === "parent")
-      await db
-        .collection("categories")
-        .where({ ledgerId: ledger._id, parentId: category._id })
-        .update({ data: { parentName: name, updatedAt: now() } });
-    return ok();
-  }
-  const level = data.level === "parent" ? "parent" : "child";
-  if (level === "child" && !data.parentId) throw new Error("PARENT_REQUIRED");
-  const parent = level === "child" ? await getCategoryById(data.parentId) : null;
-  if (
-    level === "child" &&
-    (!parent ||
-      parent.ledgerId !== ledger._id ||
-      parent.level !== "parent" ||
-      parent.deletionState === "deleting")
-  )
-    throw new Error("PARENT_NOT_FOUND");
   const type = data.type === "income" ? "income" : "expense";
-  const icon = data.icon || "price-tag-3-line";
-  if (parent && parent.type !== type) throw new Error("PARENT_NOT_FOUND");
+  const category = data.categoryId ? await getCategoryById(data.categoryId) : null;
+  if (data.categoryId && (!category || category.ledgerId !== ledger._id || category.type !== type))
+    throw new Error("CATEGORY_NOT_FOUND");
+  const duplicates = await db
+    .collection("categories")
+    .where({ ledgerId: ledger._id, type, name })
+    .limit(2)
+    .get();
+  if ((duplicates.data || []).some((item) => item._id !== data.categoryId))
+    throw new Error("CATEGORY_NAME_EXISTS");
   await db.runTransaction(async (transaction) => {
     const ledgerRef = transaction.collection("ledgers").doc(ledger._id);
     const currentLedger = (await ledgerRef.get()).data;
-    if (!["owner", "member"].includes(getLedgerRole(openid, currentLedger)))
+    assertLedgerActive(currentLedger);
+    const role = getLedgerRole(openid, currentLedger);
+    if (category ? role !== "owner" : !["owner", "member"].includes(role))
       throw new Error("NO_CATEGORY_PERMISSION");
-    if (currentLedger.categoryDeletionId) throw new Error("CATEGORY_DELETION_IN_PROGRESS");
-    let currentParent = null;
-    if (parent) {
-      currentParent = (await transaction.collection("categories").doc(parent._id).get()).data;
+    if (currentLedger.syncRevision !== ledger.syncRevision)
+      throw new Error("CATEGORY_CHANGED_RETRY");
+    if (currentLedger.categoryDeletionId || currentLedger.categoryRepairState)
+      throw new Error("CATEGORY_DELETION_IN_PROGRESS");
+    if (category) {
+      const ref = transaction.collection("categories").doc(category._id);
+      const current = (await ref.get()).data;
       if (
-        !currentParent ||
-        currentParent.ledgerId !== ledger._id ||
-        currentParent.level !== "parent" ||
-        currentParent.type !== type ||
-        currentParent.deletionState === "deleting"
+        !current ||
+        current.ledgerId !== ledger._id ||
+        current.type !== type ||
+        current.deletionState
       )
-        throw new Error("PARENT_NOT_FOUND");
-    }
-    const added = await transaction.collection("categories").add({
-      data: {
-        ledgerId: ledger._id,
-        type,
-        level,
-        parentId: currentParent ? currentParent._id : "",
-        parentName: currentParent ? currentParent.name : "",
-        name,
-        icon,
-        sort: Date.now(),
-        isOther: false,
-        isDefaultChild: false,
-        source: "custom",
-        createdBy: openid,
-        createdAt: now(),
-        updatedAt: now(),
-      },
-    });
-    if (level === "parent") {
+        throw new Error("CATEGORY_NOT_FOUND");
+      if (current.isOther) throw new Error("SYSTEM_CATEGORY_PROTECTED");
+      await ref.update({ data: { name, icon: data.icon || current.icon, updatedAt: now() } });
+    } else {
       await transaction.collection("categories").add({
         data: {
           ledgerId: ledger._id,
           type,
-          level: "child",
-          parentId: added._id,
-          parentName: name,
           name,
-          icon,
-          sort: -1,
-          isDefaultChild: true,
-          source: "system",
+          icon: data.icon || "price-tag-3-line",
+          sort: Date.now(),
+          isOther: false,
+          source: "custom",
           createdBy: openid,
           createdAt: now(),
           updatedAt: now(),
@@ -168,61 +83,40 @@ async function saveCategory(openid, data = {}) {
     }
     await ledgerRef.update({ data: { syncRevision: _.inc(1), updatedAt: now() } });
   });
-  return ok();
+  return ok({ ledgerId: ledger._id });
 }
 
-async function getOtherDefaultChild(ledger, type, openid) {
-  const other = (
-    await db
-      .collection("categories")
-      .where({ ledgerId: ledger._id, type, level: "parent", isOther: true })
-      .limit(1)
-      .get()
-  ).data[0];
-  if (!other) throw new Error("OTHER_CATEGORY_NOT_FOUND");
-  return { parent: other, child: await addDefaultChild(ledger._id, other, openid) };
+async function getOtherCategory(ledger, type) {
+  const result = await db
+    .collection("categories")
+    .where({ ledgerId: ledger._id, type, isOther: true })
+    .limit(1)
+    .get();
+  const category = (result.data || [])[0];
+  if (!category) throw new Error("OTHER_CATEGORY_NOT_FOUND");
+  return category;
 }
 
-async function migrateTo(ledger, parent, fromChild, target) {
-  const ids = [];
-  if (fromChild) ids.push(fromChild._id);
-  else {
-    for (let offset = 0; ; offset += 100) {
-      const children =
-        (
-          await db
-            .collection("categories")
-            .where({ ledgerId: ledger._id, parentId: parent._id })
-            .orderBy("_id", "asc")
-            .skip(offset)
-            .limit(100)
-            .get()
-        ).data || [];
-      ids.push(...children.map((child) => child._id));
-      if (children.length < 100) break;
-    }
-  }
-  const legacy = { categoryId: _.in(["", null]), parentCategory: parent.name };
-  if (fromChild) legacy.categoryName = fromChild.name;
-  const identities = ids.length ? _.or([{ categoryId: _.in(ids) }, legacy]) : legacy;
-  const query = _.and([{ ledgerId: ledger._id, type: parent.type }, identities]);
-  const patch = {
-    parentCategory: target.parent.name,
-    parentIcon: target.parent.icon || "more-2-line",
-    categoryId: target.child._id,
-    categoryName: target.child.name,
-    categoryLabel: target.child.name,
-    categoryIcon: target.child.icon || target.parent.icon || "price-tag-3-line",
-    syncVersion: _.inc(1),
-    updatedAt: now(),
-  };
+async function migrateFlatRecords(ledger, category, target) {
+  const query = { ledgerId: ledger._id, type: category.type, categoryId: category._id };
   for (let batch = 0; batch < 5; batch += 1) {
     const rows = (await db.collection("records").where(query).limit(50).get()).data || [];
     if (!rows.length) return true;
     await db
       .collection("records")
       .where(_.and([query, { _id: _.in(rows.map((row) => row._id)) }]))
-      .update({ data: patch });
+      .update({
+        data: {
+          categoryId: target._id,
+          categoryName: target.name,
+          categoryLabel: target.name,
+          categoryIcon: target.icon,
+          parentCategory: "",
+          parentIcon: "",
+          syncVersion: _.inc(1),
+          updatedAt: now(),
+        },
+      });
   }
   return false;
 }
@@ -241,8 +135,7 @@ async function removeCategory(openid, data = {}) {
   if (operation && operation.stage === "cleanup") category = operation.categorySnapshot;
   else category = await getCategoryById(data.categoryId);
   if (!category || category.ledgerId !== ledger._id) throw new Error("CATEGORY_NOT_FOUND");
-  if (!operation && (await isProtectedOtherCategory(category)))
-    throw new Error("SYSTEM_CATEGORY_PROTECTED");
+  if (!operation && category.isOther) throw new Error("SYSTEM_CATEGORY_PROTECTED");
   if (!operation) {
     operation = await saveOperation(null, {
       type: "category-delete",
@@ -259,6 +152,7 @@ async function removeCategory(openid, data = {}) {
       await db.runTransaction(async (transaction) => {
         const ledgerRef = transaction.collection("ledgers").doc(ledger._id);
         const currentLedger = (await ledgerRef.get()).data;
+        assertLedgerActive(currentLedger);
         if (getLedgerRole(openid, currentLedger) !== "owner")
           throw new Error("ONLY_OWNER_CAN_DELETE_CATEGORY");
         if (currentLedger.categoryDeletionId && currentLedger.categoryDeletionId !== category._id)
@@ -267,51 +161,23 @@ async function removeCategory(openid, data = {}) {
         const currentCategory = (await categoryRef.get()).data;
         if (!currentCategory || currentCategory.ledgerId !== ledger._id)
           throw new Error("CATEGORY_NOT_FOUND");
+        if (currentCategory.isOther) throw new Error("SYSTEM_CATEGORY_PROTECTED");
         await categoryRef.update({ data: { deletionState: "deleting", updatedAt: now() } });
         await ledgerRef.update({
           data: { categoryDeletionId: category._id, syncRevision: _.inc(1), updatedAt: now() },
         });
       });
     }
-    if (category.level === "parent") {
-      const target = await getOtherDefaultChild(ledger, category.type, openid);
-      if (!(await migrateTo(ledger, category, null, target)))
-        return ok({ operationId: operation._id, hasMore: true });
-    } else {
-      const parent = await getCategoryById(category.parentId);
-      if (!parent) throw new Error("PARENT_NOT_FOUND");
-      const target = await getOtherDefaultChild(ledger, parent.type, openid);
-      if (!(await migrateTo(ledger, parent, category, target)))
-        return ok({ operationId: operation._id, hasMore: true });
-    }
+    const target = await getOtherCategory(ledger, category.type);
+    if (!(await migrateFlatRecords(ledger, category, target)))
+      return ok({ ledgerId: ledger._id, operationId: operation._id, hasMore: true });
     operation = await saveOperation(operation, { stage: "cleanup", categorySnapshot: category });
   }
   if (operation.stage === "cleanup") {
-    if (category.level === "parent") {
-      for (let batch = 0; batch < 5; batch += 1) {
-        const rows =
-          (
-            await db
-              .collection("categories")
-              .where({ ledgerId: ledger._id, parentId: category._id })
-              .limit(50)
-              .get()
-          ).data || [];
-        if (!rows.length) break;
-        await db
-          .collection("categories")
-          .where({
-            ledgerId: ledger._id,
-            parentId: category._id,
-            _id: _.in(rows.map((row) => row._id)),
-          })
-          .remove();
-        if (batch === 4) return ok({ operationId: operation._id, hasMore: true });
-      }
-    }
     await db.runTransaction(async (transaction) => {
       const ledgerRef = transaction.collection("ledgers").doc(ledger._id);
       const currentLedger = (await ledgerRef.get()).data;
+      assertLedgerActive(currentLedger);
       if (getLedgerRole(openid, currentLedger) !== "owner")
         throw new Error("ONLY_OWNER_CAN_DELETE_CATEGORY");
       if (currentLedger.categoryDeletionId && currentLedger.categoryDeletionId !== category._id)
@@ -328,7 +194,7 @@ async function removeCategory(openid, data = {}) {
       });
     });
   }
-  return ok({ operationId: operation._id, hasMore: false });
+  return ok({ ledgerId: ledger._id, operationId: operation._id, hasMore: false });
 }
 
 module.exports = {

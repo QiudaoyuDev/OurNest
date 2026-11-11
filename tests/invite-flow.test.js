@@ -81,6 +81,8 @@ function setup(mode = "member", type = "shared") {
     Date,
     console,
     require: (name) => {
+      if (name.includes("shared/ledger-state"))
+        return require("../cloudfunctions/ourNest/shared/ledger-state");
       if (name.includes("shared/helpers")) return helpers;
       if (name.includes("validators/schemas"))
         return { assertOpenid: () => {}, assertInviteInput: () => {} };
@@ -172,6 +174,8 @@ test("分享链接预览后必须确认才能加入", async () => {
     wx: {},
     console,
     require: (name) => {
+      if (name.includes("shared/ledger-state"))
+        return require("../cloudfunctions/ourNest/shared/ledger-state");
       if (name.includes("ledger.service"))
         return { previewLedgerInvite: async () => ({ ledgerName: "家", mode: "member" }) };
       if (name.includes("ledger.store"))
@@ -317,3 +321,126 @@ test("邀请码输入支持粘贴分隔符、错误提示及预览后返回修�
   assert.equal(page.data.status, "input");
   assert.equal(page.data.code, "K7M92P4X");
 });
+
+function deletionFixture(failAt = "") {
+  const state = {
+    ledgers: { ledger: { _id: "ledger", ownerOpenid: "owner", syncRevision: 1 } },
+    records: { r1: { _id: "r1", ledgerId: "ledger" }, r2: { _id: "r2", ledgerId: "ledger" } },
+    categories: { c1: { _id: "c1", ledgerId: "ledger" } },
+    ledgerInvites: { i1: { _id: "i1", ledgerId: "ledger" } },
+    ledgerOperations: {},
+    users: {},
+  };
+  let failed = false;
+  let nextId = 0;
+  const collection = (name) => ({
+    where: (query) => ({
+      limit: (limit) => ({
+        get: async () => ({
+          data: Object.values(state[name])
+            .filter((row) => Object.entries(query).every(([key, value]) => row[key] === value))
+            .slice(0, limit),
+        }),
+      }),
+    }),
+    add: async ({ data }) => {
+      const id = `op-${++nextId}`;
+      state[name][id] = { ...data, _id: id };
+      return { _id: id };
+    },
+    doc: (id) => ({
+      get: async () => ({ data: state[name][id] ? { ...state[name][id] } : null }),
+      update: async ({ data }) => {
+        if (!failed && name === "ledgerOperations" && data.stage === failAt) {
+          failed = true;
+          throw new Error("INJECTED_FAILURE");
+        }
+        const row = state[name][id];
+        for (const [key, value] of Object.entries(data))
+          row[key] = value && value.inc ? (row[key] || 0) + value.inc : value;
+      },
+      remove: async () => {
+        if (!state[name][id]) throw new Error("does not exist");
+        delete state[name][id];
+      },
+    }),
+  });
+  const helpers = {
+    db: { collection, runTransaction: async (fn) => fn({ collection }) },
+    _: { inc: (inc) => ({ inc }) },
+    ok: (data) => ({ success: true, data }),
+    now: () => 1,
+    getLedgerById: async (id) => (state.ledgers[id] ? { ...state.ledgers[id] } : null),
+    getOperation: async (type, key) =>
+      Object.values(state.ledgerOperations).find((row) => row.type === type && row.key === key) ||
+      null,
+    getUser: async () => null,
+    listLedgersForUser: async () => [],
+    assertLedgerId: () => {},
+  };
+  const module = { exports: {} };
+  vm.runInNewContext(fs.readFileSync("cloudfunctions/ourNest/handlers/ledger.handler.js", "utf8"), {
+    module,
+    console,
+    Date,
+    require: (name) => {
+      if (name.includes("ledger-state"))
+        return require("../cloudfunctions/ourNest/shared/ledger-state");
+      if (name.includes("helpers")) return helpers;
+      if (name === "crypto") return require("node:crypto");
+      return {};
+    },
+  });
+  return { state, handler: module.exports };
+}
+
+test("ledger deletion resumes after an interrupted stage and preserves unrelated assets", async () => {
+  const { handler, state } = deletionFixture("categories");
+  state.records.other = { _id: "other", ledgerId: "another" };
+  state.ledgerOperations.file = { _id: "file", type: "import-file-reference", references: 1 };
+  await assert.rejects(handler.deleteLedger("owner", { ledgerId: "ledger" }), /INJECTED_FAILURE/);
+  assert.equal(state.ledgers.ledger.deletionState, "deleting");
+  const operation = Object.values(state.ledgerOperations).find(
+    (row) => row.type === "ledger-delete"
+  );
+  assert.equal(operation.stage, "records");
+  const result = await handler.deleteLedger("owner", { ledgerId: "ledger" });
+  assert.equal(result.success, true);
+  assert.equal(state.ledgers.ledger, undefined);
+  assert.equal(operation.stage, "complete");
+  assert.deepEqual(Object.keys(state.records), ["other"]);
+  assert.equal(Object.keys(state.categories).length, 0);
+  assert.equal(Object.keys(state.ledgerInvites).length, 0);
+  assert.equal(state.ledgerOperations.file.references, 1);
+  const repeated = await handler.deleteLedger("owner", { ledgerId: "ledger" });
+  assert.equal(repeated.data.operationId, operation._id);
+});
+
+test("ledger deletion rejects non-owner and active category migration", async () => {
+  const first = deletionFixture();
+  await assert.rejects(
+    first.handler.deleteLedger("member", { ledgerId: "ledger" }),
+    /ONLY_OWNER_CAN_DELETE_LEDGER/
+  );
+  assert.equal(Object.keys(first.state.ledgerOperations).length, 0);
+  const second = deletionFixture();
+  second.state.ledgers.ledger.categoryDeletionId = "category";
+  await assert.rejects(
+    second.handler.deleteLedger("owner", { ledgerId: "ledger" }),
+    /CATEGORY_DELETION_IN_PROGRESS/
+  );
+  assert.equal(Object.keys(second.state.ledgerOperations).length, 0);
+});
+
+for (const stage of ["invites", "ledger"]) {
+  test(`ledger deletion retries safely after failure advancing to ${stage}`, async () => {
+    const { handler, state } = deletionFixture(stage);
+    await assert.rejects(handler.deleteLedger("owner", { ledgerId: "ledger" }), /INJECTED_FAILURE/);
+    assert.equal(state.ledgers.ledger.deletionState, "deleting");
+    await handler.deleteLedger("owner", { ledgerId: "ledger" });
+    assert.equal(state.ledgers.ledger, undefined);
+    assert.equal(Object.keys(state.records).length, 0);
+    assert.equal(Object.keys(state.categories).length, 0);
+    assert.equal(Object.keys(state.ledgerInvites).length, 0);
+  });
+}

@@ -16,8 +16,14 @@
             <text>收入</text>
           </view>
         </view>
-        <tl-category-tree groups="{{groups}}" expanded-group-id="{{expandedGroupId}}" bind:toggle="toggleGroup" bind:select="chooseCategory">
-        </tl-category-tree>
+        <view class="category-grid">
+          <view wx:for="{{categories}}" wx:key="id" class="category-choice" data-id="{{item.id}}" bindtap="chooseCategory">
+            <view class="category-choice-icon">
+              <tl-icon name="{{item.icon}}" size="44" colorKey="{{type === 'income' ? 'income' : 'primary'}}" />
+            </view>
+            <text>{{item.name}}</text>
+          </view>
+        </view>
       </view>
     </scroll-view>
   </tl-container>

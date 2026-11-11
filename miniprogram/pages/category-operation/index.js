@@ -5,12 +5,9 @@ Page({
   data: {
     ledgerId: "",
     type: "expense",
-    level: "parent",
-    parentId: "",
     title: "分类管理",
     role: "",
     items: [],
-    parentName: "",
     showEditor: false,
     saving: false,
     deleting: false,
@@ -24,8 +21,6 @@ Page({
       ledgerId: o.ledgerId || ledger._id || "",
       title: ledger.name || "分类管理",
       type: o.type === "income" ? "income" : "expense",
-      level: o.level === "child" ? "child" : "parent",
-      parentId: o.parentId || "",
     });
     this.load();
   },
@@ -35,28 +30,14 @@ Page({
   async load() {
     const allItems = await categoryService.listCategories(this.data.ledgerId);
     const cs = allItems || [];
-    const parentMap = cs.reduce((map, item) => {
-      if (item.level === "parent") map[item._id] = item;
-      return map;
-    }, {});
     const items = cs
-      .filter(
-        (item) =>
-          item.type === this.data.type &&
-          item.level === this.data.level &&
-          (this.data.level !== "child" || item.parentId === this.data.parentId)
-      )
+      .filter((item) => item.type === this.data.type)
       .map((item) => ({
         ...item,
-        isProtected:
-          Boolean(item.isOther) ||
-          Boolean(
-            item.isDefaultChild && parentMap[item.parentId] && parentMap[item.parentId].isOther
-          ),
+        isProtected: Boolean(item.isOther),
       }));
-    const p = cs.find((item) => item._id === this.data.parentId);
     const ledger = app.globalData.currentLedger || {};
-    this.setData({ items, role: ledger.role || "", parentName: p ? p.name : "" });
+    this.setData({ items, role: ledger.role || "" });
   },
   openCreate() {
     if (!["owner", "member"].includes(this.data.role)) return;
@@ -109,8 +90,6 @@ Page({
         ledgerId: this.data.ledgerId,
         categoryId: this.data.editingItem && this.data.editingItem._id,
         type: this.data.type,
-        level: this.data.level,
-        parentId: this.data.parentId,
         name,
         icon: this.data.draftIcon,
       });
@@ -126,15 +105,6 @@ Page({
     if (this.data.role !== "owner" || this.data.deleting) return;
     const item = e.currentTarget.dataset.item;
     if (item.isProtected) return;
-    if (item.level === "child" && item.isDefaultChild) {
-      const hasOtherChildren = this.data.items.some(
-        (child) => child._id !== item._id && !child.isDefaultChild
-      );
-      if (hasOtherChildren) {
-        feedback.showToast({ type: "warning", message: "请先删除该分类下其他自定义分类" });
-        return;
-      }
-    }
     const content = "关联记录会自动保留并转入其他分类";
     wx.showModal({
       title: "删除分类",

@@ -1388,6 +1388,7 @@ test("record creation validates category identity and uses server category metad
   let ledgerWrites = 0;
   let migrationActive = false;
   let repairActive = false;
+  let ledgerDeletionActive = false;
   const categories = {
     child: {
       _id: "child",
@@ -1413,6 +1414,14 @@ test("record creation validates category identity and uses server category metad
       level: "child",
       parentId: "parent",
     },
+    flat: {
+      _id: "flat",
+      ledgerId: "ledger",
+      type: "expense",
+      name: "高铁动车",
+      icon: "train-line",
+      systemKey: "high_speed_rail",
+    },
   };
   const handler = load(
     "cloudfunctions/ourNest/handlers/record.handler.js",
@@ -1433,6 +1442,7 @@ test("record creation validates category identity and uses server category metad
                             _id: "ledger",
                             categoryDeletionId: migrationActive ? "child" : "",
                             categoryRepairState: repairActive ? { phase: "repair" } : null,
+                            deletionState: ledgerDeletionActive ? "deleting" : "",
                           }
                         : deletionBegins && id === "parent"
                           ? { ...categories[id], deletionState: "deleting" }
@@ -1503,6 +1513,18 @@ test("record creation validates category identity and uses server category metad
     /CATEGORY_REPAIR_IN_PROGRESS/
   );
   assert.equal(stored.length, 1);
+  repairActive = false;
+  migrationActive = false;
+  await handler.createRecord("owner", { ...base, categoryId: "flat", parentCategory: "伪造" });
+  assert.equal(stored[1].categoryName, "高铁动车");
+  assert.equal(stored[1].categoryIcon, "train-line");
+  assert.equal(stored[1].parentCategory, "");
+  ledgerDeletionActive = true;
+  await assert.rejects(
+    handler.createRecord("owner", { ...base, categoryId: "flat" }),
+    /账本正在删除/
+  );
+  assert.equal(stored.length, 2);
 });
 
 test("family and category drill-down use matching totals and cursor pages", async () => {

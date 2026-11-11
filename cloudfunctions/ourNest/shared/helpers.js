@@ -1,4 +1,5 @@
 const cloud = require("wx-server-sdk");
+const { assertLedgerActive } = require("./ledger-state");
 
 // --- 云数据库 singleton（cloud.init 全局只执行一次） ---
 let _db;
@@ -206,6 +207,7 @@ async function getLedgerForUser(openid, ledgerId) {
   const ledger = await getLedgerById(selectedLedgerId);
   if (!ledger) return null;
   if (getLedgerRole(openid, ledger) === "none") throw new Error("NO_LEDGER_ACCESS");
+  assertLedgerActive(ledger);
   if (Object.prototype.hasOwnProperty.call(ledger, "syncRevision")) {
     assertLedgerSyncRevision(ledger);
     return ledger;

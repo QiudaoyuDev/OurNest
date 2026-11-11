@@ -6,14 +6,7 @@ function compareCategoryOrder(left, right) {
 }
 
 function groupCategories(categories, type) {
-  const children = categories.filter((item) => item.type === type && item.level === "child");
-  return categories
-    .filter((item) => item.type === type && item.level === "parent")
-    .sort(compareCategoryOrder)
-    .map((parent) => ({
-      ...parent,
-      children: children.filter((child) => child.parentId === parent._id),
-    }));
+  return categories.filter((item) => item.type === type).sort(compareCategoryOrder);
 }
 function buildRows(groups, activeParentId, canCreate) {
   const allItems = canCreate
@@ -99,7 +92,7 @@ Page({
   },
   findChildren(id, expenseGroups = this.data.expenseGroups, incomeGroups = this.data.incomeGroups) {
     const parent = this.findParent(id, expenseGroups, incomeGroups);
-    return parent ? parent.children : [];
+    return parent && parent.children ? parent.children : [];
   },
   findParentName(
     id,

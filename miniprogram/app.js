@@ -4,7 +4,7 @@ const categoryStore = require("./services/category.store");
 const { emit } = require("./utils/event-bus");
 const { resolveEnvironment } = require("./config/cloud-env");
 
-const APP_VERSION = "V0.0.1";
+const APP_VERSION = "v26.11.11.01";
 
 App({
   globalData: {

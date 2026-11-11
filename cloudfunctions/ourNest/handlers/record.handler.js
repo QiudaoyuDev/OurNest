@@ -24,7 +24,8 @@ const {
   getRecordById,
   getCategoryById,
 } = require("../shared/helpers");
-const { assertRecordPayload } = require("../validators/schemas");
+const { assertRecordPayload, isValidRecordDate } = require("../validators/schemas");
+const { assertLedgerActive } = require("../shared/ledger-state");
 
 // --- 校验与展示辅助 ---
 
@@ -41,6 +42,23 @@ function attachRecordOwner(record = {}, ownerMap = {}, currentOpenid = "") {
 async function resolveRecordCategory(ledgerId, type, categoryId, readCategory = getCategoryById) {
   if (!categoryId) return null;
   const child = await readCategory(categoryId);
+  if (
+    child &&
+    child.ledgerId === ledgerId &&
+    child.type === type &&
+    child.deletionState !== "deleting" &&
+    !child.level &&
+    !child.parentId
+  ) {
+    return {
+      categoryId: child._id,
+      categoryName: child.name,
+      categoryLabel: child.name,
+      categoryIcon: child.icon || "price-tag-3-line",
+      parentCategory: "",
+      parentIcon: "",
+    };
+  }
   if (
     !child ||
     child.ledgerId !== ledgerId ||
@@ -78,6 +96,7 @@ function recordSnapshotChangedError() {
 }
 
 function assertNoCategoryMigration(ledger) {
+  assertLedgerActive(ledger);
   if (ledger.categoryRepairState) throw new Error("CATEGORY_REPAIR_IN_PROGRESS");
   if (!ledger.categoryDeletionId) return;
   const error = new Error("分类迁移进行中，请稍后重试");
@@ -596,12 +615,7 @@ function importDate(value, xlsx) {
 }
 
 function isValidImportDate(value) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const [year, month, day] = value.split("-").map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  return (
-    date.getUTCFullYear() === year && date.getUTCMonth() + 1 === month && date.getUTCDate() === day
-  );
+  return isValidRecordDate(value);
 }
 
 function parseHtmlImportRows(buffer) {

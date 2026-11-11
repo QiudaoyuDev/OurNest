@@ -1,234 +1,125 @@
-// 分类引导：建账时初始化默认分类树，以及懒修复缺失的默认子分类。
-// 被 ledger.handler（createLedger）和未来的 category handler 共用，独立成模块避免循环依赖。
-const { db, now, OTHER_CATEGORY_SORT } = require("../shared/helpers");
+const { db, now } = require("../shared/helpers");
 
-const categoryTreeDefaults = {
-  expense: [
-    ["餐饮", "restaurant-2-line", ["早餐", "午餐", "晚餐", "买菜", "咖啡奶茶"]],
-    ["购物", "shopping-bag-3-line", ["日用品", "服饰鞋包", "数码电器", "美妆个护"]],
-    [
-      "交通",
-      "taxi-line",
-      [
-        "公交地铁",
-        "打车",
-        "火车高铁",
-        "加油充电",
-        "停车",
-        "过路过桥",
-        "维修保养",
-        "车险",
-        "其他车费",
-      ],
-    ],
-    ["居家", "home-4-line", ["房租房贷", "水电燃气", "物业", "维修"]],
-    ["生活", "heart-pulse-line", ["医疗", "学习", "娱乐", "旅行"]],
-    ["其他", "more-2-line", []],
-  ],
-  income: [
-    ["工作收入", "wallet-3-line", ["工资", "奖金", "加班", "报销"]],
-    ["副业收入", "briefcase-4-line", ["副业", "项目", "稿费", "咨询"]],
-    ["资产收入", "funds-line", ["理财", "利息", "分红", "房租"]],
-    ["其他", "more-2-line", ["红包", "退款", "礼金"]],
-  ],
-};
-
-// 新账本模板独立于旧账本的懒修复模板；保留旧模板已有子项，避免首次读取时补入额外分类。
-const newLedgerDefaults = {
-  income: categoryTreeDefaults.income,
-  expense: [
-    categoryTreeDefaults.expense[0],
-    categoryTreeDefaults.expense[1],
-    ["日用", "shopping-basket-2-line", []],
-    categoryTreeDefaults.expense[2],
-    ["蔬菜", "leaf-line", []],
-    ["水果", "apple-line", []],
-    ["零食", "cake-2-line", []],
-    ["运动", "basketball-line", []],
-    ["娱乐", "gamepad-line", []],
-    ["通讯", "phone-line", []],
-    ["服饰", "t-shirt-line", []],
-    ["美容", "brush-line", []],
-    ["住房", "home-4-line", []],
-    categoryTreeDefaults.expense[3],
-    ["孩子", "user-smile-line", []],
-    ["长辈", "parent-line", []],
-    categoryTreeDefaults.expense[4],
-    categoryTreeDefaults.expense[5],
-  ],
-};
-
-async function addDefaultChild(ledgerId, parent, openid) {
-  const existing = await db
-    .collection("categories")
-    .where({ ledgerId, level: "child", parentId: parent._id, isDefaultChild: true })
-    .limit(1)
-    .get();
-  if (existing.data.length) {
-    const child = existing.data[0];
-    if (child.source !== "system") {
-      await db
-        .collection("categories")
-        .doc(child._id)
-        .update({ data: { source: "system", updatedAt: now() } });
-      child.source = "system";
-    }
-    return child;
-  }
-  const res = await db.collection("categories").add({
-    data: {
-      ledgerId,
-      type: parent.type,
-      level: "child",
-      parentId: parent._id,
-      parentName: parent.name,
-      name: parent.name,
-      icon: parent.icon || "price-tag-3-line",
-      sort: -1,
-      isDefaultChild: true,
-      source: "system",
-      createdBy: openid,
-      createdAt: now(),
-      updatedAt: now(),
-    },
-  });
-  return {
-    _id: res._id,
-    ledgerId,
-    type: parent.type,
-    level: "child",
-    parentId: parent._id,
-    parentName: parent.name,
-    name: parent.name,
-    icon: parent.icon || "price-tag-3-line",
-    isDefaultChild: true,
+function flatLedgerDefaults() {
+  const icons = {
+    餐饮: "category-food",
+    购物: "category-shopping",
+    日用: "category-daily",
+    交通: "category-transport",
+    蔬菜: "category-vegetable",
+    水果: "category-fruit",
+    零食: "category-snack",
+    运动: "category-sport",
+    娱乐: "category-entertainment",
+    通讯: "category-phone",
+    服饰: "category-clothes",
+    美容: "category-beauty",
+    住房: "category-house",
+    居家: "category-home",
+    孩子: "category-baby",
+    长辈: "category-elder",
+    社交: "category-social",
+    旅行: "category-flight",
+    烟酒: "category-alcohol",
+    数码: "category-digital",
+    汽车: "category-car",
+    医疗: "category-medical",
+    书籍: "category-book",
+    学习: "category-study",
+    宠物: "category-pet",
+    礼金: "category-giftmoney",
+    礼物: "category-gift",
+    办公: "category-office",
+    维修: "category-repair",
+    捐赠: "category-donation",
+    彩票: "category-lottery",
+    亲友: "category-family",
+    快递: "category-delivery",
+    还款: "category-repayment",
+    高铁动车: "category-train",
+    其他: "category-other",
+    工资: "category-salary",
+    兼职: "category-parttime",
+    理财: "category-investment",
+    其它: "category-income-other",
   };
-}
-
-async function ensureSystemChildren(ledgerId, parent, childNames, openid) {
-  const existing = await db
-    .collection("categories")
-    .where({ ledgerId, level: "child", parentId: parent._id })
-    .limit(200)
-    .get();
-  const existingNames = new Set((existing.data || []).map((child) => child.name));
-  const missingChildren = childNames.filter((name) => !existingNames.has(name));
-  if (!missingChildren.length) return false;
-  await Promise.all(
-    missingChildren.map((name) => {
-      const sort = childNames.indexOf(name);
-      return db.collection("categories").add({
-        data: {
-          ledgerId,
-          type: parent.type,
-          level: "child",
-          parentId: parent._id,
-          parentName: parent.name,
-          name,
-          icon: parent.icon || "price-tag-3-line",
-          sort,
-          isDefaultChild: false,
-          source: "system",
-          createdBy: openid,
-          createdAt: now(),
-          updatedAt: now(),
-        },
-      });
-    })
+  const names = {
+    expense: [
+      "餐饮",
+      "购物",
+      "日用",
+      "交通",
+      "蔬菜",
+      "水果",
+      "零食",
+      "运动",
+      "娱乐",
+      "通讯",
+      "服饰",
+      "美容",
+      "住房",
+      "居家",
+      "孩子",
+      "长辈",
+      "社交",
+      "旅行",
+      "烟酒",
+      "数码",
+      "汽车",
+      "医疗",
+      "书籍",
+      "学习",
+      "宠物",
+      "礼金",
+      "礼物",
+      "办公",
+      "维修",
+      "捐赠",
+      "彩票",
+      "亲友",
+      "快递",
+      "还款",
+      "高铁动车",
+      "其他",
+    ],
+    income: ["工资", "兼职", "理财", "礼金", "其它"],
+  };
+  return Object.entries(names).flatMap(([type, values]) =>
+    values.map((name, index) => ({
+      type,
+      name,
+      icon: icons[name],
+      isOther: name === "其他" || name === "其它",
+      ...(name === "高铁动车" ? { systemKey: "high_speed_rail" } : {}),
+      sort: index,
+    }))
   );
-  return true;
 }
 
-async function ensureLedgerCategoryTree(ledgerId, openid, initialDefaults = categoryTreeDefaults) {
-  const parentResult = await db
-    .collection("categories")
-    .where({ ledgerId, level: "parent" })
-    .limit(200)
-    .get();
-  if (parentResult.data.length) {
-    const changes = await Promise.all(
-      parentResult.data.map(async (parent) => {
-        if (parent.deletionState === "deleting") return false;
-        let changed = false;
-        if (
-          parent.isOther &&
-          (parent.source !== "system" || Number(parent.sort) !== OTHER_CATEGORY_SORT)
-        ) {
-          await db
-            .collection("categories")
-            .doc(parent._id)
-            .update({
-              data: { source: "system", sort: OTHER_CATEGORY_SORT, updatedAt: now() },
-            });
-          changed = true;
-        }
-        const defaults = (categoryTreeDefaults[parent.type] || []).find(
-          ([name]) => name === parent.name
-        );
-        if (defaults) {
-          const [, , childNames] = defaults;
-          changed = (await ensureSystemChildren(ledgerId, parent, childNames, openid)) || changed;
-        }
-        await addDefaultChild(ledgerId, parent, openid);
-        return changed;
-      })
-    );
-    return changes.some(Boolean);
+// Only existing flat categories satisfy a default. Legacy parent/child rows
+// remain untouched so records that reference their IDs keep their identity.
+function missingFlatDefaults(existing = []) {
+  const keys = new Set(
+    existing
+      .filter((item) => item && !item.level && !item.parentId)
+      .map((item) => JSON.stringify([item.type, item.name]))
+  );
+  return flatLedgerDefaults().filter((item) => !keys.has(JSON.stringify([item.type, item.name])));
+}
+
+async function createDefaultCategories(ledgerId, openid, transaction = db) {
+  for (const category of flatLedgerDefaults()) {
+    await transaction.collection("categories").add({
+      data: {
+        ...category,
+        ledgerId,
+        source: "system",
+        createdBy: openid,
+        createdAt: now(),
+        updatedAt: now(),
+      },
+    });
   }
-  for (const type of ["expense", "income"])
-    for (let index = 0; index < initialDefaults[type].length; index += 1) {
-      const [name, icon, children] = initialDefaults[type][index];
-      const parentRes = await db.collection("categories").add({
-        data: {
-          ledgerId,
-          type,
-          level: "parent",
-          name,
-          icon,
-          sort: name === "其他" ? OTHER_CATEGORY_SORT : index,
-          isOther: name === "其他",
-          source: "system",
-          createdBy: openid,
-          createdAt: now(),
-          updatedAt: now(),
-        },
-      });
-      const parent = { _id: parentRes._id, ledgerId, type, name, icon };
-      await addDefaultChild(ledgerId, parent, openid);
-      await Promise.all(
-        children.map((childName, childIndex) =>
-          db.collection("categories").add({
-            data: {
-              ledgerId,
-              type,
-              level: "child",
-              parentId: parentRes._id,
-              parentName: name,
-              name: childName,
-              icon,
-              sort: childIndex,
-              isDefaultChild: false,
-              source: "system",
-              createdBy: openid,
-              createdAt: now(),
-              updatedAt: now(),
-            },
-          })
-        )
-      );
-    }
-  return true;
 }
 
-async function createDefaultCategories(ledgerId, openid) {
-  return ensureLedgerCategoryTree(ledgerId, openid, newLedgerDefaults);
-}
-
-module.exports = {
-  categoryTreeDefaults,
-  newLedgerDefaults,
-  addDefaultChild,
-  ensureSystemChildren,
-  ensureLedgerCategoryTree,
-  createDefaultCategories,
-};
+module.exports = { flatLedgerDefaults, missingFlatDefaults, createDefaultCategories };

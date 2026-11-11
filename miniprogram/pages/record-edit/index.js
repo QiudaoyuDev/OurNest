@@ -49,13 +49,9 @@ function categoryDisplayIcon(child, parent) {
   return child.icon || parent.icon || "price-tag-3-line";
 }
 
-function isTrainCategory(categoryName, parentCategory) {
-  const text = `${categoryName || ""} ${parentCategory || ""}`;
-  return /高铁|火车/.test(text);
-}
-
-function resolveQuickAmounts(ledger, categoryName, parentCategory) {
-  if (isTrainCategory(categoryName, parentCategory)) {
+function resolveQuickAmounts(ledger, systemKey) {
+  if (!ledger || !ledger.quickAmountsEnabled) return [];
+  if (systemKey === "high_speed_rail") {
     return TRAIN_QUICK_AMOUNTS;
   }
   if (
@@ -224,6 +220,37 @@ Page({
 
   renderCategories(items = []) {
     this._categories = items;
+    const flat = items.filter(
+      (item) => item.type === this.data.type && !item.level && !item.parentId
+    );
+    if (flat.length) {
+      const selected = flat.find((item) => getId(item) === this.data.categoryId);
+      if (this.data.categoryId && !selected) this.clearCategorySelection();
+      if (selected)
+        this.applyCategorySelection({
+          type: this.data.type,
+          categoryId: getId(selected),
+          categoryName: selected.name,
+          categoryLabel: selected.name,
+          categoryIcon: selected.icon || "price-tag-3-line",
+          systemKey: selected.systemKey || "",
+          parentCategory: "",
+          parentIcon: "",
+        });
+      this.setData({
+        groups: [],
+        flatCategories: flat.map((item) => ({
+          id: getId(item),
+          name: item.name,
+          icon: item.icon || "price-tag-3-line",
+          parentHint: "",
+        })),
+        expandedGroupId: "",
+        categoryLoading: false,
+        categoryError: false,
+      });
+      return;
+    }
     const parents = items.filter((item) => item.type === this.data.type && item.level === "parent");
     const groups = parents.map((parent) => ({
       ...parent,
@@ -327,7 +354,10 @@ Page({
     if (this.data.readonly || this.data.saving) return;
     const categoryId = event.detail.categoryId || event.currentTarget.dataset.categoryId;
     const child = (this._categories || []).find(
-      (item) => getId(item) === categoryId && item.type === this.data.type && item.level === "child"
+      (item) =>
+        getId(item) === categoryId &&
+        item.type === this.data.type &&
+        (item.level === "child" || (!item.level && !item.parentId))
     );
     if (!child) return;
     this.setData({ categoryId });
@@ -409,7 +439,7 @@ Page({
         ledgerId: record.ledgerId || "",
         ledgerName: (ledgerInfo && ledgerInfo.name) || "我的账本",
         accountIndex,
-        quickAmounts: resolveQuickAmounts(ledgerInfo, record.categoryName, record.parentCategory),
+        quickAmounts: resolveQuickAmounts(ledgerInfo, ""),
         quickNotes: quickNotesFor(recordType, record.categoryName),
         sourceText:
           record.source === "wechat"
@@ -528,7 +558,8 @@ Page({
   applyCategorySelection(selection = {}) {
     const type = selection.type === "income" ? "income" : "expense";
     const categoryName = selection.categoryName || this.data.categoryName;
-    const parentCategory = selection.parentCategory || this.data.parentCategory;
+    const parentCategory =
+      selection.parentCategory !== undefined ? selection.parentCategory : this.data.parentCategory;
     const categoryLabel = selection.categoryLabel || categoryName || this.data.categoryLabel;
     this.setData({
       type,
@@ -540,8 +571,8 @@ Page({
       categoryHeading: categoryLabel,
       categoryIcon: selection.categoryIcon || this.data.categoryIcon,
       parentCategory,
-      parentIcon: selection.parentIcon || this.data.parentIcon,
-      quickAmounts: resolveQuickAmounts(this._currentLedger, categoryName, parentCategory),
+      parentIcon: selection.parentIcon !== undefined ? selection.parentIcon : this.data.parentIcon,
+      quickAmounts: resolveQuickAmounts(this._currentLedger, selection.systemKey || ""),
       quickNotes: quickNotesFor(type, categoryName),
       canSave:
         evaluateAmountExpression(this.data.amount).valid &&

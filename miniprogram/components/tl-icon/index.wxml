@@ -1,1 +1,2 @@
-<text class="ri" style="font-size: {{size}}rpx; color: {{resolvedColor}};">{{glyph}}</text>
+<image wx:if="{{categoryImage}}" src="{{categoryImage}}" mode="aspectFit" style="width: {{size}}rpx; height: {{size}}rpx;" />
+<text wx:else class="ri" style="font-size: {{size}}rpx; color: {{resolvedColor}};">{{glyph}}</text>

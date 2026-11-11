@@ -31,3 +31,27 @@
 .category-page .page-content {
   padding-bottom: var(--tl-page-content-bottom);
 }
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24rpx 8rpx;
+  margin-top: 32rpx;
+}
+.category-choice {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 10rpx;
+  min-height: 112rpx;
+  color: var(--tl-color-text);
+}
+.category-choice-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: var(--tl-color-primary-soft);
+}

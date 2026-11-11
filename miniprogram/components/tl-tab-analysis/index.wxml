@@ -381,7 +381,7 @@
                 <view wx:for="{{member.categories}}" wx:for-item="category" wx:for-index="categoryIndex" wx:key="key" class="family-category-row" data-dimension="payer" data-index="{{memberIndex}}" data-category-index="{{categoryIndex}}" bindtap="openFamilyRecords">
                   <tl-icon name="{{category.categoryIcon || 'price-tag-3-line'}}" size="28" colorKey="primary">
                   </tl-icon>
-                  <text class="dashboard-row-content">{{category.parentCategory}} / {{category.name}}</text>
+                  <text class="dashboard-row-content">{{category.name}}</text>
                   <text class="dashboard-amount">¥{{category.amountText}}</text>
                 </view>
               </view>
@@ -405,7 +405,7 @@
                 <view wx:for="{{member.categories}}" wx:for-item="category" wx:for-index="categoryIndex" wx:key="key" class="family-category-row" data-dimension="consumer" data-index="{{memberIndex}}" data-category-index="{{categoryIndex}}" bindtap="openFamilyRecords">
                   <tl-icon name="{{category.categoryIcon || 'price-tag-3-line'}}" size="28" colorKey="primary">
                   </tl-icon>
-                  <text class="dashboard-row-content">{{category.parentCategory}} / {{category.name}}</text>
+                  <text class="dashboard-row-content">{{category.name}}</text>
                   <text class="dashboard-amount">¥{{category.amountText}}</text>
                 </view>
               </view>
@@ -429,7 +429,7 @@
                 <view wx:for="{{member.categories}}" wx:for-item="category" wx:for-index="categoryIndex" wx:key="key" class="family-category-row" data-dimension="creator" data-index="{{memberIndex}}" data-category-index="{{categoryIndex}}" bindtap="openFamilyRecords">
                   <tl-icon name="{{category.categoryIcon || 'price-tag-3-line'}}" size="28" colorKey="primary">
                   </tl-icon>
-                  <text class="dashboard-row-content">{{category.parentCategory}} / {{category.name}}</text>
+                  <text class="dashboard-row-content">{{category.name}}</text>
                   <text class="dashboard-amount">¥{{category.amountText}}</text>
                 </view>
               </view>

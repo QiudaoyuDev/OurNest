@@ -1,3 +1,4 @@
+const { assertLedgerActive } = require("../shared/ledger-state");
 // 账本域：账本 CRUD、成员管理、同步、邀请加入、可恢复删除。
 const {
   db,
@@ -14,7 +15,6 @@ const {
   getUsersByOpenids,
   resolveUsersAvatarUrls,
   getOperation,
-  saveOperation,
   getLedgerInviteByToken,
   getLedgerRole,
   assertReadable,
@@ -25,7 +25,12 @@ const {
   defaultPaymentAccounts,
 } = require("../shared/helpers");
 const { createDefaultCategories } = require("./category-tree");
-const { assertOpenid, assertLedgerInput, assertInviteInput } = require("../validators/schemas");
+const {
+  assertOpenid,
+  assertLedgerInput,
+  assertInviteInput,
+  assertBudgetInput,
+} = require("../validators/schemas");
 const crypto = require("crypto");
 const { createInviteCode, normalizeInviteCode, getInviteStatus } = require("../invite-code");
 
@@ -42,13 +47,8 @@ async function createLedger(openid, data = {}) {
   });
   void type; // assertLedgerInput 返回 type 但已在上方确定，保持结构不变
 
-  const budgetEnabled = Boolean(data.budgetEnabled);
+  const { enabled: budgetEnabled, monthlyBudget } = assertBudgetInput(data);
   const quickAmountsEnabled = Boolean(data.quickAmountsEnabled);
-  const requestedBudget = Number(data.monthlyBudget);
-  const monthlyBudget =
-    budgetEnabled && Number.isFinite(requestedBudget)
-      ? Math.min(999999, Math.max(1, Math.round(requestedBudget * 100) / 100))
-      : 0;
   const ledgerNo = await generateUniqueLedgerCode("ledgerNo", { prefix: "L", min: 7, max: 11 });
 
   const ledger = {
@@ -72,8 +72,11 @@ async function createLedger(openid, data = {}) {
     createdAt: now(),
     updatedAt: now(),
   };
-  const res = await db.collection("ledgers").add({ data: ledger });
-  await createDefaultCategories(res._id, openid);
+  const res = await db.runTransaction(async (transaction) => {
+    const created = await transaction.collection("ledgers").add({ data: ledger });
+    await createDefaultCategories(created._id, openid, transaction);
+    return created;
+  });
   await db
     .collection("users")
     .where({ openid })
@@ -95,19 +98,15 @@ async function updateLedger(openid, data = {}) {
   if (name === String(ledger.name || "").trim() && remark === String(ledger.remark || "").trim())
     return ok({ changed: false, ledger });
 
-  const syncRevision = Number(ledger.syncRevision || 0) + 1;
-  await db
-    .collection("ledgers")
-    .doc(ledger._id)
-    .update({
-      data: {
-        name,
-        remark,
-        syncRevision: _.inc(1),
-        updatedAt: now(),
-      },
-    });
-  return ok({ changed: true, ledger: { ...ledger, name, remark, syncRevision } });
+  const updated = await db.runTransaction(async (transaction) => {
+    const ref = transaction.collection("ledgers").doc(ledger._id);
+    const current = (await ref.get()).data;
+    assertLedgerActive(current);
+    if (getLedgerRole(openid, current) !== "owner") throw new Error("ONLY_OWNER_CAN_UPDATE_LEDGER");
+    await ref.update({ data: { name, remark, syncRevision: _.inc(1), updatedAt: now() } });
+    return { ...current, name, remark, syncRevision: Number(current.syncRevision || 0) + 1 };
+  });
+  return ok({ changed: true, ledger: updated });
 }
 
 async function listLedgers(openid) {
@@ -248,6 +247,7 @@ async function updateMembership(ledgerId, openid, targetOpenid, action) {
   await db.runTransaction(async (transaction) => {
     const ref = transaction.collection("ledgers").doc(ledgerId);
     const ledger = (await ref.get()).data;
+    assertLedgerActive(ledger);
     const callerRole = getLedgerRole(openid, ledger);
     if (action === "leave") {
       if (callerRole === "owner") throw new Error("OWNER_CANNOT_LEAVE");
@@ -307,6 +307,7 @@ async function requestOwnerTransfer(openid, data = {}) {
   await db.runTransaction(async (transaction) => {
     const ref = transaction.collection("ledgers").doc(ledger._id);
     const current = (await ref.get()).data;
+    assertLedgerActive(current);
     if (getLedgerRole(openid, current) !== "owner") throw new Error("ONLY_OWNER_CAN_TRANSFER");
     if (current.type !== "shared" || getLedgerRole(data.targetOpenid, current) !== "member")
       throw new Error("TRANSFER_TARGET_MUST_BE_MEMBER");
@@ -326,6 +327,7 @@ async function acceptOwnerTransfer(openid, data = {}) {
   await db.runTransaction(async (transaction) => {
     const ref = transaction.collection("ledgers").doc(ledger._id);
     const current = (await ref.get()).data;
+    assertLedgerActive(current);
     const pending = current.ownerTransfer;
     if (
       !pending ||
@@ -366,6 +368,7 @@ async function cancelOwnerTransfer(openid, data = {}) {
   await db.runTransaction(async (transaction) => {
     const ref = transaction.collection("ledgers").doc(ledger._id);
     const current = (await ref.get()).data;
+    assertLedgerActive(current);
     const pending = current.ownerTransfer;
     if (!pending || (current.ownerOpenid !== openid && pending.targetOpenid !== openid))
       throw new Error("TRANSFER_NOT_AVAILABLE");
@@ -400,6 +403,7 @@ async function createLedgerInviteToken(openid, data = {}) {
   await db.runTransaction(async (transaction) => {
     const ledgerRef = transaction.collection("ledgers").doc(ledger._id);
     const currentLedger = (await ledgerRef.get()).data;
+    assertLedgerActive(currentLedger);
     if (getLedgerRole(openid, currentLedger) !== "owner") throw new Error("ONLY_OWNER_CAN_INVITE");
     await transaction.collection("ledgerInvites").add({
       data: {
@@ -459,6 +463,7 @@ async function revokeLedgerInvite(openid, data = {}) {
   const ledger = await getLedgerForUser(openid, data.ledgerId);
   await db.runTransaction(async (transaction) => {
     const current = (await transaction.collection("ledgers").doc(ledger._id).get()).data;
+    assertLedgerActive(current);
     if (getLedgerRole(openid, current) !== "owner") throw new Error("ONLY_OWNER_CAN_INVITE");
     const ref = transaction.collection("ledgerInvites").doc(String(data.inviteId || ""));
     const invite = (await ref.get()).data;
@@ -551,6 +556,7 @@ async function joinLedgerByInviteToken(openid, data = {}) {
     assertInviteAvailable(currentInvite, openid);
     const ledger = (await transaction.collection("ledgers").doc(currentInvite.ledgerId).get()).data;
     if (!ledger) throw new Error("LEDGER_NOT_FOUND");
+    assertLedgerActive(ledger);
     if (
       (currentInvite.ownerOpenid && currentInvite.ownerOpenid !== ledger.ownerOpenid) ||
       Number(currentInvite.ownerEpoch || 0) !== Number(ledger.ownerEpoch || 0)
@@ -636,43 +642,113 @@ async function deleteByQuery(collectionName, query) {
   return deleted;
 }
 
+async function advanceLedgerDeletion(operation, expectedStage, nextStage, patch = {}) {
+  return db.runTransaction(async (transaction) => {
+    const ref = transaction.collection("ledgerOperations").doc(operation._id);
+    const current = (await ref.get()).data;
+    if (
+      !current ||
+      current.type !== "ledger-delete" ||
+      current.ledgerId !== operation.ledgerId ||
+      current.ownerOpenid !== operation.ownerOpenid
+    )
+      throw new Error("LEDGER_DELETION_STATE_INVALID");
+    if (current.stage !== expectedStage) return { ...current, _id: operation._id };
+    const changes = { ...patch, stage: nextStage, updatedAt: now() };
+    await ref.update({ data: changes });
+    return { ...current, ...changes, _id: operation._id };
+  });
+}
+
 async function runLedgerDeletion(openid, ledgerId) {
   const key = "delete:" + ledgerId;
   let operation = await getOperation("ledger-delete", key);
   let ledger = await getLedgerById(ledgerId);
-  if (!operation) {
-    if (!ledger) throw new Error("LEDGER_NOT_FOUND");
-    if (ledger.ownerOpenid !== openid) throw new Error("ONLY_OWNER_CAN_DELETE_LEDGER");
-    operation = await saveOperation(null, {
-      type: "ledger-delete",
-      key,
-      ledgerId,
-      ownerOpenid: openid,
-      stage: "records",
-      status: "running",
-    });
-  } else if (operation.ownerOpenid !== openid) {
+  if (ledger && ledger.deletionOperationId) {
+    const stored = (await db.collection("ledgerOperations").doc(ledger.deletionOperationId).get())
+      .data;
+    if (!stored || stored.ledgerId !== ledgerId) throw new Error("LEDGER_DELETION_STATE_INVALID");
+    operation = { ...stored, _id: ledger.deletionOperationId };
+  }
+  if (operation && operation.ownerOpenid !== openid) {
     throw new Error("ONLY_OWNER_CAN_DELETE_LEDGER");
   }
-  if (operation.stage === "records")
-    operation = await saveOperation(operation, {
-      stage: "categories",
-      deletedRecords: await deleteByQuery("records", { ledgerId }),
-    });
-  if (operation.stage === "categories")
-    operation = await saveOperation(operation, {
-      stage: "ledger",
-      deletedCategories: await deleteByQuery("categories", { ledgerId }),
-    });
-  if (operation.stage === "ledger") {
-    ledger = ledger || (await getLedgerById(ledgerId));
-    if (ledger) await db.collection("ledgers").doc(ledgerId).remove();
-    operation = await saveOperation(operation, {
-      stage: "complete",
-      status: "complete",
-      completedAt: now(),
+  if (ledger && (!operation || !ledger.deletionOperationId)) {
+    operation = await db.runTransaction(async (transaction) => {
+      const ledgerRef = transaction.collection("ledgers").doc(ledgerId);
+      const current = (await ledgerRef.get()).data;
+      if (!current) throw new Error("LEDGER_NOT_FOUND");
+      if (current.ownerOpenid !== openid) throw new Error("ONLY_OWNER_CAN_DELETE_LEDGER");
+      if (current.categoryDeletionId || current.categoryRepairState)
+        throw new Error("CATEGORY_DELETION_IN_PROGRESS");
+      if (current.deletionOperationId) {
+        const existing = (
+          await transaction.collection("ledgerOperations").doc(current.deletionOperationId).get()
+        ).data;
+        if (!existing || existing.ownerOpenid !== openid)
+          throw new Error("LEDGER_DELETION_STATE_INVALID");
+        return { ...existing, _id: current.deletionOperationId };
+      }
+      const state = {
+        type: "ledger-delete",
+        key,
+        ledgerId,
+        ownerOpenid: openid,
+        stage: "records",
+        status: "running",
+        createdAt: now(),
+        updatedAt: now(),
+      };
+      const created = await transaction.collection("ledgerOperations").add({ data: state });
+      await ledgerRef.update({
+        data: {
+          deletionState: "deleting",
+          deletionOperationId: created._id,
+          syncRevision: _.inc(1),
+          updatedAt: now(),
+        },
+      });
+      return { ...state, _id: created._id };
     });
   }
+  if (!operation) throw new Error("LEDGER_NOT_FOUND");
+  if (operation.stage === "records") {
+    const deletedRecords = await deleteByQuery("records", { ledgerId });
+    operation = await advanceLedgerDeletion(operation, "records", "categories", { deletedRecords });
+  }
+  if (operation.stage === "categories") {
+    const deletedCategories = await deleteByQuery("categories", { ledgerId });
+    operation = await advanceLedgerDeletion(operation, "categories", "invites", {
+      deletedCategories,
+    });
+  }
+  if (operation.stage === "invites") {
+    const deletedInvites = await deleteByQuery("ledgerInvites", { ledgerId });
+    operation = await advanceLedgerDeletion(operation, "invites", "ledger", { deletedInvites });
+  }
+  if (operation.stage === "ledger") {
+    operation = await db.runTransaction(async (transaction) => {
+      const operationRef = transaction.collection("ledgerOperations").doc(operation._id);
+      const current = (await operationRef.get()).data;
+      if (!current || current.ownerOpenid !== openid || current.ledgerId !== ledgerId)
+        throw new Error("LEDGER_DELETION_STATE_INVALID");
+      if (current.stage !== "ledger") return { ...current, _id: operation._id };
+      const ledgerRef = transaction.collection("ledgers").doc(ledgerId);
+      const currentLedger = (await ledgerRef.get()).data;
+      if (
+        !currentLedger ||
+        currentLedger.ownerOpenid !== openid ||
+        currentLedger.deletionOperationId !== operation._id ||
+        currentLedger.deletionState !== "deleting"
+      )
+        throw new Error("LEDGER_DELETION_STATE_INVALID");
+      await ledgerRef.remove();
+      const patch = { stage: "complete", status: "complete", completedAt: now(), updatedAt: now() };
+      await operationRef.update({ data: patch });
+      return { ...current, ...patch, _id: operation._id };
+    });
+  }
+  if (operation.stage !== "complete") throw new Error("LEDGER_DELETION_IN_PROGRESS");
   const user = await getUser(openid);
   let currentLedger = null;
   let currentLedgerId = user && user.currentLedgerId !== ledgerId ? user.currentLedgerId || "" : "";

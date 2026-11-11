@@ -39,6 +39,16 @@ function assertLedgerInput({ name, remark, type }) {
 
 // --- record ---
 
+function isValidRecordDate(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(0);
+  date.setUTCFullYear(year, month - 1, day);
+  return (
+    date.getUTCFullYear() === year && date.getUTCMonth() + 1 === month && date.getUTCDate() === day
+  );
+}
+
 function assertRecordPayload(data = {}) {
   const amount = Number(data.amount);
   if (
@@ -56,7 +66,7 @@ function assertRecordPayload(data = {}) {
     error.code = ERR.INVALID_RECORD_TYPE;
     throw error;
   }
-  if (data.date && !/^\d{4}-\d{2}-\d{2}$/.test(data.date)) {
+  if (data.date && !isValidRecordDate(data.date)) {
     const error = new Error("INVALID_RECORD_DATE");
     error.code = ERR.INVALID_RECORD_DATE;
     throw error;
@@ -166,6 +176,7 @@ module.exports = {
   assertOpenid,
   assertLedgerInput,
   assertRecordPayload,
+  isValidRecordDate,
   assertRecordCursor,
   assertCategoryInput,
   assertBudgetInput,

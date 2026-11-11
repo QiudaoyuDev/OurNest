@@ -4,22 +4,10 @@ const { getId } = require("../../utils/mapper");
 const categoryService = require("../../services/category.service");
 const categoryStore = require("../../services/category.store");
 const { startNavigation, markNavigation } = require("../../utils/navigation-timing");
-function toGroups(categories, type) {
-  const parents = categories.filter((item) => item.type === type && item.level === "parent");
-  const children = categories.filter((item) => item.type === type && item.level === "child");
-  return parents.map((parent) => ({
-    ...parent,
-    id: getId(parent),
-    children: children
-      .filter((child) => child.parentId === parent._id)
-      .map((child) => ({ ...child, label: child.name })),
-  }));
-}
 Page({
   data: {
     type: "expense",
-    groups: [],
-    expandedGroupId: "",
+    categories: [],
     ledgerId: "",
     mode: "create",
     ledgerName: "选择分类",
@@ -65,10 +53,10 @@ Page({
     this.renderCategories(cached);
   },
   renderCategories(categories) {
-    const groups = toGroups(categories || [], this.data.type);
     this.setData({
-      groups,
-      expandedGroupId: groups[0] ? groups[0].id : this.data.expandedGroupId,
+      categories: (categories || [])
+        .filter((item) => item.type === this.data.type)
+        .map((item) => ({ ...item, id: getId(item) })),
     });
   },
   async loadCategories() {
@@ -83,15 +71,15 @@ Page({
     this.setData({ type: event.currentTarget.dataset.type });
     this.renderFromCache();
   },
-  toggleGroup(event) {
-    const id = event.detail.id || event.currentTarget.dataset.id;
-    this.setData({ expandedGroupId: this.data.expandedGroupId === id ? "" : id });
-  },
   chooseCategory(event) {
-    const { categoryId, category, categoryLabel, categoryIcon, parent, parentIcon } = event.detail
-      .category
-      ? event.detail
-      : event.currentTarget.dataset;
+    const selected = this.data.categories.find(
+      (item) => item.id === event.currentTarget.dataset.id
+    );
+    if (!selected) return;
+    const { id: categoryId, name: category, icon: categoryIcon, systemKey } = selected;
+    const categoryLabel = category;
+    const parent = "";
+    const parentIcon = "";
     if (this.data.mode === "reselect") {
       const previous = getCurrentPages().slice(-2)[0];
       if (previous && previous.applyCategorySelection)
@@ -101,6 +89,7 @@ Page({
           categoryName: category,
           categoryLabel,
           categoryIcon,
+          systemKey,
           parentCategory: parent,
           parentIcon,
         });
