@@ -20,6 +20,26 @@ test("home uses a compact income and balance summary only when budget is visible
   );
 });
 
+test("home money presentation marks rounded values and keeps record signs", () => {
+  const template = fs.readFileSync("miniprogram/components/tl-tab-home/index.wxml", "utf8");
+  assert.doesNotMatch(template, /¥/);
+  assert.match(template, /item\.type === 'income' \? '\+' : '-'/);
+  assert.match(template, /已超支/);
+  assert.doesNotMatch(template, /isOverBudget \? '-/);
+  const context = {
+    getApp: () => ({}),
+    require: (name) => (name.endsWith("/money") ? money : {}),
+    Component() {},
+  };
+  vm.runInNewContext(
+    fs.readFileSync("miniprogram/components/tl-tab-home/index.js", "utf8"),
+    context
+  );
+  assert.equal(context.compactMoney(100000), "10.0万");
+  assert.equal(context.compactMoney(100001), "约 10.0万");
+  assert.equal(context.compactMoney(-100001), "约 -10.0万");
+});
+
 test("home shows expense placeholders for empty and income-only months", () => {
   const context = {
     getApp: () => ({}),

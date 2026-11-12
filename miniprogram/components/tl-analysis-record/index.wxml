@@ -8,5 +8,5 @@
     <text class="analysis-record__title">{{(preferNote && record.note) || record.categoryName || record.note || '其他'}}</text>
     <text class="analysis-record__meta">{{record.date}} · {{preferNote ? (record.account || '未设置账户') : (record.note || record.account || '未设置账户')}}</text>
   </view>
-  <text class="analysis-record__amount {{type}}">{{type === 'income' ? '+' : '-'}}¥{{record.amountText}}</text>
+  <text class="analysis-record__amount {{type}}">{{type === 'income' ? '+' : '-'}}{{record.amountText}}</text>
 </view>

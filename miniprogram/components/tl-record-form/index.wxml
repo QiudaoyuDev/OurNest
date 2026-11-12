@@ -1,11 +1,11 @@
 <view class="tl-record-form {{quickEntry ? 'tl-record-form--quick' : ''}}">
   <view wx:if="{{!quickEntry}}" class="tl-record-form__amount" bindtap="openKeypad">
-    <text>¥</text>
+    <text>金额（元）</text>
     <text class="tl-record-form__amount-value {{amount ? '' : 'is-placeholder'}}">{{amount || '0.00'}}</text>
   </view>
   <scroll-view wx:if="{{!quickEntry && quickAmounts.length}}" class="tl-record-form__quick" scroll-x="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}">
     <view class="tl-record-form__quick-list">
-      <view wx:for="{{quickAmounts}}" wx:key="*this" data-amount="{{item}}" bindtap="quickAmount">¥{{item}}</view>
+      <view wx:for="{{quickAmounts}}" wx:key="*this" data-amount="{{item}}" bindtap="quickAmount">{{item}}</view>
     </view>
   </scroll-view>
   <view wx:if="{{showKeypad && !quickEntry}}" class="tl-record-form__keypad-mask" bindtap="closeKeypad">
@@ -22,7 +22,7 @@
     <view hidden="{{quickEntry && noteFocused}}">
       <view wx:if="{{quickAmounts.length}}" class="tl-record-form__quick-bar">
         <view class="tl-record-form__quick-grid {{quickAmounts.length === 4 ? 'is-4col' : 'is-5col'}}">
-          <view wx:for="{{quickAmounts}}" wx:key="*this" class="quick-chip" data-amount="{{item}}" bindtap="quickAmount">¥{{item}}</view>
+          <view wx:for="{{quickAmounts}}" wx:key="*this" class="quick-chip" data-amount="{{item}}" bindtap="quickAmount">{{item}}</view>
         </view>
       </view>
       <view class="tl-record-form__keypad-grid tl-record-form__keypad-grid--four">

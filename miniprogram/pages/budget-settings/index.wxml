@@ -15,9 +15,8 @@
           </view>
         </view>
         <view class="budget-card card fade-up {{budgetEnabled ? '' : 'is-disabled'}}">
-          <view class="amount-label">月预算金额</view>
+          <view class="amount-label">月预算金额（元）</view>
           <view class="amount-input-row">
-            <text class="currency">¥</text>
             <input class="amount-input" type="digit" value="{{monthlyBudget}}" disabled="{{!budgetEnabled}}" adjust-position="{{true}}" cursor-spacing="140" bindinput="onBudgetInput" />
           </view>
         </view>

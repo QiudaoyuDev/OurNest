@@ -13,17 +13,16 @@
         </view>
         <view class="amount-card card {{quickAmountsEnabled ? '' : 'is-disabled'}}">
           <view class="amount-head">
-            <text>常用金额</text>
+            <text>常用金额（元）</text>
             <text>{{amounts.length}} / 5</text>
           </view>
           <view class="amount-list">
             <view wx:for="{{amounts}}" wx:key="index" class="amount-pill">
-              ¥{{item}}
+              {{item}}
               <text data-index="{{index}}" bindtap="removeAmount">×</text>
             </view>
           </view>
           <view class="amount-add">
-            <text>¥</text>
             <input type="digit" value="{{inputAmount}}" placeholder="输入金额" disabled="{{!quickAmountsEnabled || amounts.length >= 5}}" adjust-position="{{true}}" cursor-spacing="140" bindinput="onAmountInput" />
             <view class="add-button" bindtap="addAmount">添加</view>
           </view>

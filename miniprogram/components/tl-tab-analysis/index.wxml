@@ -72,9 +72,9 @@
             <view class="analysis-summary-card analysis-overview-card card dashboard-hero">
               <view class="overview-top-row">
                 <view class="overview-main-info">
-                  <text class="section-kicker">{{rangeLabel}} · {{dashboardView.typeLabel}}</text>
-                  <text class="summary-title t-num">¥{{dashboardView.totalText}}</text>
-                  <text class="summary-copy">共 {{dashboardView.recordCount}} 笔 · 日均 ¥{{dashboardView.dailyAverageText}}</text>
+                  <text class="section-kicker">{{rangeLabel}} · {{dashboardView.typeLabel}}（元）</text>
+                  <text class="summary-title t-num">{{dashboardView.totalText}}</text>
+                  <text class="summary-copy">共 {{dashboardView.recordCount}} 笔 · 日均 {{dashboardView.dailyAverageText}}</text>
                 </view>
                 <view class="overview-badges">
                   <view class="overview-report-btn" bindtap="openMonthlyReportSheet">
@@ -84,7 +84,7 @@
                   </view>
                   <view class="overview-balance-badge {{dashboardView.isBalancePositive ? 'is-positive' : 'is-negative'}}">
                     <text class="badge-label">结余</text>
-                    <text class="badge-amount t-num">¥{{dashboardView.balanceText}}</text>
+                    <text class="badge-amount t-num">{{dashboardView.balanceText}}</text>
                   </view>
                   <text class="overview-compare-tag">{{dashboardView.comparisonTag || dashboardView.comparisonText}}</text>
                 </view>
@@ -109,7 +109,7 @@
                   <view wx:for="{{family.payers}}" wx:key="openid" class="family-member-pill">
                     <view class="member-avatar-chip">{{item.name[0]}}</view>
                     <text class="member-name">{{item.name}}</text>
-                    <text class="member-amount t-num">¥{{item.amountText}}</text>
+                    <text class="member-amount t-num">{{item.amountText}}</text>
                     <text class="member-rate">({{item.rate}}%)</text>
                   </view>
                 </view>
@@ -117,15 +117,15 @@
               <view class="summary-metrics">
                 <view class="summary-metric">
                   <text>本期收入</text>
-                  <text class="is-income t-num">¥{{dashboardView.incomeText}}</text>
+                  <text class="is-income t-num">{{dashboardView.incomeText}}</text>
                 </view>
                 <view class="summary-metric">
                   <text>本期支出</text>
-                  <text class="is-expense t-num">¥{{dashboardView.expenseText}}</text>
+                  <text class="is-expense t-num">{{dashboardView.expenseText}}</text>
                 </view>
                 <view class="summary-metric">
                   <text>本期结余</text>
-                  <text class="t-num">¥{{dashboardView.balanceText}}</text>
+                  <text class="t-num">{{dashboardView.balanceText}}</text>
                 </view>
               </view>
             </view>
@@ -138,13 +138,13 @@
             <view id="analysis-summary" class="dashboard-card card">
               <view class="dashboard-heading">
                 <text class="card-title">{{mode === 'week' ? '本周走势' : mode === 'month' ? '月度走势' : '年度走势'}}</text>
-                <text class="dashboard-meta">最高 ¥{{dashboardView.maxText}}</text>
+                <text class="dashboard-meta">最高 {{dashboardView.maxText}}</text>
               </view>
               <view class="chart-tooltip-bar {{selectedBar ? 'is-active' : ''}}" bindtap="openSelectedMonth">
                 <block wx:if="{{selectedBar}}">
                   <view class="tooltip-data-group">
                     <text class="tooltip-label">{{selectedBar.key}}</text>
-                    <text class="tooltip-amount t-num">¥{{selectedBar.amountText}}</text>
+                    <text class="tooltip-amount t-num">{{selectedBar.amountText}}</text>
                   </view>
                   <view class="tooltip-action-group">
                     <text class="tooltip-action">看流水 ›</text>
@@ -175,16 +175,16 @@
                   <text class="dashboard-bar-label">{{item.label}}</text>
                 </view>
               </view>
-              <view class="dashboard-insight">{{mode === 'week' ? '浅色为上周，深色为本周 · 日均' : mode === 'month' ? '近6个月月均' : '已到月份月均'}} ¥{{dashboardView.averageText}} {{trendCaption}} {{trendCaption ? '（含未结束周期）' : ''}}</view>
+              <view class="dashboard-insight">{{mode === 'week' ? '浅色为上周，深色为本周 · 日均' : mode === 'month' ? '近6个月月均' : '已到月份月均'}} {{dashboardView.averageText}} {{trendCaption}} {{trendCaption ? '（含未结束周期）' : ''}}</view>
               <tl-button variant="text" size="small" bind:tap="toggleTrendDetails">{{showTrendDetails ? '收起趋势明细' : '查看趋势明细'}}</tl-button>
               <view wx:if="{{showTrendDetails}}">
                 <view wx:for="{{dashboardView.bars}}" wx:key="key" class="dashboard-row" data-index="{{index}}" bindtap="selectDashboardBar">
                   <text>{{item.label}}</text>
-                  <text>{{item.future ? '未到日期' : '¥' + item.amountText}}</text>
+                  <text>{{item.future ? '未到日期' : item.amountText}}</text>
                 </view>
               </view>
               <view wx:if="{{selectedBar}}" class="dashboard-row" bindtap="openSelectedMonth">
-                <text>{{selectedBar.key}}：¥{{selectedBar.amountText}}</text>
+                <text>{{selectedBar.key}}：{{selectedBar.amountText}}</text>
                 <text>查看明细 ›</text>
               </view>
               <block wx:if="{{mode === 'month'}}">
@@ -213,7 +213,7 @@
                       </tl-icon>
                     </view>
                   </view>
-                  <text wx:if="{{dayStatus === 'ready' || dayStatus === 'loadingMore'}}" class="dashboard-meta">{{dashboardView.typeLabel}}合计 ¥{{dayAmountText}}</text>
+                  <text wx:if="{{dayStatus === 'ready' || dayStatus === 'loadingMore'}}" class="dashboard-meta">{{dashboardView.typeLabel}}合计 {{dayAmountText}}</text>
                   <tl-skeleton wx:if="{{dayStatus === 'loading'}}" variant="list">
                   </tl-skeleton>
                   <tl-empty-state wx:elif="{{dayStatus === 'error'}}" variant="error" title="明细加载失败">
@@ -268,10 +268,10 @@
                       </view>
                       <text class="dashboard-meta">{{item.parentCategory ? item.parentCategory + ' · ' : ''}}占比 {{item.rate}}%</text>
                     </view>
-                    <text wx:if="{{compareCategories}}" class="dashboard-meta">上期 ¥{{item.previousText}} · {{item.deltaDirection}} ¥{{item.deltaText}}</text>
+                    <text wx:if="{{compareCategories}}" class="dashboard-meta">上期 {{item.previousText}} · {{item.deltaDirection}} {{item.deltaText}}</text>
                   </view>
                   <view class="dashboard-row-value">
-                    <text class="dashboard-amount {{analysisType}}">¥{{item.amountText}}</text>
+                    <text class="dashboard-amount {{analysisType}}">{{item.amountText}}</text>
                     <text class="dashboard-meta">{{item.recordCount}} 笔</text>
                   </view>
                   <tl-icon wx:if="{{item.recordCount}}" name="{{selectedCategory && selectedCategory.key === item.key ? 'arrow-up-s-line' : 'arrow-down-s-line'}}" size="28" colorKey="muted">
@@ -307,7 +307,7 @@
                   <text class="dashboard-meta">占比 {{item.rate}}%</text>
                 </view>
                 <view class="dashboard-row-value">
-                  <text class="dashboard-amount {{analysisType}}">¥{{item.amountText}}</text>
+                  <text class="dashboard-amount {{analysisType}}">{{item.amountText}}</text>
                   <text class="dashboard-meta">{{item.recordCount}} 笔 ›</text>
                 </view>
               </view>
@@ -361,22 +361,22 @@
             </view>
             <block wx:if="{{hasRecords}}">
               <view class="analysis-summary-card card dashboard-hero">
-                <text class="section-kicker">{{mode === 'custom' ? '区间' : '累计'}}{{analysisType === 'income' ? '收入' : '支出'}}</text>
-                <text class="summary-title">¥{{analysisType === 'income' ? overview.incomeText : overview.expenseText}}</text>
-                <text class="summary-copy">{{directionRecordCount === null ? '收支共 ' + overview.recordCount : '共 ' + directionRecordCount}} 笔 · 结余 ¥{{overview.balanceText}}（收入减支出）</text>
+                <text class="section-kicker">{{mode === 'custom' ? '区间' : '累计'}}{{analysisType === 'income' ? '收入' : '支出'}}（元）</text>
+                <text class="summary-title">{{analysisType === 'income' ? overview.incomeText : overview.expenseText}}</text>
+                <text class="summary-copy">{{directionRecordCount === null ? '收支共 ' + overview.recordCount : '共 ' + directionRecordCount}} 笔 · 结余 {{overview.balanceText}}（收入减支出）</text>
                 <text wx:if="{{comparisonRange}}" class="summary-copy">对比 {{comparisonRange.start}} 起至 {{comparisonRange.end}} 前 · 结余 {{balanceCompareText}}</text>
                 <view class="summary-metrics">
                   <view class="summary-metric">
                     <text>收入</text>
-                    <text class="is-income">¥{{overview.incomeText}}</text>
+                    <text class="is-income">{{overview.incomeText}}</text>
                   </view>
                   <view class="summary-metric">
                     <text>支出</text>
-                    <text class="is-expense">¥{{overview.expenseText}}</text>
+                    <text class="is-expense">{{overview.expenseText}}</text>
                   </view>
                   <view class="summary-metric">
                     <text>结余</text>
-                    <text>¥{{overview.balanceText}}</text>
+                    <text>{{overview.balanceText}}</text>
                   </view>
                 </view>
               </view>
@@ -392,12 +392,12 @@
                 </view>
                 <tl-button wx:if="{{trendChartError}}" variant="text" size="small" bind:tap="retryTrendChart">图表加载失败，重试</tl-button>
                 <view wx:if="{{selectedTrend}}" class="dashboard-row" bindtap="openSelectedTrend">
-                  <text>{{selectedTrend.label}} · 收入 ¥{{selectedTrend.incomeText}} · 支出 ¥{{selectedTrend.expenseText}} · 结余 ¥{{selectedTrend.balanceText}}</text>
+                  <text>{{selectedTrend.label}} · 收入 {{selectedTrend.incomeText}} · 支出 {{selectedTrend.expenseText}} · 结余 {{selectedTrend.balanceText}}</text>
                   <text>查看明细 ›</text>
                 </view>
                 <view class="timeline-detail-box">
                   <view class="timeline-header">
-                    <text class="timeline-title">趋势明细</text>
+                    <text class="timeline-title">趋势明细（元）</text>
                     <view class="timeline-cols-head">
                       <text class="th-cell th-inc">收入</text>
                       <text class="th-cell th-exp">支出</text>
@@ -410,9 +410,9 @@
                         <text class="date-badge">{{item.label}}</text>
                       </view>
                       <view class="timeline-data-grid">
-                        <text class="val-cell val-inc {{item.income > 0 ? 'has-val' : 'is-zero'}}">{{item.income > 0 ? '¥' + item.incomeText : '0.00'}}</text>
-                        <text class="val-cell val-exp {{item.expense > 0 ? 'has-val' : 'is-zero'}}">{{item.expense > 0 ? '¥' + item.expenseText : '0.00'}}</text>
-                        <text class="val-cell val-bal {{item.balance >= 0 ? 'is-surplus' : 'is-deficit'}}">{{item.balance >= 0 ? '+' : ''}}¥{{item.balanceText}}</text>
+                        <text class="val-cell val-inc {{item.income > 0 ? 'has-val' : 'is-zero'}}">{{item.income > 0 ? item.incomeText : '0.00'}}</text>
+                        <text class="val-cell val-exp {{item.expense > 0 ? 'has-val' : 'is-zero'}}">{{item.expense > 0 ? item.expenseText : '0.00'}}</text>
+                        <text class="val-cell val-bal {{item.balance >= 0 ? 'is-surplus' : 'is-deficit'}}">{{item.balance >= 0 ? '+' : ''}}{{item.balanceText}}</text>
                       </view>
                     </view>
                   </view>
@@ -444,7 +444,7 @@
                       <text class="dashboard-meta">占比 {{item.rate}}%</text>
                     </view>
                     <view class="dashboard-row-value">
-                      <text class="dashboard-amount {{analysisType}}">¥{{item.amountText}}</text>
+                      <text class="dashboard-amount {{analysisType}}">{{item.amountText}}</text>
                     </view>
                     <tl-icon name="arrow-right-s-line" size="28" colorKey="muted">
                     </tl-icon>
@@ -469,7 +469,7 @@
             <view id="analysis-family">
             </view>
             <view class="showcase-section">
-              <text class="section-kicker">家庭支出 · ¥{{family.totalText}}</text>
+              <text class="section-kicker">家庭支出（元） · {{family.totalText}}</text>
             </view>
             <view class="showcase-insights card">
               <view class="showcase-insight">记录全家共同开支，透明分摊更安心；支持按付款人与消费归属分别查看。</view>
@@ -505,13 +505,13 @@
                     <text>{{member.name}}</text>
                     <text>{{member.recordCount}} 笔</text>
                   </view>
-                  <text>¥{{member.amountText}}</text>
+                  <text>{{member.amountText}}</text>
                 </view>
                 <view wx:for="{{member.categories}}" wx:for-item="category" wx:for-index="categoryIndex" wx:key="key" class="family-category-row" data-dimension="payer" data-index="{{memberIndex}}" data-category-index="{{categoryIndex}}" bindtap="openFamilyRecords">
                   <tl-icon name="{{category.categoryIcon || 'price-tag-3-line'}}" size="28" color="{{category.iconColor}}">
                   </tl-icon>
                   <text class="dashboard-row-content">{{category.name}}</text>
-                  <text class="dashboard-amount">¥{{category.amountText}}</text>
+                  <text class="dashboard-amount">{{category.amountText}}</text>
                 </view>
               </view>
             </view>
@@ -527,15 +527,15 @@
                   </view>
                   <view class="category-main">
                     <text>{{member.name}}</text>
-                    <text>{{member.recordCount}} 笔 · 公共 ¥{{member.publicText}} · 多人 ¥{{member.multipleText}}</text>
+                    <text>{{member.recordCount}} 笔 · 公共 {{member.publicText}} · 多人 {{member.multipleText}}</text>
                   </view>
-                  <text>¥{{member.amountText}}</text>
+                  <text>{{member.amountText}}</text>
                 </view>
                 <view wx:for="{{member.categories}}" wx:for-item="category" wx:for-index="categoryIndex" wx:key="key" class="family-category-row" data-dimension="consumer" data-index="{{memberIndex}}" data-category-index="{{categoryIndex}}" bindtap="openFamilyRecords">
                   <tl-icon name="{{category.categoryIcon || 'price-tag-3-line'}}" size="28" color="{{category.iconColor}}">
                   </tl-icon>
                   <text class="dashboard-row-content">{{category.name}}</text>
-                  <text class="dashboard-amount">¥{{category.amountText}}</text>
+                  <text class="dashboard-amount">{{category.amountText}}</text>
                 </view>
               </view>
             </view>
@@ -553,13 +553,13 @@
                     <text>{{member.name}}</text>
                     <text>{{member.recordCount}} 笔</text>
                   </view>
-                  <text>¥{{member.amountText}}</text>
+                  <text>{{member.amountText}}</text>
                 </view>
                 <view wx:for="{{member.categories}}" wx:for-item="category" wx:for-index="categoryIndex" wx:key="key" class="family-category-row" data-dimension="creator" data-index="{{memberIndex}}" data-category-index="{{categoryIndex}}" bindtap="openFamilyRecords">
                   <tl-icon name="{{category.categoryIcon || 'price-tag-3-line'}}" size="28" color="{{category.iconColor}}">
                   </tl-icon>
                   <text class="dashboard-row-content">{{category.name}}</text>
-                  <text class="dashboard-amount">¥{{category.amountText}}</text>
+                  <text class="dashboard-amount">{{category.amountText}}</text>
                 </view>
               </view>
             </view>
@@ -575,7 +575,7 @@
       <text class="card-title">其余分类</text>
       <tl-button class="ratio-sheet-close" variant="text" size="small" bind:tap="closeRatioRemainder">关闭</tl-button>
     </view>
-    <text class="ratio-preview-meta">选择一个分类，查看对应明细</text>
+    <text class="ratio-preview-meta">选择一个分类，查看对应明细（金额单位：元）</text>
     <scroll-view wx:if="{{ratioRemainderOptions.length}}" class="ratio-remainder-scroll" scroll-y="{{true}}" show-scrollbar="{{false}}">
       <view wx:for="{{ratioRemainderOptions}}" wx:key="key" class="analysis-ratio-row" data-key="{{item.key}}" bindtap="chooseRatioRemainder">
         <view class="ratio-category-main">
@@ -583,7 +583,7 @@
           <text wx:if="{{item.parentCategory}}" class="ratio-preview-meta">{{item.parentCategory}}</text>
         </view>
         <view class="ratio-category-amount">
-          <text>¥{{item.amountText}}</text>
+          <text>{{item.amountText}}</text>
           <tl-icon name="arrow-right-s-line" size="26" colorKey="muted">
           </tl-icon>
         </view>
@@ -605,9 +605,9 @@
           <text class="report-period">{{rangeLabel}}</text>
         </view>
         <view class="report-card-hero">
-          <text class="report-hero-label">家庭总支出</text>
-          <text class="report-hero-amount t-num">¥{{dashboardView.totalText}}</text>
-          <text class="report-hero-sub">共 {{dashboardView.recordCount}} 笔 · 日均 ¥{{dashboardView.dailyAverageText}}</text>
+          <text class="report-hero-label">家庭总支出（元）</text>
+          <text class="report-hero-amount t-num">{{dashboardView.totalText}}</text>
+          <text class="report-hero-sub">共 {{dashboardView.recordCount}} 笔 · 日均 {{dashboardView.dailyAverageText}}</text>
         </view>
         <view wx:if="{{dashboardView.editorialSummary}}" class="report-narrative-quote">
           <text>“{{dashboardView.editorialSummary}}”</text>
@@ -620,13 +620,13 @@
               </view>
               <text class="report-cat-name">{{item.name}}</text>
             </view>
-            <text class="report-cat-val t-num">¥{{item.amountText}} ({{item.rate}}%)</text>
+            <text class="report-cat-val t-num">{{item.amountText}} ({{item.rate}}%)</text>
           </view>
         </view>
         <view wx:if="{{family && family.payers.length}}" class="report-payers-summary">
           <text class="report-section-label">全家付款贡献</text>
           <view class="report-payers-pills">
-            <text wx:for="{{family.payers}}" wx:key="openid" class="report-payer-item">{{item.name}} {{item.rate}}% (¥{{item.amountText}})</text>
+            <text wx:for="{{family.payers}}" wx:key="openid" class="report-payer-item">{{item.name}} {{item.rate}}% ({{item.amountText}})</text>
           </view>
         </view>
       </view>

@@ -28,12 +28,12 @@
         </view>
         <view class="month-brief" wx:if="{{!loading && !isError}}">
           <view>
-            <text class="brief-label">收入</text>
-            <text class="brief-income">¥{{monthIncome}}</text>
+            <text class="brief-label">收入（元）</text>
+            <text class="brief-income">{{monthIncome}}</text>
           </view>
           <view>
             <text class="brief-label">支出</text>
-            <text class="brief-expense">¥{{monthExpense}}</text>
+            <text class="brief-expense">{{monthExpense}}</text>
           </view>
           <view>
             <text class="brief-label">共</text>
@@ -56,8 +56,8 @@
               <view class="day-subtitle">{{item.weekday}}</view>
             </view>
             <view class="day-total">
-              <text class="day-income">收 ¥{{item.income}}</text>
-              <text class="day-expense">支 ¥{{item.expense}}</text>
+              <text class="day-income">收 {{item.income}}</text>
+              <text class="day-expense">支 {{item.expense}}</text>
             </view>
           </view>
           <view class="record-row" wx:for="{{item.records}}" wx:for-item="record" wx:key="id" data-id="{{record.id}}" bindtap="openRecord">
@@ -68,7 +68,7 @@
             <view class="record-main">
               <view class="record-line">
                 <view class="record-title">{{record.categoryText}}</view>
-                <view class="record-amount {{record.type}}">{{record.sign}}¥{{record.amountText}}</view>
+                <view class="record-amount {{record.type}}">{{record.sign}}{{record.amountText}}</view>
               </view>
               <view class="record-line record-subline">
                 <view class="record-meta">{{record.timeText}}</view>

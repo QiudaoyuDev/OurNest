@@ -1109,7 +1109,7 @@ Component({
       const lines = [
         `【咱家小账 · ${this.data.rangeLabel || "月度"}生活月报】`,
         `💰 家庭支出：¥${v.totalText} (共 ${v.recordCount} 笔，日均 ¥${v.dailyAverageText})`,
-        `结余状态：¥${v.balanceText} (${v.comparisonTag || v.comparisonText || ""})`,
+        `结余状态：¥${v.balanceText} (${v.comparisonCopyText || v.comparisonTag || v.comparisonText || ""})`,
         v.editorialSummary ? `💬 生活速览：${v.editorialSummary}` : "",
         categoriesText ? `📊 消费大头 Top 3：\n${categoriesText}` : "",
         payersText ? `👥 付款贡献：${payersText}` : "",

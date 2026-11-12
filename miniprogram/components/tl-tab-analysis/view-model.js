@@ -7,7 +7,7 @@ function amount(value) {
 }
 
 function money(value) {
-  return `¥${formatDisplayMoney(value)}`;
+  return formatDisplayMoney(value);
 }
 
 function comparisonText(comparison = {}, metric) {

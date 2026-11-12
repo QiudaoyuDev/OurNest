@@ -16,7 +16,11 @@ function getMonthLabel() {
 
 function compactMoney(value) {
   const num = Number(value || 0);
-  if (Math.abs(num) >= 100000) return `${(num / 10000).toFixed(1)}万`;
+  if (Math.abs(num) >= 100000) {
+    const rounded = (num / 10000).toFixed(1);
+    const isApproximate = Math.round(num * 100) !== Math.round(Number(rounded) * 1000000);
+    return `${isApproximate ? "约 " : ""}${rounded}万`;
+  }
   return formatDisplayMoney(num);
 }
 

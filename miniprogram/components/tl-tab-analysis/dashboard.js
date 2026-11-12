@@ -104,7 +104,7 @@ function calculateFamilySettlement(family = {}, rangeLabel = "", ledgerName = "�
   if (diffCents === 0) {
     advice = `${first.name} 与 ${second.name} 付款金额一致，收支平衡！`;
   } else {
-    advice = `${lower.name} 需向 ${higher.name} 转账 ¥${diffText} 结清平摊开支`;
+    advice = `${lower.name} 需向 ${higher.name} 转账 ${diffText} 元结清平摊开支`;
   }
 
   const familyTotal = Number(family.total || 0) || firstAmount + secondAmount;
@@ -187,11 +187,11 @@ function makeDashboardView(result, mode, type, today) {
   const comparisonText =
     delta === 0
       ? `与${comparisonLabel}持平`
-      : `较${comparisonLabel}${delta > 0 ? "增加" : "减少"} ¥${formatDisplayMoney(Math.abs(delta))}`;
+      : `较${comparisonLabel}${delta > 0 ? "增加" : "减少"} ${formatDisplayMoney(Math.abs(delta))} 元`;
   const comparisonTag =
     delta === 0
       ? `与${comparisonLabel}持平`
-      : `${delta > 0 ? "↑" : "↓"} 较${comparisonLabel}${delta > 0 ? "增加" : "减少"} ¥${formatDisplayMoney(Math.abs(delta))}`;
+      : `${delta > 0 ? "↑" : "↓"} 较${comparisonLabel}${delta > 0 ? "增加" : "减少"} ${formatDisplayMoney(Math.abs(delta))} 元`;
   const editorialSummary = generateEditorialSummary({
     mode,
     type,
@@ -282,6 +282,10 @@ function makeDashboardView(result, mode, type, today) {
     dailyAverageText: formatDisplayMoney(dashboard.dailyAverage),
     comparisonText,
     comparisonTag,
+    comparisonCopyText:
+      delta === 0
+        ? comparisonTag
+        : `${delta > 0 ? "↑" : "↓"} 较${comparisonLabel}${delta > 0 ? "增加" : "减少"} ¥${formatDisplayMoney(Math.abs(delta))}`,
     editorialSummary,
     settlement,
     isBalancePositive: Number((result.overview || {}).balance || 0) >= 0,

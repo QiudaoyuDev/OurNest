@@ -59,8 +59,8 @@
                   <text class="entry-panel-category">{{categoryHeading}}</text>
                 </view>
                 <view class="entry-panel-amount">
-                  ¥{{amount || '0.00'}}
-                  <text wx:if="{{showAmountResult && amountResult}}" class="entry-panel-result">= ¥{{amountResult}}</text>
+                  {{amount || '0.00'}} 元
+                  <text wx:if="{{showAmountResult && amountResult}}" class="entry-panel-result">= {{amountResult}} 元</text>
                 </view>
               </view>
               <view class="entry-clear" bindtap="clearEntryAmount">清空金额</view>

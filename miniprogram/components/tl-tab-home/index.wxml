@@ -21,16 +21,16 @@
         </view>
         <block wx:elif="{{isEmpty}}">
           <view wx:if="{{!showBudget || !budgetEnabled}}" class="summary-card card fade-up">
-            <view class="summary-title">本月结余</view>
-            <view class="overview-value">¥{{balanceCompact}}</view>
+            <view class="summary-title">本月结余（元）</view>
+            <view class="overview-value">{{balanceCompact}}</view>
             <view class="overview-grid">
               <view class="overview-item">
                 <view class="overview-label">收入</view>
-                <view class="overview-value income">¥{{monthIncomeCompact}}</view>
+                <view class="overview-value income">{{monthIncomeCompact}}</view>
               </view>
               <view class="overview-item">
                 <view class="overview-label">支出</view>
-                <view class="overview-value expense">¥{{monthExpenseCompact}}</view>
+                <view class="overview-value expense">{{monthExpenseCompact}}</view>
               </view>
             </view>
           </view>
@@ -43,7 +43,7 @@
             <block wx:if="{{budgetEnabled}}">
               <view class="budget-card-header">
                 <view class="budget-card-heading">
-                  <text class="budget-card-title">本月预算</text>
+                  <text class="budget-card-title">本月预算（元）</text>
                   <view class="budget-status-tag {{isOverBudget ? 'danger' : budgetRate >= 90 ? 'danger' : budgetRate >= 70 ? 'warning' : budgetRate >= 50 ? 'attention' : 'safe'}}">{{isOverBudget ? '已超支' : budgetRate >= 100 ? '预算已用完' : '已使用 ' + budgetRateText + '%'}}</view>
                 </view>
                 <view class="budget-actions">
@@ -61,7 +61,6 @@
                 <view class="budget-hero-main">
                   <text class="budget-hero-label">{{isOverBudget ? '已超支' : '剩余可用'}}</text>
                   <view class="budget-hero-amount {{isOverBudget ? 'is-danger' : ''}}">
-                    <text class="currency">{{isOverBudget ? '-¥' : '¥'}}</text>
                     <text class="amount-num">{{budgetLeftAbs}}</text>
                   </view>
                 </view>
@@ -76,13 +75,13 @@
               <view class="budget-metrics-row">
                 <view class="budget-metric-item">
                   <text class="budget-metric-label">总预算</text>
-                  <text class="budget-metric-value">¥{{budget}}</text>
+                  <text class="budget-metric-value">{{budget}}</text>
                 </view>
                 <view class="budget-metric-divider">
                 </view>
                 <view class="budget-metric-item is-right">
                   <text class="budget-metric-label">已支出</text>
-                  <text class="budget-metric-value expense">¥{{monthExpense}}</text>
+                  <text class="budget-metric-value expense">{{monthExpense}}</text>
                 </view>
               </view>
             </block>
@@ -112,7 +111,7 @@
           <view wx:if="{{showBudget && budgetEnabled}}" class="budget-card card fade-up">
             <view class="budget-card-header">
               <view class="budget-card-heading">
-                <text class="budget-card-title">本月预算</text>
+                <text class="budget-card-title">本月预算（元）</text>
                 <view class="budget-status-tag {{isOverBudget ? 'danger' : budgetRate >= 90 ? 'danger' : budgetRate >= 70 ? 'warning' : budgetRate >= 50 ? 'attention' : 'safe'}}">{{isOverBudget ? '已超支' : budgetRate >= 100 ? '预算已用完' : '已使用 ' + budgetRateText + '%'}}</view>
               </view>
               <view class="budget-actions">
@@ -130,7 +129,6 @@
               <view class="budget-hero-main">
                 <text class="budget-hero-label">{{isOverBudget ? '已超支' : '剩余可用'}}</text>
                 <view class="budget-hero-amount {{isOverBudget ? 'is-danger' : ''}}">
-                  <text class="currency">{{isOverBudget ? '-¥' : '¥'}}</text>
                   <text class="amount-num">{{budgetLeftInteger || budgetLeftAbs}}</text>
                   <text wx:if="{{budgetLeftDecimal}}" class="amount-decimal">{{budgetLeftDecimal}}</text>
                 </view>
@@ -146,40 +144,40 @@
             <view class="budget-metrics-row">
               <view class="budget-metric-item">
                 <text class="budget-metric-label">总预算</text>
-                <text class="budget-metric-value">¥{{budget}}</text>
+                <text class="budget-metric-value">{{budget}}</text>
               </view>
               <view class="budget-metric-divider">
               </view>
               <view class="budget-metric-item is-right">
                 <text class="budget-metric-label">已支出</text>
-                <text class="budget-metric-value expense">¥{{monthExpense}}</text>
+                <text class="budget-metric-value expense">{{monthExpense}}</text>
               </view>
             </view>
           </view>
           <view wx:if="{{showBudget && budgetEnabled}}" class="budget-summary fade-up">
             <view class="budget-summary-item">
               <text class="budget-summary-label">本月收入</text>
-              <text class="budget-summary-value income">¥{{monthIncomeCompact}}</text>
+              <text class="budget-summary-value income">{{monthIncomeCompact}}</text>
             </view>
             <view class="budget-summary-item">
               <text class="budget-summary-label">本月结余</text>
-              <text class="budget-summary-value">¥{{balanceCompact}}</text>
+              <text class="budget-summary-value">{{balanceCompact}}</text>
             </view>
           </view>
           <view wx:else class="summary-card card fade-up">
             <view class="summary-head">
-              <view class="summary-title">本月结余</view>
+              <view class="summary-title">本月结余（元）</view>
               <view wx:if="{{canManageBudget}}" class="summary-action" bindtap="goBudgetSettings">设置预算</view>
             </view>
-            <view class="overview-value">¥{{balanceCompact}}</view>
+            <view class="overview-value">{{balanceCompact}}</view>
             <view class="overview-grid">
               <view class="overview-item">
                 <view class="overview-label">收入</view>
-                <view class="overview-value income">¥{{monthIncomeCompact}}</view>
+                <view class="overview-value income">{{monthIncomeCompact}}</view>
               </view>
               <view class="overview-item">
                 <view class="overview-label">支出</view>
-                <view class="overview-value expense">¥{{monthExpenseCompact}}</view>
+                <view class="overview-value expense">{{monthExpenseCompact}}</view>
               </view>
             </view>
           </view>
@@ -199,7 +197,7 @@
                     <text class="record-title">{{item.categoryText}}</text>
                     <text class="record-member-pill">{{item.memberName}}</text>
                   </view>
-                  <view class="record-amount {{item.type}}">{{item.type === 'income' ? '+' : '-'}}¥{{item.amountText}}</view>
+                  <view class="record-amount {{item.type}}">{{item.type === 'income' ? '+' : '-'}}{{item.amountText}}</view>
                 </view>
                 <view class="record-line record-subline">
                   <view class="record-meta">{{item.selectedTimeText}}</view>

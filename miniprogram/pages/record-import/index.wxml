@@ -47,8 +47,8 @@
           <view class="import-note">支持模板及微信、支付宝账单（.xls / .xlsx / .csv），最多 5 MB、200 行。</view>
         </view>
         <view wx:else class="import-card card">
-          <view class="card-title">核对导入记录</view>
-          <view class="import-note">{{ledgerName}} · 已选 {{previewSummary.count}} 笔 · 收入 ¥{{previewSummary.income}} · 支出 ¥{{previewSummary.expense}} · 待处理 {{previewSummary.pending}} 笔</view>
+          <view class="card-title">核对导入记录（金额单位：元）</view>
+          <view class="import-note">{{ledgerName}} · 已选 {{previewSummary.count}} 笔 · 收入 {{previewSummary.income}} · 支出 {{previewSummary.expense}} · 待处理 {{previewSummary.pending}} 笔</view>
           <tl-button variant="text" size="small" bind:tap="toggleReviewFilter">{{reviewOnly ? '查看全部记录' : '只看需要处理'}}</tl-button>
           <view class="import-note">点击记录可取消选择；确认后写入账本。</view>
           <tl-button wx:if="{{hasCategoryChoices}}" variant="secondary" size="small" bind:tap="confirmUnmappedCategories">未确认分类全部保持其他</tl-button>
@@ -56,7 +56,7 @@
           <view wx:for="{{previewRows}}" wx:key="rowNumber" wx:if="{{!reviewOnly || item.needsAttention}}" class="preview-row" data-row="{{item.rowNumber}}" bindtap="togglePreviewRow">
             <view class="preview-heading">
               <text>{{item.excluded ? '不计入' : item.selected ? '已选择' : '未选择'}} · 第 {{item.rowNumber}} 行</text>
-              <text>{{(item.manualType || item.type) === 'income' ? '收入' : '支出'}} ¥{{item.amount}}</text>
+              <text>{{(item.manualType || item.type) === 'income' ? '收入' : '支出'}} {{item.amount}}</text>
             </view>
             <view>{{item.date}} · {{item.parentCategory}} / {{item.categoryName}} · {{item.account}}</view>
             <view data-row="{{item.rowNumber}}" catchtap="togglePreviewDetails">{{item.expanded ? '收起详情' : '查看详情'}}</view>
