@@ -42,6 +42,101 @@ function load(file, app, wx = {}, mocks = {}) {
     : module.exports;
 }
 
+test("editable income and expense share the detail layout without changing quick entry", () => {
+  const template = fs.readFileSync("miniprogram/pages/record-edit/index.wxml", "utf8");
+  const styles = fs.readFileSync("miniprogram/pages/record-edit/index.wxss", "utf8");
+  assert.match(template, /isEditing \? typeLabel \+ '明细' : '记一笔'/);
+  assert.match(template, /isEditing && type === 'income' \? 'edit-page--income'/);
+  assert.match(template, /quick-entry="\{\{!isEditing\}\}"/);
+  assert.match(template, /bindtap="reselectCategory"/);
+  assert.match(template, /bind:tap="saveAndLeave"/);
+  assert.match(template, /bind:tap="deleteRecord"/);
+  assert.match(template, /最近更新：\{\{updatedDate\}\}/);
+  assert.match(
+    styles,
+    /\.edit-page--income \.tl-record-form__amount-value\s*\{[^}]*var\(--tl-color-income\)/
+  );
+});
+
+test("readonly record detail does not invent a parent for flat categories", async () => {
+  let record = { type: "expense", categoryName: "餐饮", amount: 12 };
+  const page = load(
+    "miniprogram/pages/record-detail/index.js",
+    { globalData: {} },
+    {},
+    {
+      "../../services/record.service": { getRecord: async () => ({ record }) },
+      "../../utils/avatar": { resolveAvatarUrls: async (records) => records },
+    }
+  );
+  await page.loadRecord("one");
+  assert.equal(page.data.record.parentCategoryText, "");
+  assert.equal(page.data.record.categoryText, "餐饮");
+  record = { ...record, type: "income", parentCategory: "工资" };
+  await page.loadRecord("two");
+  assert.equal(page.data.record.parentCategoryText, "工资");
+  assert.equal(page.data.record.typeText, "收入");
+});
+
+test("readonly detail displays a category icon with category colors and safe fallbacks", async () => {
+  let record = { type: "expense", categoryName: "餐饮", categoryIcon: "category-food", amount: 12 };
+  const page = load(
+    "miniprogram/pages/record-detail/index.js",
+    { globalData: {} },
+    {},
+    {
+      "../../services/record.service": { getRecord: async () => ({ record, readonly: true }) },
+      "../../utils/avatar": { resolveAvatarUrls: async (records) => records },
+    }
+  );
+  for (const [type, icon, expectedIcon, color] of [
+    ["expense", "category-food", "category-food", "#e86a33"],
+    ["expense", "restaurant-line", "restaurant-line", "#e86a33"],
+    ["expense", "invalid-icon", "price-tag-3-line", "#e86a33"],
+    ["expense", "__proto__", "price-tag-3-line", "#e86a33"],
+    ["income", null, "funds-line", "#0ea569"],
+  ]) {
+    record = { ...record, type, categoryIcon: icon };
+    await page.loadRecord("one");
+    assert.equal(page.data.record.categoryDisplayIcon, expectedIcon);
+    assert.equal(page.data.record.categoryIconColor, color);
+    assert.equal(page.data.readonly, true);
+  }
+  const template = fs.readFileSync("miniprogram/pages/record-detail/index.wxml", "utf8");
+  assert.match(
+    template,
+    /<tl-icon name="{{record.categoryDisplayIcon}}" size="32" color="{{record.categoryIconColor}}">[\s\S]*?{{record.categoryText}}<\/text>/
+  );
+});
+
+test("readonly shared income detail displays server owner name and safe fallbacks", async () => {
+  let record = { type: "income", amount: 12, incomeOwnerOpenid: "other", incomeOwnerName: "家人" };
+  const page = load(
+    "miniprogram/pages/record-detail/index.js",
+    { globalData: {} },
+    {},
+    {
+      "../../services/record.service": {
+        getRecord: async () => ({ record, ledger: { type: "shared" }, readonly: true }),
+      },
+      "../../utils/avatar": { resolveAvatarUrls: async (records) => records },
+    }
+  );
+  for (const [owner, expected] of [
+    [{ incomeOwnerOpenid: "other", incomeOwnerName: "家人" }, "家人"],
+    [{ incomeOwnerOpenid: "former", incomeOwnerName: "" }, "历史成员"],
+    [{ incomeOwnerOpenid: "", incomeOwnerName: "旧名称" }, "未指定"],
+  ]) {
+    record = { ...record, ...owner };
+    await page.loadRecord("one");
+    assert.equal(page.data.readonly, true);
+    assert.equal(page.data.record.incomeRecipientText, expected);
+  }
+  const template = fs.readFileSync("miniprogram/pages/record-detail/index.wxml", "utf8");
+  assert.match(template, /收入归属/);
+  assert.match(template, /\{\{record.incomeRecipientText\}\}/);
+});
+
 for (const [component, method] of [
   ["tl-tab-home", "goRecordDetail"],
   ["tl-tab-records", "openRecord"],

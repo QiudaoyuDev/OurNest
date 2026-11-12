@@ -52,6 +52,12 @@ references:
 - 年度模式的 `recentYearTrend` 补齐以所选年度为终点的 5 个自然年；所选年度处于未来时不返回趋势，避免把未来年份误作零值。当前年尚未结束，金额是截至已录入记录的累计值。
 - `feedbacks.content` 必填且最多 200 字；`type` 必填，取 `feature`、`bug`、`improvement`、`other`；`images` 最多 9 个云文件；提交写入 `submitted`，当前没有更新处理状态的公开路由。
 
+## 收入归属人
+
+- `records.incomeOwnerOpenid` 是共享账本收入的真实归属人，与 `ownerOpenid` 录入人独立。历史记录和导入记录缺失或空值均为未指定，绝不推断为录入人；无需迁移。个人账本和支出不指定收入归属。
+- `record/create`、`record/update` 可传 `incomeOwnerOpenid`：字符串为空或 `null` 表示清除；非空必须是当前共享账本 Owner 或成员，访客及其他账本用户不可选。更新未传保留已有收入归属；历史已离开成员的原值可保留或原样提交，但不能重新选择其他已离开成员。收入改为支出时清空，支出改收入不会继承。服务端在事务内重新读取账本及记录并复核成员和写入权限；现有 Owner、成员及访客权限不变。无效输入返回 `INVALID_INCOME_OWNER`。
+- `record/get` 返回 `record.incomeOwnerOpenid` 和 `record.incomeOwnerName`：未指定显示“未指定”，有资料显示昵称，本人缺昵称显示“我”，其他缺资料显示“历史成员”；此展示不修改历史数据。
+
 ## 家庭付款与消费归属
 
 - `records.ownerOpenid` 始终由云端记录实际录入人；共享账本支出可附带 `familyAttribution: { payerOpenid, consumerKind, consumerOpenid }`。`payerOpenid` 空字符串表示其他；`consumerKind` 为 `personal`、`public`、`multiple` 或 `unknown`，仅 `personal` 使用 `consumerOpenid`。

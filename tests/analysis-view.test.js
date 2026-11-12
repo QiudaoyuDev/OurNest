@@ -7,6 +7,8 @@ const { createRequire } = require("node:module");
 const {
   shiftMonth,
   formatAnalysisRangeLabel,
+  formatWeekRangeCompact,
+  getPresetRange,
 } = require("../miniprogram/components/tl-tab-analysis/dates");
 const {
   comparisonText,
@@ -25,6 +27,19 @@ const {
   generateEditorialSummary,
   calculateFamilySettlement,
 } = require("../miniprogram/components/tl-tab-analysis/dashboard");
+
+test("family category icons use the category management color scheme", () => {
+  const category = { name: "餐饮", categoryIcon: "restaurant-line", amount: 10 };
+  const view = decorate({
+    family: { payers: [{ categories: [category] }], consumers: [{ categories: [category] }] },
+    members: [{ categories: [category] }],
+  });
+  const { resolveCategoryScheme } = require("../miniprogram/utils/category-color");
+  const expected = resolveCategoryScheme(category.name, "expense", category.categoryIcon).iconColor;
+  assert.equal(view.family.payers[0].categories[0].iconColor, expected);
+  assert.equal(view.family.consumers[0].categories[0].iconColor, expected);
+  assert.equal(view.members[0].categories[0].iconColor, expected);
+});
 
 test("dashboard bars preserve small amounts and distinguish zero", () => {
   const result = makeDashboardView(
@@ -105,7 +120,7 @@ test("analysis offers supported modes without removed views", () => {
   });
   assert.deepEqual(
     Array.from(definition.data.modeOptions, (item) => item.value),
-    ["week", "month", "year", "custom", "all"]
+    ["week", "month", "year", "custom"]
   );
   assert.ok(
     !JSON.parse(fs.readFileSync("miniprogram/app.json", "utf8")).pages.includes(
@@ -243,6 +258,38 @@ test("custom analysis supports bounded selection and category and day drill-down
   assert.match(destinations[0], /filter=.*c1/);
   assert.match(destinations[1], /start=2026-01-31/);
   assert.match(destinations[1], /end=2026-02-01/);
+});
+
+test("compact weekly range formats omit redundant year and preserve cross-year boundaries", () => {
+  assert.equal(formatWeekRangeCompact("2026-11-09 至 2026-11-15"), "11.09 - 11.15");
+  assert.equal(formatWeekRangeCompact("2025-12-29 至 2026-01-04"), "2025.12.29 - 01.04");
+  assert.equal(
+    formatAnalysisRangeLabel("week", "2026-11-12", "2026-11-09 至 2026-11-15"),
+    "11.09 - 11.15"
+  );
+  assert.equal(
+    formatAnalysisRangeLabel("week", "2026-01-01", "2025-12-29 至 2026-01-04"),
+    "2025.12.29 - 01.04"
+  );
+});
+
+test("custom date presets provide 30d, 90d, 180d and all-time range definitions", () => {
+  const p30 = getPresetRange("30d");
+  assert.equal(p30.preset, "30d");
+  assert.match(p30.start, /^\d{4}-\d{2}-\d{2}$/);
+  assert.match(p30.end, /^\d{4}-\d{2}-\d{2}$/);
+
+  const p90 = getPresetRange("90d");
+  assert.equal(p90.preset, "90d");
+  assert.match(p90.start, /^\d{4}-\d{2}-\d{2}$/);
+
+  const pHalf = getPresetRange("180d");
+  assert.equal(pHalf.preset, "180d");
+
+  const pAll = getPresetRange("all");
+  assert.equal(pAll.preset, "all");
+  assert.equal(pAll.start, "");
+  assert.equal(pAll.end, "");
 });
 
 test("analysis charts use supplied data for zero days, yearly extrema and negative balance", () => {
@@ -1279,4 +1326,83 @@ test("calculateFamilySettlement computes fair partner balance difference", () =>
   // Single payer case
   const single = calculateFamilySettlement({ payers: [{ name: "我", amount: 100 }] });
   assert.equal(single.enabled, false);
+});
+
+test("decorate computes rate and barStyle for family payers and consumers when rate is missing", () => {
+  const view = decorate({
+    overview: {},
+    categories: [],
+    incomeCategories: [],
+    accounts: [],
+    family: {
+      total: 500,
+      payers: [
+        { name: "张三", amount: 350 },
+        { name: "李四", amount: 150 },
+      ],
+      consumers: [
+        { name: "张三", amount: 250, publicAmount: 100, multipleAmount: 150 },
+        { name: "李四", amount: 250, publicAmount: 100, multipleAmount: 150 },
+      ],
+    },
+  });
+
+  assert.equal(view.family.payers[0].rate, 70);
+  assert.equal(view.family.payers[0].barStyle, "width: 70%");
+  assert.equal(view.family.payers[1].rate, 30);
+  assert.equal(view.family.payers[1].barStyle, "width: 30%");
+  assert.equal(view.family.consumers[0].rate, 50);
+  assert.equal(view.family.consumers[0].barStyle, "width: 50%");
+});
+
+test("copyMonthlyReportText generates valid payer contributions without undefined%", () => {
+  const filename = path.resolve("miniprogram/components/tl-tab-analysis/index.js");
+  let definition;
+  let copiedText = "";
+  let sheetClosed = false;
+  const wxMock = {
+    setClipboardData: ({ data }) => {
+      copiedText = data;
+    },
+  };
+
+  vm.runInNewContext(fs.readFileSync(filename, "utf8").replace(/^import .*;\r?\n/, ""), {
+    getApp: () => ({}),
+    require: createRequire(filename),
+    Component: (value) => {
+      definition = value;
+    },
+    wx: wxMock,
+  });
+
+  const instance = {
+    data: {
+      rangeLabel: "2026年3月",
+      dashboardView: {
+        totalText: "500.00",
+        recordCount: 10,
+        dailyAverageText: "16.67",
+        balanceText: "1,000.00",
+        comparisonTag: "较上月同期 ↓ 10%",
+        editorialSummary: "本月支出平稳",
+        categories: [{ name: "餐饮", amountText: "300.00", rate: 60 }],
+      },
+      family: {
+        total: 500,
+        payers: [
+          { name: "张三", amount: 350, amountText: "350.00" },
+          { name: "李四", amount: 150, amountText: "150.00" },
+        ],
+      },
+    },
+    closeMonthlyReportSheet() {
+      sheetClosed = true;
+    },
+  };
+
+  definition.methods.copyMonthlyReportText.call(instance);
+  assert.equal(sheetClosed, true);
+  assert.ok(copiedText.includes("【咱家小账 · 2026年3月生活月报】"));
+  assert.ok(copiedText.includes("👥 付款贡献：张三：¥350.00 (70%)，李四：¥150.00 (30%)"));
+  assert.ok(!copiedText.includes("undefined"));
 });

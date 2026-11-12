@@ -8,13 +8,24 @@ function dateAnchor() {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
+function formatWeekRangeCompact(label) {
+  if (!label || typeof label !== "string") return label || "";
+  const match = /^(\d{4})-(\d{2})-(\d{2})\s*至\s*(\d{4})-(\d{2})-(\d{2})$/.exec(label.trim());
+  if (!match) return label;
+  const [, startYear, startMonth, startDay, endYear, endMonth, endDay] = match;
+  if (startYear === endYear) {
+    return `${startMonth}.${startDay} - ${endMonth}.${endDay}`;
+  }
+  return `${startYear}.${startMonth}.${startDay} - ${endMonth}.${endDay}`;
+}
+
 function formatAnalysisRangeLabel(mode, anchor, fallback = "") {
   if (mode === "month" && /^\d{4}-\d{2}$/.test(anchor)) {
     return `${anchor.slice(0, 4)}年${anchor.slice(5, 7)}月`;
   }
   if (mode === "year" && /^\d{4}$/.test(anchor)) return `${anchor}年`;
   if (mode === "week") {
-    if (fallback) return fallback;
+    if (fallback) return formatWeekRangeCompact(fallback);
     if (/^\d{4}-\d{2}-\d{2}$/.test(anchor)) return `${anchor.slice(5)} 当周`;
     return "本周";
   }
@@ -23,8 +34,12 @@ function formatAnalysisRangeLabel(mode, anchor, fallback = "") {
 }
 
 function customRangeDefaults() {
-  const end = dateAnchor();
-  return { start: `${end.slice(0, 8)}01`, end };
+  const now = new Date();
+  const format = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const end = format(now);
+  const start = format(new Date(now.getTime() - 29 * 86400000));
+  return { start, end, preset: "30d" };
 }
 
 function getPresetRange(type) {
@@ -32,13 +47,24 @@ function getPresetRange(type) {
   const format = (d) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const end = format(now);
-  if (type === "7d") {
-    const d = new Date(now.getTime() - 6 * 86400000);
-    return { start: format(d), end, preset: "7d" };
-  }
   if (type === "30d") {
     const d = new Date(now.getTime() - 29 * 86400000);
     return { start: format(d), end, preset: "30d" };
+  }
+  if (type === "90d") {
+    const d = new Date(now.getTime() - 89 * 86400000);
+    return { start: format(d), end, preset: "90d" };
+  }
+  if (type === "180d" || type === "halfYear") {
+    const d = new Date(now.getTime() - 179 * 86400000);
+    return { start: format(d), end, preset: "180d" };
+  }
+  if (type === "all") {
+    return { start: "", end: "", preset: "all" };
+  }
+  if (type === "7d") {
+    const d = new Date(now.getTime() - 6 * 86400000);
+    return { start: format(d), end, preset: "7d" };
   }
   if (type === "month") {
     return { start: `${end.slice(0, 8)}01`, end, preset: "month" };
@@ -77,6 +103,7 @@ module.exports = {
   monthAnchor,
   dateAnchor,
   formatAnalysisRangeLabel,
+  formatWeekRangeCompact,
   customRangeDefaults,
   getPresetRange,
   getDaysCount,

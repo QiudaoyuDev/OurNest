@@ -9,7 +9,6 @@
   display: flex;
   align-items: center;
   padding-bottom: 20rpx;
-  border-bottom: var(--tl-border-width) solid var(--tl-color-divider-warm);
   color: var(--tl-color-primary-ink);
 }
 .tl-record-form__amount text {
@@ -90,12 +89,20 @@
   align-items: flex-start;
   padding: 22rpx 0;
 }
+.tl-record-form__field--note > text {
+  padding-top: 12rpx;
+  line-height: 42rpx;
+}
 .tl-record-form__note {
   height: 126rpx;
   box-sizing: border-box;
   padding: 12rpx 0;
   line-height: 42rpx;
   text-align: left !important;
+}
+.tl-record-form__note-placeholder {
+  text-align: left;
+  line-height: 42rpx;
 }
 .tl-record-form__tags {
   align-items: flex-start;
@@ -149,7 +156,7 @@
   font-size: var(--tl-font-data-xl);
   font-weight: var(--tl-font-weight-bold);
   line-height: 94rpx;
-  text-align: right;
+  text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

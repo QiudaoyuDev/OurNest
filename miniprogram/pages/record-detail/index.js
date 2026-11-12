@@ -4,6 +4,9 @@ const { formatDisplayMoney } = require("../../utils/money");
 const { formatDateTime } = require("../../utils/date");
 const { getId } = require("../../utils/mapper");
 const { resolveAvatarUrls } = require("../../utils/avatar");
+const { resolveCategoryScheme } = require("../../utils/category-color");
+const ICON_GLYPHS = require("../../components/tl-icon/glyphs");
+const CATEGORY_ICONS = require("../../components/tl-icon/category-icons");
 
 function getLedgerTypeText(type) {
   return type === "shared" ? "共享账本" : "个人账本";
@@ -17,6 +20,17 @@ function normalizeRecord(record = {}, ledger = {}) {
   const type = record.type === "income" ? "income" : "expense";
   const selectedTimeText = formatDateTime(record.date, record.time);
   const tags = Array.isArray(record.tags) ? record.tags : [];
+  const categoryText = record.categoryName || record.categoryLabel || "其他";
+  const icon = record.categoryIcon;
+  const categoryIcon =
+    typeof icon === "string" &&
+    (Object.prototype.hasOwnProperty.call(ICON_GLYPHS, icon) ||
+      Object.prototype.hasOwnProperty.call(CATEGORY_ICONS, icon))
+      ? icon
+      : type === "income"
+        ? "funds-line"
+        : "price-tag-3-line";
+  const categoryScheme = resolveCategoryScheme(categoryText, type, categoryIcon);
   return {
     ...record,
     id: getId(record),
@@ -26,11 +40,19 @@ function normalizeRecord(record = {}, ledger = {}) {
     typeIconColor: type === "income" ? "#25a66a" : "#f0442f",
     amountText: formatDisplayMoney(record.amount),
     sign: type === "income" ? "+" : "-",
-    categoryText: record.categoryName || record.categoryLabel || "其他",
-    parentCategoryText: record.parentCategory || "未分类",
+    categoryText,
+    categoryDisplayIcon: categoryIcon,
+    categoryIconColor: categoryScheme.iconColor,
+    categoryChipClass: categoryScheme.chipClass,
+    parentCategoryText:
+      record.parentCategory &&
+      record.parentCategory !== (record.categoryName || record.categoryLabel)
+        ? record.parentCategory
+        : "",
     selectedTimeText,
     ledgerName: ledger.name || "我的账本",
     ledgerTypeText: getLedgerTypeText(ledger.type),
+    incomeRecipientText: record.incomeOwnerOpenid ? record.incomeOwnerName || "历史成员" : "未指定",
     memberName: record.memberName || "我",
     memberAvatar: record.memberAvatar || "/images/brand/our-nest-logo-256-transparent.png",
     accountText: record.account || "未选择账户",

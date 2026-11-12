@@ -124,18 +124,18 @@ Component({
       { value: "month", label: "月度" },
       { value: "year", label: "年度" },
       { value: "custom", label: "自定义" },
-      { value: "all", label: "累计" },
     ],
     modeIndex: 1,
-    modeLabel: "\u6708\u5ea6",
+    modeLabel: "月度",
     isModeSheetVisible: false,
     isMonthlyReportVisible: false,
     anchor: "",
     customStart: "",
     customEnd: "",
     customToday: "",
-    customPreset: "",
+    customPreset: "30d",
     customDays: 0,
+    isWarmRefreshing: false,
     rangeLabel: "",
     trendCaption: "",
     activeChart: "monthTrend",
@@ -719,15 +719,17 @@ Component({
     },
 
     getAnalysisRequestContext() {
+      const effectiveMode =
+        this.data.mode === "custom" && this.data.customPreset === "all" ? "all" : this.data.mode;
       return {
         ledgerId: this.data.ledgerId,
-        mode: this.data.mode,
+        mode: effectiveMode,
         anchor: this.data.anchor,
-        customStart: this.data.customStart,
-        customEnd: this.data.customEnd,
+        customStart: effectiveMode === "all" ? "" : this.data.customStart,
+        customEnd: effectiveMode === "all" ? "" : this.data.customEnd,
         analysisType: this.data.analysisType,
-        analysisView: ["week", "month", "year"].includes(this.data.mode),
-        autoTrend: this.data.mode === "all",
+        analysisView: ["week", "month", "year"].includes(effectiveMode),
+        autoTrend: effectiveMode === "all",
       };
     },
 
@@ -806,8 +808,10 @@ Component({
       }
       this.categoryRequestId = (this.categoryRequestId || 0) + 1;
       this.dayRequestId = (this.dayRequestId || 0) + 1;
+      const isWarmSwitch = Boolean(this.data.chartFirstReadyEver && this.data.ledgerId);
       const patch = {
         loading: true,
+        isWarmRefreshing: isWarmSwitch,
         error: false,
         noLedger: false,
         // Keep the old response and host during same-context refresh. A
@@ -857,6 +861,7 @@ Component({
             this._analysisDisplayedContext = null;
             this.setData({
               loading: false,
+              isWarmRefreshing: false,
               noLedger: true,
               hasChartData: false,
               chartHostMounted: false,
@@ -891,6 +896,7 @@ Component({
               dateAnchor()
             ),
             loading: false,
+            isWarmRefreshing: false,
             ledgerName: result.ledger.name,
             ledgerType: result.ledger.type,
             canShiftNext: Boolean(
@@ -984,6 +990,7 @@ Component({
           this._analysisDisplayedContext = null;
           this.setData({
             loading: false,
+            isWarmRefreshing: false,
             error: true,
             chartHostMounted: false,
             hasChartData: false,
@@ -1087,8 +1094,17 @@ Component({
         .slice(0, 3)
         .map((c, i) => `${i + 1}. ${c.name}：¥${c.amountText} (${c.rate}%)`)
         .join("\n");
+      const familyTotal = Number((this.data.family && this.data.family.total) || 0);
       const payersText = ((this.data.family && this.data.family.payers) || [])
-        .map((p) => `${p.name}：¥${p.amountText} (${p.rate}%)`)
+        .map((p) => {
+          const rate =
+            p.rate !== undefined && p.rate !== null
+              ? p.rate
+              : familyTotal
+                ? Math.round((Number(p.amount || 0) * 100) / familyTotal)
+                : 0;
+          return `${p.name}：¥${p.amountText} (${rate}%)`;
+        })
         .join("，");
       const lines = [
         `【咱家小账 · ${this.data.rangeLabel || "月度"}生活月报】`,
@@ -1160,7 +1176,6 @@ Component({
     setAnalysisMode(mode) {
       if (!this.data.modeOptions.some((item) => item.value === mode) || mode === this.data.mode)
         return;
-      const customRange = customRangeDefaults();
       const current = dateAnchor();
       const oldMode = this.data.mode;
       const oldAnchor = this.data.anchor || current;
@@ -1207,10 +1222,14 @@ Component({
         ),
       };
       if (mode === "custom") {
-        nextData.customStart = this.data.customStart || customRange.start;
-        nextData.customEnd = this.data.customEnd || customRange.end;
+        const defaultPreset = this.data.customPreset || "30d";
+        const range = getPresetRange(defaultPreset);
+        nextData.customPreset = defaultPreset;
+        nextData.customStart = range.preset === "all" ? "" : this.data.customStart || range.start;
+        nextData.customEnd = range.preset === "all" ? "" : this.data.customEnd || range.end;
         nextData.customToday = dateAnchor();
-        nextData.customDays = getDaysCount(nextData.customStart, nextData.customEnd);
+        nextData.customDays =
+          range.preset === "all" ? 0 : getDaysCount(nextData.customStart, nextData.customEnd);
       }
       this.setData(nextData);
       this.loadAnalysis();
@@ -1221,7 +1240,7 @@ Component({
       if (!preset) return;
       const range = getPresetRange(preset);
       if (!range) return;
-      const customDays = getDaysCount(range.start, range.end);
+      const customDays = preset === "all" ? 0 : getDaysCount(range.start, range.end);
       this.setData({
         customPreset: preset,
         customStart: range.start,

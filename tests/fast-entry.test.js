@@ -40,6 +40,7 @@ function pageFixture({
   ledger = {},
   createRecord,
   updateRecord,
+  getRecord,
   listCategories = async () => categories,
 } = {}) {
   const calls = { creates: [], updates: [], toasts: [], navigation: [], modals: [] };
@@ -53,6 +54,7 @@ function pageFixture({
         showReadonlyToast() {},
       },
       "../../services/record.service": {
+        getRecord,
         createRecord(payload) {
           calls.creates.push(plain(payload));
           return createRecord ? createRecord(payload) : Promise.resolve({ recordId: "new" });
@@ -101,6 +103,99 @@ function pageFixture({
   page.onLoad();
   return { page, calls };
 }
+
+test("edit detail category icon falls back and follows reselection", async () => {
+  const { page } = pageFixture({
+    getRecord: async () => ({
+      record: { type: "expense", amount: 12, categoryName: "餐饮", categoryIcon: "invalid-icon" },
+      ledger: { type: "personal" },
+    }),
+  });
+  await page.loadRecord("record");
+  assert.equal(page.data.detailCategoryIcon, "price-tag-3-line");
+  page.applyCategorySelection({
+    type: "income",
+    categoryName: "工资",
+    categoryIcon: "wallet-line",
+  });
+  assert.equal(page.data.detailCategoryIcon, "wallet-line");
+  const template = fs.readFileSync(
+    path.join(root, "miniprogram/pages/record-edit/index.wxml"),
+    "utf8"
+  );
+  assert.match(template, /detailCategoryIcon/);
+  assert.match(template, /bindtap="reselectCategory"/);
+});
+
+test("edit metadata reports timestamps without implying an edit", async () => {
+  const stamp = "2024-01-02T03:04:00Z";
+  const { page } = pageFixture({
+    getRecord: async () => ({
+      record: { amount: 12, createdAt: stamp, updatedAt: stamp },
+      ledger: { type: "personal" },
+    }),
+  });
+  await page.loadRecord("record");
+  assert.ok(page.data.createdDate);
+  assert.equal(page.data.updatedDate, page.data.createdDate);
+  const template = fs.readFileSync(
+    path.join(root, "miniprogram/pages/record-edit/index.wxml"),
+    "utf8"
+  );
+  assert.match(template, /创建时间：\{\{createdDate\}\}/);
+  assert.match(template, /最近更新：\{\{updatedDate\}\}/);
+  assert.doesNotMatch(template, /编辑于/);
+  assert.match(template, /class="record-timestamps__dates"/);
+  const style = fs.readFileSync(
+    path.join(root, "miniprogram/pages/record-edit/index.wxss"),
+    "utf8"
+  );
+  assert.match(style, /\.record-timestamps__dates\s*\{[^}]*flex-wrap:\s*wrap/s);
+  assert.match(style, /\.record-timestamps__date\s*\{[^}]*white-space:\s*nowrap/s);
+});
+
+test("note label aligns with the textarea's first line only in the full form", () => {
+  const template = fs.readFileSync(
+    path.join(root, "miniprogram/components/tl-record-form/index.wxml"),
+    "utf8"
+  );
+  const styles = fs.readFileSync(
+    path.join(root, "miniprogram/components/tl-record-form/index.wxss"),
+    "utf8"
+  );
+  assert.match(template, /wx:if="\{\{!quickEntry\}\}"[\s\S]*tl-record-form__field--note/);
+  assert.match(template, /placeholder-class="tl-record-form__note-placeholder"/);
+  assert.match(
+    styles,
+    /\.tl-record-form__note-placeholder\s*\{[^}]*text-align:\s*left;[^}]*line-height:\s*42rpx;/
+  );
+  assert.match(
+    styles,
+    /\.tl-record-form__field--note > text\s*\{[^}]*padding-top:\s*12rpx;[^}]*line-height:\s*42rpx;/
+  );
+  assert.match(
+    styles,
+    /\.tl-record-form__note\s*\{[^}]*padding:\s*12rpx 0;[^}]*line-height:\s*42rpx;/
+  );
+});
+
+test("full form amount is left aligned without affecting quick entry", () => {
+  const template = fs.readFileSync(
+    path.join(root, "miniprogram/components/tl-record-form/index.wxml"),
+    "utf8"
+  );
+  const styles = fs.readFileSync(
+    path.join(root, "miniprogram/components/tl-record-form/index.wxss"),
+    "utf8"
+  );
+  assert.match(
+    template,
+    /wx:if="\{\{!quickEntry\}\}" class="tl-record-form__amount" bindtap="openKeypad"/
+  );
+  assert.match(styles, /\.tl-record-form__amount-value\s*\{[^}]*text-align:\s*left;/);
+  assert.doesNotMatch(styles, /\.tl-record-form__amount\s*\{[^}]*border-bottom:/);
+  assert.match(template, /<slot wx:if="\{\{quickEntry\}\}" \/>/);
+});
 
 test("entry back confirms unsaved input and preserves it on cancel", () => {
   const { page, calls } = pageFixture();
@@ -572,6 +667,73 @@ test("non-personal family expenses clear consumer identity; income omits attribu
     await page.saveAndLeave();
     assert.equal(Object.hasOwn(calls.creates[1], "familyAttribution"), false);
   }
+});
+
+test("shared income loads eligible recipients and submits the server owner contract", async () => {
+  const { page, calls } = await readyPage({ ledger: { type: "shared" } });
+  await page.loadFamilyContext("ledger");
+  page.switchType(dataset({ type: "income" }));
+  page.chooseCategory({ detail: { categoryId: "pay" } });
+  assert.deepEqual(
+    Array.from(page.data.incomeRecipients, (item) => item.openid),
+    ["", "self", "other"]
+  );
+  assert.equal(page.data.incomeRecipientName, "我");
+  assert.equal(page.data.incomeRecipientOpenid, "self");
+  page.changeIncomeRecipient(input("2"));
+  assert.equal(page.data.incomeRecipientName, "家人");
+  await page.saveAndContinue();
+  assert.equal(calls.creates[0].incomeOwnerOpenid, "other");
+  assert.equal(Object.hasOwn(calls.creates[0], "incomeOwnerName"), false);
+  assert.equal(Object.hasOwn(calls.creates[0], "familyAttribution"), false);
+  assert.equal(page.data.incomeRecipientOpenid, "self");
+  assert.equal(page.data.incomeRecipientName, "我");
+  page.changeIncomeRecipient(input("0"));
+  await page.loadFamilyContext("ledger");
+  assert.equal(page.data.incomeRecipientOpenid, "");
+});
+
+test("new income leaves attribution unspecified when current user is not eligible", () => {
+  const { page } = pageFixture({ ledger: { type: "shared" } });
+  page.applyFamilyResult({
+    ledger: { type: "shared" },
+    members: [{ openid: "other", nickName: "家人", role: "member" }],
+  });
+  assert.equal(page.data.incomeRecipientOpenid, "");
+  assert.equal(page.data.incomeRecipientName, "未指定");
+});
+
+test("editing shared income retains historical owner until explicitly cleared", async () => {
+  const { page, calls } = pageFixture({
+    ledger: { type: "shared" },
+    getRecord: async () => ({
+      record: {
+        _id: "old",
+        ledgerId: "ledger",
+        type: "income",
+        amount: 10,
+        categoryId: "pay",
+        incomeOwnerOpenid: "former",
+        incomeOwnerName: "旧成员",
+      },
+      ledger: { _id: "ledger", type: "shared" },
+    }),
+  });
+  await page.loadRecord("old");
+  assert.equal(page.data.incomeRecipientOpenid, "former");
+  assert.equal(page.data.incomeRecipientName, "旧成员");
+  assert.equal(page.data.incomeRecipientHistorical, true);
+  assert.equal(
+    page.data.incomeRecipients.some((item) => item.openid === "former"),
+    false
+  );
+  page.clearIncomeRecipient();
+  assert.equal(page.data.incomeRecipientName, "未指定");
+  assert.equal(page.data.incomeRecipientHistorical, false);
+  await page.saveAndLeave();
+  assert.equal(calls.updates.length, 1);
+  assert.equal(calls.updates[0].incomeOwnerOpenid, "");
+  assert.equal(Object.hasOwn(calls.updates[0], "incomeOwnerName"), false);
 });
 
 test("quick completion emits submit without amountinput or premature expression settlement", () => {

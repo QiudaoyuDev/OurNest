@@ -34,12 +34,61 @@
   padding-bottom: 24px;
 }
 
+.analysis-content {
+  opacity: 1;
+  transition: opacity var(--tl-duration-normal, 0.25s) ease;
+}
+
 /* Keep same-context chart hosts mounted during refresh, without exposing the old view. */
 .analysis-content.is-analysis-hidden {
   position: absolute;
   width: 100%;
   visibility: hidden;
   pointer-events: none;
+}
+
+/* Direction 1: Silk Breather. Keep existing view in place with gentle opacity reduction during in-page warm refresh */
+.page-content.is-warm-refreshing .analysis-content.is-analysis-hidden {
+  position: relative;
+  visibility: visible;
+  opacity: 0.55;
+  pointer-events: none;
+  transition: opacity var(--tl-duration-normal, 0.25s) ease;
+}
+
+.analysis-slim-bar {
+  position: relative;
+  width: 100%;
+  height: 4rpx;
+  background: var(--tl-color-primary);
+  border-radius: var(--tl-radius-pill);
+  opacity: 0;
+  transition: opacity var(--tl-duration-fast, 0.15s) ease;
+  margin-top: 2rpx;
+  margin-bottom: 6rpx;
+  overflow: hidden;
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+
+.analysis-slim-bar.is-active {
+  opacity: 1;
+  animation: slimProgressPulse 1.1s infinite ease-in-out;
+}
+
+@keyframes slimProgressPulse {
+  0% {
+    transform: scaleX(0.08) translateX(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scaleX(0.7) translateX(30%);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(0.12) translateX(650%);
+    opacity: 0.3;
+  }
 }
 
 .analysis-header {
@@ -108,14 +157,25 @@
   color: var(--tl-color-text-secondary);
   font-size: var(--tl-font-caption);
   font-weight: var(--tl-font-weight-medium);
-  transition: all var(--tl-duration-fast) ease;
+  border: var(--tl-border-width) solid transparent;
+  transform: scale(1);
+  transition:
+    transform var(--tl-duration-fast, 0.12s) ease,
+    background-color var(--tl-duration-normal, 0.2s) ease,
+    color var(--tl-duration-fast, 0.15s) ease,
+    border-color var(--tl-duration-fast, 0.15s) ease;
+}
+
+.preset-pill:active {
+  transform: scale(0.95);
+  background: var(--tl-color-surface-warm);
 }
 
 .preset-pill.is-active {
   background: var(--tl-palette-white);
   color: var(--tl-color-primary-ink);
   font-weight: var(--tl-font-weight-bold);
-  border: var(--tl-border-width) solid var(--tl-color-border-warm);
+  border-color: var(--tl-color-border-warm);
 }
 
 .custom-range__dates {
@@ -141,6 +201,11 @@
   border: var(--tl-border-width) solid var(--tl-color-border-warm);
   border-radius: var(--tl-radius-md);
   box-sizing: border-box;
+}
+
+.custom-date-box.is-disabled {
+  opacity: 0.8;
+  background: var(--tl-color-surface-muted);
 }
 
 .custom-date-text {
@@ -566,16 +631,28 @@
 
 .analysis-action-bar .context-picker-btn {
   height: 72rpx;
+  padding: 0 8rpx;
 }
 
 .analysis-action-bar .context-nav {
-  width: 72rpx;
+  width: 56rpx;
   height: 72rpx;
-  flex: 0 0 72rpx;
+  flex: 0 0 56rpx;
+  position: relative;
+}
+
+.analysis-action-bar .context-nav::after {
+  content: "";
+  position: absolute;
+  top: -6rpx;
+  bottom: -6rpx;
+  left: -10rpx;
+  right: -10rpx;
 }
 
 .analysis-action-bar .context-period-text {
-  font-size: var(--tl-font-body);
+  font-size: var(--tl-font-body-sm);
+  font-variant-numeric: tabular-nums;
 }
 
 .analysis-action-bar .dashboard-toggle-item {

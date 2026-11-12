@@ -3,6 +3,47 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
 
+test("category reselection uses the same color scheme as category management", () => {
+  const { createRequire } = require("node:module");
+  const { resolveCategoryScheme } = require("../miniprogram/utils/category-color");
+  const pagePath = require.resolve("../miniprogram/pages/record-category/index.js");
+  let page;
+  vm.runInNewContext(fs.readFileSync(pagePath, "utf8"), {
+    getApp: () => ({}),
+    Page: (definition) => {
+      page = definition;
+    },
+    require: createRequire(pagePath),
+  });
+  const categories = [
+    { _id: "food", type: "expense", name: "餐饮", icon: "category-food" },
+    { _id: "shopping", type: "expense", name: "购物", icon: "category-shopping" },
+    { _id: "other", type: "expense", name: "其他", icon: "category-other" },
+    { _id: "income", type: "income", name: "工资", icon: "category-salary" },
+  ];
+  const instance = {
+    data: { type: "expense" },
+    setData(data) {
+      Object.assign(this.data, data);
+    },
+  };
+  for (const type of ["expense", "income"]) {
+    instance.data.type = type;
+    page.renderCategories.call(instance, categories);
+    const expected = categories.filter((item) => item.type === type);
+    assert.equal(instance.data.categories.length, expected.length);
+    for (const item of instance.data.categories) {
+      const scheme = resolveCategoryScheme(item.name, type, item.icon);
+      assert.equal(item.id, item._id);
+      assert.equal(item.iconColor, scheme.iconColor);
+      assert.equal(item.chipClass, scheme.chipClass);
+    }
+  }
+  const template = fs.readFileSync("miniprogram/pages/record-category/index.wxml", "utf8");
+  assert.match(template, /category-choice-icon \{\{item\.chipClass\}\}/);
+  assert.match(template, /color="\{\{item\.iconColor\}\}"/);
+});
+
 test("new ledger defaults are flat and unique within each income or expense type", () => {
   const module = { exports: {} };
   vm.runInNewContext(fs.readFileSync("cloudfunctions/ourNest/handlers/category-tree.js", "utf8"), {

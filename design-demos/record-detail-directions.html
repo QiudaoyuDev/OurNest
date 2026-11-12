@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>OurNest · 记录明细设计方向</title>
+    <style>
+      :root {
+        --red: #c43220;
+        --ink: #322b27;
+        --muted: #766c65;
+        --line: #eee5df;
+        --paper: #fffdfc;
+        --bg: #fff7f2;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #f5f2ef;
+        color: var(--ink);
+        font-family: "Microsoft YaHei", sans-serif;
+        font-size: 15px;
+        line-height: 1.55;
+      }
+      .wrap {
+        max-width: 1320px;
+        margin: auto;
+        padding: 40px 24px 64px;
+      }
+      h1 {
+        font-size: 28px;
+        margin: 0 0 8px;
+      }
+      h2 {
+        font-size: 20px;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 0;
+        color: #665d57;
+      }
+      .intro {
+        max-width: 800px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 24px;
+        margin-top: 32px;
+      }
+      .option {
+        min-width: 0;
+      }
+      .option > p {
+        min-height: 74px;
+      }
+      .phone {
+        margin-top: 16px;
+        background: var(--bg);
+        border: 1px solid #ded5ce;
+        border-radius: 24px;
+        overflow: hidden;
+        min-height: 700px;
+      }
+      .nav {
+        height: 68px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 0 20px;
+        font-weight: 600;
+        color: #352d29;
+      }
+      .back {
+        font-size: 25px;
+        line-height: 1;
+      }
+      .content {
+        padding: 0 14px 24px;
+      }
+      .card {
+        background: var(--paper);
+        border-radius: 17px;
+        padding: 16px;
+        margin-bottom: 12px;
+      }
+      .hero {
+        text-align: center;
+        background: #fff0e9;
+        padding: 24px 16px;
+      }
+      .mark {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: #ffdfd1;
+        color: var(--red);
+        display: grid;
+        place-items: center;
+        margin: 0 auto 10px;
+        font-size: 22px;
+      }
+      .category {
+        font-weight: 600;
+      }
+      .sub {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 3px;
+      }
+      .amount {
+        font-size: 32px;
+        line-height: 1.25;
+        font-weight: 600;
+        color: var(--red);
+        font-variant-numeric: tabular-nums;
+        margin-top: 12px;
+      }
+      .row {
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 1px solid var(--line);
+      }
+      .row:last-child {
+        border: 0;
+      }
+      .label {
+        color: var(--muted);
+        font-size: 13px;
+        flex-shrink: 0;
+      }
+      .value {
+        text-align: right;
+        overflow-wrap: anywhere;
+      }
+      .note {
+        padding-top: 16px;
+      }
+      .note .value {
+        text-align: left;
+        margin-top: 8px;
+      }
+      .heading {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .b .hero {
+        text-align: left;
+        background: var(--paper);
+        padding: 22px 16px 20px;
+      }
+      .b .mark {
+        margin: 0 0 12px;
+      }
+      .b .amount {
+        font-size: 36px;
+        margin: 5px 0 12px;
+      }
+      .b .row {
+        min-height: 46px;
+      }
+      .section {
+        padding: 12px 0 4px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .c .hero {
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .c .mark {
+        margin: 0;
+        flex: none;
+      }
+      .c .amount {
+        font-size: 30px;
+        margin: 4px 0 0;
+      }
+      .people {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .avatar {
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #fae9e0;
+        color: #934836;
+        font-size: 14px;
+      }
+      .person {
+        flex: 1;
+      }
+      .person small {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .tag {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 3px 10px;
+        background: #fff0e9;
+        color: #a23323;
+        border-radius: 14px;
+        font-size: 12px;
+      }
+      .explain {
+        margin-top: 36px;
+        background: #fff;
+        border: 1px solid #e9e1da;
+        border-radius: 16px;
+        padding: 24px;
+      }
+      .explain h2 {
+        margin-bottom: 12px;
+      }
+      .explain ul {
+        padding-left: 20px;
+        margin: 0;
+      }
+      .explain li {
+        margin: 8px 0;
+      }
+      .hint {
+        font-size: 13px;
+        color: #766c65;
+        margin-top: 16px;
+      }
+      button {
+        font: inherit;
+        cursor: pointer;
+        border: 1px solid #d9c9bf;
+        background: #fff;
+        color: #46372f;
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin-top: 12px;
+      }
+      button:focus-visible {
+        outline: 2px solid var(--red);
+        outline-offset: 2px;
+      }
+      .more {
+        display: none;
+      }
+      .more.open {
+        display: block;
+      }
+      @media (max-width: 950px) {
+        .grid {
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+        .option > p {
+          min-height: 0;
+        }
+      }
+      @media (max-width: 450px) {
+        .wrap {
+          padding: 24px 16px;
+        }
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="intro">
+        <h1>让每笔支出，更容易看懂</h1>
+        <p>
+          咱家小账 ·
+          记录明细升级方向。三版保留暖红品牌、现有字段与权限；示例为虚构数据，用于比较层级和布局，不代表真实记录。
+        </p>
+      </header>
+      <div class="grid">
+        <section class="option a">
+          <h2>A · 温暖票据</h2>
+          <p>保留熟悉的居中金额，以两组信息清晰区分交易与家庭记录。改动小，延续当前使用习惯。</p>
+          <div class="phone">
+            <div class="nav"><span class="back">‹</span>记录明细</div>
+            <div class="content">
+              <div class="card hero">
+                <div class="mark">餐</div>
+                <div class="category">餐饮</div>
+                <div class="sub">支出</div>
+                <div class="amount">−¥86.50</div>
+              </div>
+              <div class="card">
+                <div class="heading">交易信息</div>
+                <div class="row">
+                  <span class="label">记录时间</span><span class="value">2026-11-08 18:30</span>
+                </div>
+                <div class="row">
+                  <span class="label">账本</span><span class="value">我们的家</span>
+                </div>
+                <div class="row">
+                  <span class="label">账本类型</span><span class="value">共享账本</span>
+                </div>
+                <div class="row">
+                  <span class="label">账户</span><span class="value">微信</span>
+                </div>
+              </div>
+              <div class="card">
+                <div class="heading">家庭记录</div>
+                <div class="row">
+                  <span class="label">记录人</span><span class="value">小林</span>
+                </div>
+                <div class="row">
+                  <span class="label">付款人</span><span class="value">小林</span>
+                </div>
+                <div class="row">
+                  <span class="label">消费归属</span><span class="value">家庭共同</span>
+                </div>
+                <div class="note">
+                  <span class="label">备注</span>
+                  <div class="value">周末一起吃晚饭</div>
+                  <span class="tag">#聚餐</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="option b">
+          <h2>B · 金额优先</h2>
+          <p>金额与分类靠左，交易字段在同一卡片中分区排列。扫描更快，适合频繁核对账目。</p>
+          <div class="phone">
+            <div class="nav"><span class="back">‹</span>记录明细</div>
+            <div class="content">
+              <div class="card hero">
+                <div class="mark">餐</div>
+                <div class="sub">支出 · 餐饮</div>
+                <div class="amount">−¥86.50</div>
+                <div class="sub">2026-11-08 18:30</div>
+              </div>
+              <div class="card">
+                <div class="section">交易信息</div>
+                <div class="row">
+                  <span class="label">账本</span><span class="value">我们的家</span>
+                </div>
+                <div class="row">
+                  <span class="label">账本类型</span><span class="value">共享账本</span>
+                </div>
+                <div class="row">
+                  <span class="label">账户</span><span class="value">微信</span>
+                </div>
+                <div class="section">家庭记录</div>
+                <div class="row">
+                  <span class="label">记录人</span><span class="value">小林</span>
+                </div>
+                <div class="row">
+                  <span class="label">付款人</span><span class="value">小林</span>
+                </div>
+                <div class="row">
+                  <span class="label">消费归属</span><span class="value">家庭共同</span>
+                </div>
+                <div class="note">
+                  <span class="label">备注</span>
+                  <div class="value">周末一起吃晚饭</div>
+                  <span class="tag">#聚餐</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="option c">
+          <h2>C · 家庭叙事</h2>
+          <p>在金额下突出记录人和家庭分摊信息；普通个人账本不展示无关共享字段。</p>
+          <div class="phone">
+            <div class="nav"><span class="back">‹</span>记录明细</div>
+            <div class="content">
+              <div class="card hero">
+                <div class="mark">餐</div>
+                <div>
+                  <div class="category">餐饮 <span class="sub">· 支出</span></div>
+                  <div class="amount">−¥86.50</div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="heading">家庭记录</div>
+                <div class="people">
+                  <span class="avatar">林</span
+                  ><span class="person">小林<small>记录人</small></span>
+                </div>
+                <div class="row">
+                  <span class="label">付款人</span><span class="value">小林</span>
+                </div>
+                <div class="row">
+                  <span class="label">消费归属</span><span class="value">家庭共同</span>
+                </div>
+                <div class="note">
+                  <span class="label">备注</span>
+                  <div class="value">周末一起吃晚饭</div>
+                  <span class="tag">#聚餐</span>
+                </div>
+              </div>
+              <div class="card">
+                <div class="heading">交易信息</div>
+                <div class="row">
+                  <span class="label">记录时间</span><span class="value">2026-11-08 18:30</span>
+                </div>
+                <div class="row">
+                  <span class="label">账本</span><span class="value">我们的家</span>
+                </div>
+                <div class="row">
+                  <span class="label">账本类型</span><span class="value">共享账本</span>
+                </div>
+                <div class="row">
+                  <span class="label">账户</span><span class="value">微信</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <section class="explain">
+        <h2>编辑页：两个细节如何处理</h2>
+        <ul>
+          <li>
+            <strong>备注对齐：</strong
+            >标签与多行输入框首行使用一致行高和顶部内边距；保留左对齐以便输入长备注。建议改为“请输入备注，最多
+            100 字”，并确认实际长度约束。
+          </li>
+          <li>
+            <strong>创建与更新：</strong>将辅助信息组织为易扫读的两行；现有 updatedAt
+            不能可靠证明人工编辑，建议显示“最近更新”，不要未经验证称作“编辑于”。缺失或无效时间不显示。
+          </li>
+          <li>
+            <strong>来源信息：</strong
+            >存在来源、交易号或导入批次时展示完整信息；长内容允许换行，不虚构字段。上方样例未展示导入场景。
+          </li>
+        </ul>
+        <button
+          type="button"
+          aria-expanded="false"
+          onclick="
+            const x = document.getElementById('edge');
+            x.classList.toggle('open');
+            this.setAttribute('aria-expanded', x.classList.contains('open'));
+          "
+        >
+          查看边界与验证
+        </button>
+        <div id="edge" class="more">
+          <p class="hint">
+            该页面只是浏览器设计示意，并非微信小程序运行截图。列表、加载失败、无备注、长字段、收入、访客和成员权限仍需实现后专项验证。创建时间和更新时间是否在只读详情页呈现需单独确认。
+          </p>
+        </div>
+        <p class="hint">设计方法参考 unslop by Damir Sokolovsky（CC BY 4.0）。</p>
+      </section>
+    </main>
+  </body>
+</html>

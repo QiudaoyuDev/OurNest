@@ -1,6 +1,7 @@
 const app = getApp();
 const feedback = require("../../services/feedback-ui");
 const { getId } = require("../../utils/mapper");
+const { resolveCategoryScheme } = require("../../utils/category-color");
 const categoryService = require("../../services/category.service");
 const categoryStore = require("../../services/category.store");
 const { startNavigation, markNavigation } = require("../../utils/navigation-timing");
@@ -56,7 +57,15 @@ Page({
     this.setData({
       categories: (categories || [])
         .filter((item) => item.type === this.data.type)
-        .map((item) => ({ ...item, id: getId(item) })),
+        .map((item) => {
+          const scheme = resolveCategoryScheme(item.name, this.data.type, item.icon);
+          return {
+            ...item,
+            id: getId(item),
+            chipClass: scheme.chipClass,
+            iconColor: scheme.iconColor,
+          };
+        }),
     });
   },
   async loadCategories() {

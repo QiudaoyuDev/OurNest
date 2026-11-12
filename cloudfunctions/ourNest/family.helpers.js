@@ -77,6 +77,7 @@ function familyExpenseGroups(records = []) {
         amount: item.amount / 100,
         publicAmount: item.publicAmount / 100,
         multipleAmount: item.multipleAmount / 100,
+        rate: total ? Math.round((item.amount * 100) / total) : 0,
       }))
       .sort((left, right) => right.amount - left.amount);
   return {

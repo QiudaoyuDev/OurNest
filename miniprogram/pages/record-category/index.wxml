@@ -18,8 +18,8 @@
         </view>
         <view class="category-grid">
           <view wx:for="{{categories}}" wx:key="id" class="category-choice" data-id="{{item.id}}" bindtap="chooseCategory">
-            <view class="category-choice-icon">
-              <tl-icon name="{{item.icon}}" size="44" colorKey="{{type === 'income' ? 'income' : 'primary'}}" />
+            <view class="category-choice-icon {{item.chipClass}}">
+              <tl-icon name="{{item.icon}}" size="44" color="{{item.iconColor}}" />
             </view>
             <text>{{item.name}}</text>
           </view>

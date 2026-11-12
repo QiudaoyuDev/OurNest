@@ -87,6 +87,25 @@ async function resolveRecordCategory(ledgerId, type, categoryId, readCategory = 
   };
 }
 
+function normalizeIncomeOwner({ ledger, type, input, existing = "" }) {
+  if (input !== undefined && input !== null && (typeof input !== "string" || input.length > 128)) {
+    throw new Error("INVALID_INCOME_OWNER");
+  }
+  const value = input === undefined ? existing || "" : input || "";
+  if (type !== "income" || (ledger.type || "personal") !== "shared") {
+    if (input !== undefined && value) throw new Error("INVALID_INCOME_OWNER");
+    return "";
+  }
+  if (
+    value &&
+    value !== existing &&
+    ![ledger.ownerOpenid, ...(ledger.memberOpenids || [])].includes(value)
+  ) {
+    throw new Error("INVALID_INCOME_OWNER");
+  }
+  return value;
+}
+
 // --- 记录 CRUD ---
 
 function recordSnapshotChangedError() {
@@ -120,6 +139,11 @@ async function createRecord(openid, data = {}) {
     ledgerId: ledger._id,
     ownerOpenid: openid,
     familyAttribution,
+    incomeOwnerOpenid: normalizeIncomeOwner({
+      ledger,
+      type: data.type,
+      input: data.incomeOwnerOpenid,
+    }),
     type: data.type,
     amount: Number(data.amount),
     categoryId: data.categoryId || "",
@@ -152,6 +176,11 @@ async function createRecord(openid, data = {}) {
     );
     const currentRecord = {
       ...record,
+      incomeOwnerOpenid: normalizeIncomeOwner({
+        ledger: currentLedger,
+        type: data.type,
+        input: data.incomeOwnerOpenid,
+      }),
       ...(currentCategory || {}),
       familyAttribution: normalizeFamilyAttribution({
         ledger: currentLedger,
@@ -418,6 +447,7 @@ async function getRecord(openid, data = {}) {
   const ownerMap = await resolveUsersAvatarUrls(
     await getUsersByOpenids([
       record.ownerOpenid,
+      record.type === "income" ? record.incomeOwnerOpenid : "",
       familyAttribution.payerOpenid,
       familyAttribution.consumerOpenid,
     ])
@@ -437,7 +467,16 @@ async function getRecord(openid, data = {}) {
   };
   const canEdit = (role === "owner" || record.ownerOpenid === openid) && role !== "readonly";
   return ok({
-    record: { ...attachRecordOwner(record, ownerMap, openid), familyAttribution, familyDisplay },
+    record: {
+      ...attachRecordOwner(record, ownerMap, openid),
+      incomeOwnerOpenid: record.type === "income" ? record.incomeOwnerOpenid || "" : "",
+      incomeOwnerName:
+        record.type === "income" && record.incomeOwnerOpenid
+          ? memberName(record.incomeOwnerOpenid)
+          : "未指定",
+      familyAttribution,
+      familyDisplay,
+    },
     ledger: {
       _id: ledger._id,
       name: ledger.name,
@@ -489,6 +528,12 @@ async function updateRecord(openid, data = {}) {
     amount: Number(data.amount),
     type: data.type,
     familyAttribution,
+    incomeOwnerOpenid: normalizeIncomeOwner({
+      ledger,
+      type: data.type,
+      input: data.incomeOwnerOpenid,
+      existing: record.type === "income" ? record.incomeOwnerOpenid : "",
+    }),
     categoryId,
     categoryName: data.categoryName || record.categoryName,
     categoryLabel:
@@ -538,7 +583,17 @@ async function updateRecord(openid, data = {}) {
       isImport: true,
     });
     await recordRef.update({
-      data: { ...patch, ...(currentCategory || {}), familyAttribution: currentFamily },
+      data: {
+        ...patch,
+        ...(currentCategory || {}),
+        familyAttribution: currentFamily,
+        incomeOwnerOpenid: normalizeIncomeOwner({
+          ledger: currentLedger,
+          type: data.type,
+          input: data.incomeOwnerOpenid,
+          existing: currentRecord.type === "income" ? currentRecord.incomeOwnerOpenid : "",
+        }),
+      },
     });
     await ledgerRef.update({ data: { syncRevision: _.inc(1), updatedAt: now() } });
   });

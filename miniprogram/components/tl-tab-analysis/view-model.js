@@ -1,4 +1,5 @@
 const { formatDisplayMoney } = require("../../utils/money");
+const { resolveCategoryScheme } = require("../../utils/category-color");
 const { isCurrentMonthAnchor, isCurrentYearAnchor } = require("./dates");
 
 function amount(value) {
@@ -29,6 +30,13 @@ function decorateRanking(rows = []) {
     rank: index + 1,
     amountText: formatDisplayMoney(item.amount),
     barStyle: `width: ${Math.max(4, Math.min(100, Number(item.rate || 0)))}%`,
+  }));
+}
+
+function decorateFamilyCategories(rows = []) {
+  return decorateRanking(rows).map((item) => ({
+    ...item,
+    iconColor: resolveCategoryScheme(item.name, "expense", item.categoryIcon).iconColor,
   }));
 }
 
@@ -120,21 +128,47 @@ function decorate(data = {}) {
       ? {
           ...data.family,
           totalText: formatDisplayMoney(data.family.total),
-          payers: decorateRanking(data.family.payers || []).map((item) => ({
+          payers: decorateRanking(
+            (data.family.payers || []).map((item) => {
+              const total = Number(data.family.total || 0);
+              return {
+                ...item,
+                rate:
+                  item.rate !== undefined && item.rate !== null
+                    ? item.rate
+                    : total
+                      ? Math.round((Number(item.amount || 0) * 100) / total)
+                      : 0,
+              };
+            })
+          ).map((item) => ({
             ...item,
-            categories: decorateRanking(item.categories || []),
+            categories: decorateFamilyCategories(item.categories || []),
           })),
-          consumers: decorateRanking(data.family.consumers || []).map((item) => ({
+          consumers: decorateRanking(
+            (data.family.consumers || []).map((item) => {
+              const total = Number(data.family.total || 0);
+              return {
+                ...item,
+                rate:
+                  item.rate !== undefined && item.rate !== null
+                    ? item.rate
+                    : total
+                      ? Math.round((Number(item.amount || 0) * 100) / total)
+                      : 0,
+              };
+            })
+          ).map((item) => ({
             ...item,
             publicText: formatDisplayMoney(item.publicAmount),
             multipleText: formatDisplayMoney(item.multipleAmount),
-            categories: decorateRanking(item.categories || []),
+            categories: decorateFamilyCategories(item.categories || []),
           })),
         }
       : null,
     members: decorateRanking(data.members || []).map((item) => ({
       ...item,
-      categories: decorateRanking(item.categories || []),
+      categories: decorateFamilyCategories(item.categories || []),
     })),
     insightGroups,
     insights: data.insights || [],

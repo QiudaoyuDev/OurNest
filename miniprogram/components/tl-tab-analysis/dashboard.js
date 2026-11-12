@@ -107,12 +107,26 @@ function calculateFamilySettlement(family = {}, rangeLabel = "", ledgerName = "�
     advice = `${lower.name} 需向 ${higher.name} 转账 ¥${diffText} 结清平摊开支`;
   }
 
+  const familyTotal = Number(family.total || 0) || firstAmount + secondAmount;
+  const firstRate =
+    first.rate !== undefined && first.rate !== null
+      ? first.rate
+      : familyTotal
+        ? Math.round((firstAmount * 100) / familyTotal)
+        : 50;
+  const secondRate =
+    second.rate !== undefined && second.rate !== null
+      ? second.rate
+      : familyTotal
+        ? Math.round((secondAmount * 100) / familyTotal)
+        : 50;
+
   const copyText = [
     `【咱家小账 · ${rangeLabel || "生活"}对账单】`,
     `🏠 账本：${ledgerName}`,
     `💰 家庭总支出：¥${family.totalText || formatDisplayMoney(family.total)}`,
-    `👤 ${first.name} 垫付：¥${first.amountText || formatDisplayMoney(first.amount)} (${first.rate || 50}%)`,
-    `👤 ${second.name} 垫付：¥${second.amountText || formatDisplayMoney(second.amount)} (${second.rate || 50}%)`,
+    `👤 ${first.name} 垫付：¥${first.amountText || formatDisplayMoney(first.amount)} (${firstRate}%)`,
+    `👤 ${second.name} 垫付：¥${second.amountText || formatDisplayMoney(second.amount)} (${secondRate}%)`,
     diffCents === 0
       ? `🤝 结算结果：双人开销一致，无需结算`
       : `🤝 结算建议：${lower.name} 需转给 ${higher.name} ¥${diffText} 结清本期公共开支`,

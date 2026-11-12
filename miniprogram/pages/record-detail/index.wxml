@@ -10,20 +10,19 @@
           <tl-button variant="secondary" size="small" bind:tap="reload">重新加载</tl-button>
         </tl-empty-state>
         <block wx:else>
-          <view class="detail-hero card fade-up">
-            <view class="type-mark {{record.type}}">
-              <tl-icon name="{{record.typeIcon}}" size="42" color="{{record.typeIconColor}}">
-              </tl-icon>
+          <view class="detail-hero">
+            <view class="hero-caption hero-category">
+              <view class="hero-category-icon {{record.categoryChipClass}}">
+                <tl-icon name="{{record.categoryDisplayIcon}}" size="32" color="{{record.categoryIconColor}}">
+                </tl-icon>
+              </view>
+              <text class="hero-category-label">{{record.typeText}} / {{record.parentCategoryText ? record.parentCategoryText + ' / ' : ''}}{{record.categoryText}}</text>
             </view>
-            <view class="category-name">{{record.categoryText}}</view>
-            <view class="category-path">{{record.parentCategoryText}} / {{record.typeText}}</view>
             <view class="amount {{record.type}}">{{record.sign}}¥{{record.amountText}}</view>
+            <view class="hero-caption">{{record.selectedTimeText}}</view>
           </view>
-          <view class="detail-card card fade-up">
-            <view class="detail-row">
-              <text class="detail-label">记录时间</text>
-              <text class="detail-value">{{record.selectedTimeText}}</text>
-            </view>
+          <view class="detail-section">
+            <view class="section-title">交易信息</view>
             <view class="detail-row">
               <text class="detail-label">账本</text>
               <text class="detail-value">{{record.ledgerName}}</text>
@@ -49,14 +48,19 @@
               <text class="detail-value">{{record.accountText}}</text>
             </view>
           </view>
-          <view class="detail-card card fade-up">
-            <view class="member-row">
+          <view class="detail-section">
+            <view class="section-title">家庭记录</view>
+            <view class="detail-row">
               <text class="detail-label">记录人</text>
               <view class="member-info">
                 <image class="member-avatar" src="{{record.memberAvatar}}" mode="aspectFill">
                 </image>
                 <text class="member-name">{{record.memberName}}</text>
               </view>
+            </view>
+            <view wx:if="{{record.ledgerTypeText === '共享账本' && record.type === 'income'}}" class="detail-row">
+              <text class="detail-label">收入归属</text>
+              <text class="detail-value">{{record.incomeRecipientText}}</text>
             </view>
             <view wx:if="{{record.ledgerTypeText === '共享账本' && record.type === 'expense'}}" class="detail-row">
               <text class="detail-label">付款人</text>
@@ -69,9 +73,9 @@
             <view class="note-block">
               <view class="detail-label">备注</view>
               <view class="note-text">{{record.noteText}}</view>
-            </view>
-            <view class="tag-list" wx:if="{{record.hasTags}}">
-              <view class="tag-chip" wx:for="{{record.tags}}" wx:key="*this">#{{item}}</view>
+              <view class="tag-list" wx:if="{{record.hasTags}}">
+                <view class="tag-chip" wx:for="{{record.tags}}" wx:key="*this">#{{item}}</view>
+              </view>
             </view>
           </view>
         </block>

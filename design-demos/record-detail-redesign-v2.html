@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>咱家小账 · 支出详情方向探索</title>
+    <style>
+      :root {
+        --red: #f0442f;
+        --red-ink: #b53224;
+        --ink: #302d2b;
+        --muted: #706b67;
+        --line: #eae4e0;
+        --surface: #fff;
+        --canvas: #f7f5f3;
+        --warm: #fff7f3;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--canvas);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+        font-size: 15px;
+        line-height: 1.6;
+      }
+      main {
+        max-width: 1440px;
+        margin: auto;
+        padding: 40px 32px 80px;
+      }
+      .topline {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        align-items: center;
+        padding-bottom: 24px;
+        border-bottom: 1px solid #ded8d3;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .brand {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--ink);
+      }
+      .intro {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+        align-items: end;
+        padding: 48px 0 40px;
+      }
+      .intro h1 {
+        font-size: clamp(30px, 4vw, 48px);
+        line-height: 1.2;
+        letter-spacing: -0.03em;
+        margin: 0;
+        font-weight: 600;
+      }
+      .intro p {
+        max-width: 500px;
+        color: var(--muted);
+        margin: 0;
+      }
+      .intro strong {
+        color: var(--ink);
+      }
+      .directions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 24px;
+      }
+      .direction {
+        min-width: 0;
+      }
+      .direction-head {
+        min-height: 128px;
+        border-top: 2px solid var(--ink);
+        padding: 16px 0 20px;
+      }
+      .direction-head .eyebrow {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      h2 {
+        margin: 4px 0;
+        font-size: 21px;
+        font-weight: 600;
+      }
+      .direction-head p {
+        font-size: 14px;
+        color: var(--muted);
+        margin: 0;
+      }
+      .stage {
+        background: #eeeae6;
+        padding: 24px 16px;
+        display: flex;
+        justify-content: center;
+        min-height: 860px;
+      }
+      .phone {
+        width: 100%;
+        max-width: 360px;
+        min-height: 812px;
+        background: #fff8f4;
+        border: 1px solid #ded8d3;
+        border-radius: 28px;
+        overflow: hidden;
+      }
+      .nav {
+        height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 20px 8px;
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .nav .back {
+        font-size: 28px;
+        line-height: 1;
+        font-weight: 400;
+      }
+      .nav .space {
+        width: 18px;
+      }
+      .screen {
+        padding: 4px 16px 24px;
+      }
+      .hero,
+      .panel {
+        background: var(--surface);
+        border-radius: 16px;
+      }
+      .hero {
+        padding: 24px 20px;
+        text-align: center;
+      }
+      .category-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        background: #fff0eb;
+        color: var(--red);
+        display: grid;
+        place-items: center;
+        margin: 0 auto 12px;
+      }
+      .category-icon svg {
+        width: 24px;
+        height: 24px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.7;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .category {
+        font-weight: 600;
+      }
+      .sub {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+      .amount {
+        font-size: 36px;
+        line-height: 1.2;
+        font-weight: 600;
+        color: var(--red);
+        font-variant-numeric: tabular-nums;
+        margin-top: 12px;
+      }
+      .panel {
+        padding: 8px 16px;
+        margin-top: 12px;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--line);
+        font-size: 13px;
+      }
+      .row:last-child {
+        border-bottom: 0;
+      }
+      .label {
+        color: var(--muted);
+        flex: none;
+      }
+      .value {
+        text-align: right;
+        overflow-wrap: anywhere;
+      }
+      .note {
+        padding: 12px 0;
+      }
+      .note p {
+        margin: 8px 0;
+        color: var(--ink);
+        font-size: 14px;
+      }
+      .tag {
+        display: inline-block;
+        color: var(--red-ink);
+        background: #fff1ed;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+      }
+      .section-title {
+        font-size: 13px;
+        font-weight: 600;
+        padding: 12px 0 0;
+      }
+      .b .phone {
+        background: #fff;
+      }
+      .b .screen {
+        padding: 4px 20px 24px;
+      }
+      .b .hero {
+        text-align: left;
+        padding: 28px 0 24px;
+        border-bottom: 1px solid var(--line);
+        border-radius: 0;
+      }
+      .b .category-icon {
+        display: none;
+      }
+      .b .amount {
+        font-size: 42px;
+        margin: 8px 0 16px;
+      }
+      .b .panel {
+        padding: 8px 0 0;
+        margin: 0;
+        border-radius: 0;
+      }
+      .b .section-title {
+        margin-top: 12px;
+      }
+      .b .note {
+        border-top: 1px solid var(--line);
+        margin-top: 4px;
+      }
+      .c .phone {
+        background: #fff8f4;
+      }
+      .c .hero {
+        background: #fff0eb;
+        text-align: left;
+        padding: 20px;
+      }
+      .c .hero-top {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .c .category-icon {
+        margin: 0;
+        background: #fff;
+      }
+      .c .amount {
+        margin: 20px 0 0;
+      }
+      .c .family {
+        margin-top: 12px;
+        background: #fff;
+        padding: 16px;
+        border-radius: 16px;
+      }
+      .c .family .section-title {
+        padding: 0 0 12px;
+      }
+      .people {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 4px 0 12px;
+      }
+      .avatar {
+        display: grid;
+        place-items: center;
+        background: #f8e4dc;
+        color: #8d4034;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+      }
+      .people small {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .c .panel {
+        margin-top: 12px;
+      }
+      .edit-section {
+        margin-top: 64px;
+        border-top: 1px solid #d8d1cc;
+        padding-top: 28px;
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 40px;
+      }
+      .edit-section h2,
+      .compare h2 {
+        font-size: 26px;
+        margin: 0 0 12px;
+      }
+      .edit-section p {
+        color: var(--muted);
+        margin: 0;
+      }
+      .edit-example {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 24px;
+        max-width: 720px;
+      }
+      .edit-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 16px;
+        margin-bottom: 16px;
+        font-weight: 600;
+      }
+      .edit-heading span {
+        font-weight: 400;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .edit-row {
+        display: grid;
+        grid-template-columns: 80px 1fr;
+        gap: 16px;
+        align-items: start;
+      }
+      .edit-row label {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 24px;
+      }
+      .edit-row textarea {
+        width: 100%;
+        min-height: 72px;
+        resize: vertical;
+        border: 1px solid #ded8d3;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font: inherit;
+        font-size: 14px;
+        line-height: 24px;
+        color: var(--ink);
+        background: #fff;
+      }
+      .count {
+        text-align: right;
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 4px;
+      }
+      .times {
+        border-top: 1px solid var(--line);
+        margin-top: 20px;
+        padding-top: 16px;
+        display: grid;
+        gap: 4px;
+        color: var(--muted);
+        font-size: 13px;
+        font-variant-numeric: tabular-nums;
+      }
+      .compare {
+        margin-top: 64px;
+        border-top: 1px solid #d8d1cc;
+        padding-top: 28px;
+      }
+      .compare-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+      }
+      .compare-grid article {
+        border-top: 1px solid #d8d1cc;
+        padding-top: 16px;
+      }
+      .compare-grid h3 {
+        font-size: 16px;
+        margin: 0 0 8px;
+      }
+      .compare-grid p {
+        font-size: 14px;
+        color: var(--muted);
+        margin: 0;
+      }
+      .recommend {
+        margin-top: 28px;
+        padding: 20px 24px;
+        background: #fff0eb;
+        border-radius: 12px;
+      }
+      .recommend strong {
+        color: var(--red-ink);
+      }
+      .foot {
+        margin-top: 48px;
+        padding-top: 20px;
+        border-top: 1px solid #ded8d3;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .foot p {
+        margin: 4px 0;
+      }
+      textarea:focus-visible {
+        outline: 2px solid var(--red);
+        outline-offset: 2px;
+      }
+      @media (max-width: 1000px) {
+        .directions {
+          grid-template-columns: 1fr;
+          gap: 40px;
+        }
+        .direction {
+          display: grid;
+          grid-template-columns: minmax(180px, 1fr) minmax(300px, 2fr);
+          gap: 24px;
+        }
+        .direction-head {
+          min-height: 0;
+        }
+        .stage {
+          min-height: 0;
+        }
+        .phone {
+          min-height: 812px;
+        }
+        .intro {
+          grid-template-columns: 1fr;
+        }
+        .edit-section {
+          grid-template-columns: 1fr;
+        }
+        .compare-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 600px) {
+        main {
+          padding: 24px 16px 56px;
+        }
+        .topline {
+          align-items: flex-start;
+        }
+        .intro {
+          padding: 32px 0;
+          gap: 16px;
+        }
+        .direction {
+          display: block;
+        }
+        .direction-head {
+          padding-bottom: 20px;
+        }
+        .stage {
+          padding: 16px 8px;
+        }
+        .phone {
+          min-height: 0;
+        }
+        .edit-section,
+        .compare {
+          margin-top: 48px;
+        }
+        .edit-example {
+          padding: 20px;
+        }
+        .edit-row {
+          grid-template-columns: 56px 1fr;
+          gap: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="topline">
+          <span class="brand">咱家小账 · OurNest</span><span>设计探索 / 支出详情</span>
+        </div>
+        <div class="intro">
+          <h1>一笔支出，<br />三种看法</h1>
+          <p>
+            围绕已有记录明细，探索金额、交易信息与家庭归属的不同阅读顺序。<strong>所有姓名、金额与时间均为虚构示例</strong>；页面是设计示意，不是小程序截图或新增功能承诺。
+          </p>
+        </div>
+      </header>
+      <div class="directions">
+        <section class="direction a">
+          <div class="direction-head">
+            <div class="eyebrow">方向 A / 熟悉优先</div>
+            <h2>清晰的详情卡</h2>
+            <p>保留居中金额与双卡结构，用更安静的留白组织信息。</p>
+          </div>
+          <div class="stage">
+            <div class="phone">
+              <div class="nav">
+                <span class="back">‹</span><span>记录明细</span><span class="space"></span>
+              </div>
+              <div class="screen">
+                <div class="hero">
+                  <div class="category-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M5 3v6a3 3 0 0 0 6 0V3M8 3v18M17 3c-2 2-2 7-2 9h4V3zM19 12v9" />
+                    </svg>
+                  </div>
+                  <div class="category">餐饮</div>
+                  <div class="sub">支出</div>
+                  <div class="amount">−¥86.50</div>
+                </div>
+                <div class="panel">
+                  <div class="row">
+                    <span class="label">记录时间</span><span class="value">2026-11-08 18:30</span>
+                  </div>
+                  <div class="row">
+                    <span class="label">账本</span><span class="value">我们的家</span>
+                  </div>
+                  <div class="row">
+                    <span class="label">账本类型</span><span class="value">共享账本</span>
+                  </div>
+                  <div class="row">
+                    <span class="label">账户</span><span class="value">微信</span>
+                  </div>
+                </div>
+                <div class="panel">
+                  <div class="row">
+                    <span class="label">记录人</span><span class="value">小林</span>
+                  </div>
+                  <div class="row">
+                    <span class="label">付款人</span><span class="value">小林</span>
+                  </div>
+                  <div class="row">
+                    <span class="label">消费归属</span><span class="value">家庭共同</span>
+                  </div>
+                  <div class="note">
+                    <span class="label">备注</span>
+                    <p>周末一起吃晚饭</p>
+                    <span class="tag">#聚餐</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="direction b">
+          <div class="direction-head">
+            <div class="eyebrow">方向 B / 核对优先</div>
+            <h2>一页账目</h2>
+            <p>左对齐金额，减少卡片嵌套，像读账目一样从上向下核对。</p>
+          </div>
+          <div class="stage">
+            <div class="phone">
+              <div class="nav">
+                <span class="back">‹</span><span>记录明细</span><span class="space"></span>
+              </div>
+              <div class="screen">
+                <div class="hero">
+                  <div class="sub">支出 / 餐饮</div>
+                  <div class="amount">−¥86.50</div>
+                  <div class="sub">2026-11-08 18:30</div>
+                </div>
+                <div class="panel">
+                  <div class="section-title">交易信息</div>
+                  <div class="row">
+                    <span class="label">账本</span><span class="value">我们的家</span>
+                  </div>
+                  <div class="row">
+                    <span class="label">账本类型</span><span class="value">共享账本</span>
+                  </div>
+                  <div class="row">
+                    <span class="label">账户</span><span class="value">微信</span>
+                  </div>
+                  <div class="section-title">家庭记录</div>
+                  <div class="row">
+                    <span class="label">记录人</span><span class="value">小林</span>
+                  </div>
+                  <div class="row">
+                    <span class="label">付款人</span><span class="value">小林</span>
+                  </div>
+                  <div class="row">
+                    <span class="label">消费归属</span><span class="value">家庭共同</span>
+                  </div>
+                  <div class="note">
+                    <span class="label">备注</span>
+                    <p>周末一起吃晚饭</p>
+                    <span class="tag">#聚餐</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="direction c">
+          <div class="direction-head">
+            <div class="eyebrow">方向 C / 家庭优先</div>
+            <h2>谁的这一笔</h2>
+            <p>把家庭归属放在金额之后，先看人与用途，再看交易细节。</p>
+          </div>
+          <div class="stage">
+            <div class="phone">
+              <div class="nav">
+                <span class="back">‹</span><span>记录明细</span><span class="space"></span>
+              </div>
+              <div class="screen">
+                <div class="hero">
+                  <div class="hero-top">
+                    <div class="category-icon">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M5 3v6a3 3 0 0 0 6 0V3M8 3v18M17 3c-2 2-2 7-2 9h4V3zM19 12v9" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div class="category">餐饮</div>
+                      <div class="sub">支出</div>
+                    </div>
+                  </div>
+                  <div class="amount">−¥86.50</div>
+                </div>
+                <div class="family">
+                  <div class="section-title">家庭记录</div>
+                  <div class="people">
+                    <span class="avatar">林</span><span>小林<small>记录人</small></span>
+                  </div>
+                  <div class="row">
+                    <span class="label">付款人</span><span class="value">小林</span>
+                  </div>
+                  <div class="row">
+                    <span class="label">消费归属</span><span class="value">家庭共同</span>
+                  </div>
+                  <div class="note">
+                    <span class="label">备注</span>
+                    <p>周末一起吃晚饭</p>
+                    <span class="tag">#聚餐</span>
+                  </div>
+                </div>
+                <div class="panel">
+                  <div class="section-title">交易信息</div>
+                  <div class="row">
+                    <span class="label">记录时间</span><span class="value">2026-11-08 18:30</span>
+                  </div>
+                  <div class="row">
+                    <span class="label">账本</span><span class="value">我们的家</span>
+                  </div>
+                  <div class="row">
+                    <span class="label">账本类型</span><span class="value">共享账本</span>
+                  </div>
+                  <div class="row">
+                    <span class="label">账户</span><span class="value">微信</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <section class="edit-section">
+        <div>
+          <h2>编辑时，细节也要清楚</h2>
+          <p>
+            下面单独放大备注与时间信息；这是编辑页面片段，不属于只读详情页。输入仅供本地排版体验，不会保存。
+          </p>
+        </div>
+        <div class="edit-example">
+          <div class="edit-heading">支出明细 <span>编辑页片段 / 虚构示例</span></div>
+          <div class="edit-row">
+            <label for="note">备注</label
+            ><textarea id="note" maxlength="100" aria-describedby="note-count">
+周末一起吃晚饭</textarea>
+          </div>
+          <div id="note-count" class="count" aria-live="polite">8 / 100</div>
+          <div class="times">
+            <span>创建于：2026-11-08 18:32</span><span>最近更新：2026-11-09 09:15</span>
+          </div>
+        </div>
+      </section>
+      <section class="compare">
+        <h2>怎么选择</h2>
+        <div class="compare-grid">
+          <article>
+            <h3>A · 清晰的详情卡</h3>
+            <p>最接近现有页面，迁移成本相对低；信息分组直观，但卡片较多、纵向更长。</p>
+          </article>
+          <article>
+            <h3>B · 一页账目</h3>
+            <p>金额和字段从同一条左边线开始，查账节奏快；家庭信息的情感强调相对弱。</p>
+          </article>
+          <article>
+            <h3>C · 谁的这一笔</h3>
+            <p>共享支出的记录人、付款人和消费归属更突出；个人账本需隐藏不适用的家庭字段。</p>
+          </article>
+        </div>
+        <div class="recommend">
+          <strong>推荐 B · 一页账目</strong
+          >：信息层次与核对顺序最直接，也保留现有暖红和圆角语言；若家庭分工是首要场景，可选 C。
+        </div>
+      </section>
+      <footer class="foot">
+        <p>
+          边界说明：付款人和消费归属仅在共享账本支出时显示；来源、来源交易号与导入批次仅在有值时显示，本例未模拟导入。访客不可写入，成员仅可编辑自己的记录；实际权限以服务端判断为准。
+        </p>
+        <p>
+          “最近更新”是对现有更新时间文案的设计建议，并不证明发生过人工编辑；时间缺失或无效时不显示。收入、空备注、长字段、加载状态和不同权限仍需实现时验证。
+        </p>
+        <p>设计方法参考 unslop by Damir Sokolovsky（CC BY 4.0）</p>
+      </footer>
+    </main>
+    <script>
+      const note = document.getElementById("note");
+      const count = document.getElementById("note-count");
+      function updateCount() {
+        count.textContent = Array.from(note.value).length + " / 100";
+      }
+      note.addEventListener("input", updateCount);
+      updateCount();
+    </script>
+  </body>
+</html>

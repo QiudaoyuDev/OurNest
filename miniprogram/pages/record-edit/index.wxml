@@ -1,4 +1,4 @@
-<view class="page plain-page edit-page">
+<view class="page plain-page edit-page {{isEditing ? 'edit-page--detail' : ''}} {{isEditing && type === 'income' ? 'edit-page--income' : ''}}">
   <tl-navbar title="{{isEditing ? typeLabel + '明细' : '记一笔'}}" showBack="{{true}}" intercept-back="{{!isEditing}}" bind:back="handleEntryBack">
   </tl-navbar>
   <tl-container safe-area="{{false}}">
@@ -10,22 +10,15 @@
           <tl-button variant="secondary" size="small" bind:tap="reloadRecord">重新加载</tl-button>
         </tl-empty-state>
         <block wx:elif="{{!readonly}}">
-          <view wx:if="{{isEditing}}" class="selected-card card fade-up" bindtap="reselectCategory">
-            <view class="selected-left">
-              <view class="type-badge {{type}}">
-                <tl-icon name="{{typeIcon}}" size="24" colorKey="{{type === 'income' ? 'income' : 'primary'}}">
-                </tl-icon>
-                <text>{{typeLabel}}</text>
-              </view>
-              <view class="selected-icon {{selectedChipClass || type}}">
-                <tl-icon name="{{categoryIcon}}" size="34" color="{{selectedIconColor || (type === 'income' ? '#25a66a' : '#f0442f')}}">
+          <view wx:if="{{isEditing}}" class="detail-category" bindtap="reselectCategory">
+            <view class="detail-category-main">
+              <view class="detail-category-icon {{selectedChipClass}}">
+                <tl-icon name="{{detailCategoryIcon || 'price-tag-3-line'}}" size="32" color="{{selectedIconColor || '#f0442f'}}">
                 </tl-icon>
               </view>
-              <view class="selected-text">
-                <view class="selected-name">{{categoryLabel}}</view>
-              </view>
+              <text class="detail-category-label">{{typeLabel}} / {{categoryLabel}}</text>
             </view>
-            <view class="change-link">重选</view>
+            <text class="change-link">重选分类</text>
           </view>
           <view wx:if="{{!isEditing}}" class="entry-dashboard card fade-up">
             <view class="type-switch">
@@ -57,37 +50,6 @@
               </view>
             </scroll-view>
           </view>
-          <view wx:if="{{isEditing && (familyError || (familyEnabled && type === 'expense'))}}" class="family-card card">
-            <view class="family-title">家庭归属</view>
-            <block wx:if="{{familyLoading}}">
-              <view class="family-note">正在同步家庭成员…</view>
-            </block>
-            <block wx:elif="{{familyError}}">
-              <view class="family-note">成员信息加载失败，无法保存家庭归属。</view>
-              <tl-button variant="secondary" size="small" bind:tap="retryFamilyContext">重新加载</tl-button>
-            </block>
-            <block wx:else>
-              <view class="family-row">
-                <text>付款人</text>
-                <picker mode="selector" range="{{familyMembers}}" range-key="nickName" value="{{familyPayerIndex}}" bindchange="changeFamilyPayer">
-                  <view>{{familyMembers[familyPayerIndex].nickName}} ▾</view>
-                </picker>
-              </view>
-              <view class="family-row">
-                <text>消费归属</text>
-                <picker mode="selector" range="{{familyKinds}}" range-key="label" value="{{familyKindIndex}}" bindchange="changeFamilyKind">
-                  <view>{{familyKinds[familyKindIndex].label}} ▾</view>
-                </picker>
-              </view>
-              <view wx:if="{{familyKinds[familyKindIndex].value === 'personal'}}" class="family-row">
-                <text>消费成员</text>
-                <picker mode="selector" range="{{familyConsumers}}" range-key="nickName" value="{{familyConsumerIndex}}" bindchange="changeFamilyConsumer">
-                  <view>{{familyConsumers[familyConsumerIndex].nickName}} ▾</view>
-                </picker>
-              </view>
-              <view class="family-note">付款人与消费归属可以不同；公共和多人消费按记录人展示。</view>
-            </block>
-          </view>
           <tl-record-form quick-entry="{{!isEditing}}" entry-visible="{{!!categoryId}}" note-focused="{{noteFocused}}" saving="{{saving}}" bind:submit="saveAndLeave" bind:submitcontinue="saveAndContinue" type="{{type}}" amount="{{amount}}" amount-result="{{amountResult}}" show-amount-result="{{showAmountResult}}" quick-amounts="{{quickAmounts}}" ledger-name="{{ledgerName}}" accounts="{{accounts}}" account-index="{{accountIndex}}" date="{{date}}" note="{{note}}" tag-input="{{tagInput}}" tags="{{tags}}" bind:amountinput="onAmountInput" bind:quickamount="setQuickAmount" bind:accountchange="onAccountChange" bind:datechange="onDateChange" bind:noteinput="onNoteInput" bind:taginput="onTagInput" bind:addtag="addTag" bind:removetag="removeTag" bind:keypadchange="onKeypadChange">
             <view wx:if="{{!isEditing && categoryId}}" class="entry-panel-info">
               <view class="entry-panel-heading">
@@ -109,6 +71,19 @@
                 </picker>
                 <picker mode="selector" range="{{accounts}}" value="{{accountIndex}}" bindchange="onAccountChange">
                   <view class="entry-panel-chip">{{accounts[accountIndex] || '选择账户'}}</view>
+                </picker>
+              </view>
+              <view wx:if="{{familyEnabled && type === 'income'}}" class="entry-family">
+                <view wx:if="{{familyLoading}}" class="family-note">正在同步家庭成员…</view>
+                <view wx:elif="{{familyError}}" class="family-note">
+                  成员信息加载失败
+                  <tl-button variant="text" size="small" bind:tap="retryFamilyContext">重试</tl-button>
+                </view>
+                <picker wx:else mode="selector" range="{{incomeRecipients}}" range-key="nickName" value="{{incomeRecipientIndex}}" bindchange="changeIncomeRecipient">
+                  <view class="entry-family-row">
+                    <text>收入归属</text>
+                    <text>{{incomeRecipientName}} ▾</text>
+                  </view>
                 </picker>
               </view>
               <view wx:if="{{familyEnabled && type === 'expense'}}" class="entry-family">
@@ -140,12 +115,60 @@
               </view>
             </view>
           </tl-record-form>
+          <view wx:if="{{isEditing && familyEnabled && type === 'income'}}" class="family-card card">
+            <view class="family-title">收入归属</view>
+            <view wx:if="{{familyLoading}}" class="family-note">正在同步家庭成员…</view>
+            <block wx:elif="{{familyError}}">
+              <view class="family-note">成员信息加载失败，无法保存收入归属。</view>
+              <tl-button variant="secondary" size="small" bind:tap="retryFamilyContext">重新加载</tl-button>
+            </block>
+            <view wx:else class="family-row">
+              <text>归属人</text>
+              <picker mode="selector" range="{{incomeRecipients}}" range-key="nickName" value="{{incomeRecipientIndex}}" bindchange="changeIncomeRecipient">
+                <view>{{incomeRecipientName}}{{incomeRecipientHistorical ? '（不可选择）' : ''}} ▾</view>
+              </picker>
+              <tl-button wx:if="{{incomeRecipientHistorical}}" variant="text" size="small" bind:tap="clearIncomeRecipient">设为未指定</tl-button>
+            </view>
+          </view>
+          <view wx:if="{{isEditing && familyEnabled && type === 'expense'}}" class="family-card card">
+            <view class="family-title">家庭归属</view>
+            <block wx:if="{{familyLoading}}">
+              <view class="family-note">正在同步家庭成员…</view>
+            </block>
+            <block wx:elif="{{familyError}}">
+              <view class="family-note">成员信息加载失败，无法保存家庭归属。</view>
+              <tl-button variant="secondary" size="small" bind:tap="retryFamilyContext">重新加载</tl-button>
+            </block>
+            <block wx:else>
+              <view class="family-row">
+                <text>付款人</text>
+                <picker mode="selector" range="{{familyMembers}}" range-key="nickName" value="{{familyPayerIndex}}" bindchange="changeFamilyPayer">
+                  <view>{{familyMembers[familyPayerIndex].nickName}} ▾</view>
+                </picker>
+              </view>
+              <view class="family-row">
+                <text>消费归属</text>
+                <picker mode="selector" range="{{familyKinds}}" range-key="label" value="{{familyKindIndex}}" bindchange="changeFamilyKind">
+                  <view>{{familyKinds[familyKindIndex].label}} ▾</view>
+                </picker>
+              </view>
+              <view wx:if="{{familyKinds[familyKindIndex].value === 'personal'}}" class="family-row">
+                <text>消费成员</text>
+                <picker mode="selector" range="{{familyConsumers}}" range-key="nickName" value="{{familyConsumerIndex}}" bindchange="changeFamilyConsumer">
+                  <view>{{familyConsumers[familyConsumerIndex].nickName}} ▾</view>
+                </picker>
+              </view>
+              <view class="family-note">付款人与消费归属可以不同；公共和多人消费按记录人展示。</view>
+            </block>
+          </view>
           <view wx:if="{{isEditing}}" class="record-timestamps">
             <text wx:if="{{sourceText}}">来源：{{sourceText}}</text>
             <text wx:if="{{sourceTransactionId}}">来源交易号：{{sourceTransactionId}}</text>
             <text wx:if="{{importBatchId}}">导入批次：{{importBatchId}}</text>
-            <text wx:if="{{createdDate}}">创建于：{{createdDate}}</text>
-            <text wx:if="{{updatedDate}}">编辑于：{{updatedDate}}</text>
+            <view wx:if="{{createdDate || updatedDate}}" class="record-timestamps__dates">
+              <text wx:if="{{createdDate}}" class="record-timestamps__date">创建时间：{{createdDate}}</text>
+              <text wx:if="{{updatedDate}}" class="record-timestamps__date">最近更新：{{updatedDate}}</text>
+            </view>
           </view>
         </block>
       </view>

@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>OurNest 体验综合评估</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #2d2926;
+        --muted: #6d625c;
+        --red: #c43727;
+        --line: #e8dcd4;
+        --paper: #fffdfb;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #f8f2ed;
+        color: var(--ink);
+        font:
+          16px/1.8 system-ui,
+          -apple-system,
+          "Microsoft YaHei",
+          sans-serif;
+      }
+      header {
+        background: #402d29;
+        color: #fff8f3;
+        padding: 54px max(24px, calc((100vw - 1050px) / 2)) 40px;
+      }
+      header small {
+        letter-spacing: 0.15em;
+        color: #f4b7a9;
+      }
+      header h1 {
+        font-size: clamp(27px, 4vw, 42px);
+        line-height: 1.25;
+        margin: 12px 0;
+      }
+      header p {
+        margin: 0;
+        color: #f0dcd4;
+      }
+      main {
+        max-width: 1050px;
+        margin: 0 auto;
+        padding: 32px 24px 80px;
+      }
+      article {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: clamp(22px, 4vw, 50px);
+      }
+      article > h1 {
+        display: none;
+      }
+      h2 {
+        font-size: 24px;
+        line-height: 1.35;
+        border-top: 1px solid var(--line);
+        padding-top: 36px;
+        margin: 45px 0 18px;
+      }
+      h2:first-of-type {
+        border: 0;
+        margin-top: 24px;
+        padding-top: 0;
+      }
+      p,
+      li {
+        max-width: 85ch;
+      }
+      li {
+        margin: 0.55em 0;
+      }
+      a {
+        color: #a92d20;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+      a:focus-visible {
+        outline: 3px solid #a92d20;
+        outline-offset: 3px;
+      }
+      aside {
+        border-left: 4px solid #d64a36;
+        background: #fff3ed;
+        padding: 16px 20px;
+        color: #594943;
+      }
+      .table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        min-width: 640px;
+        text-align: left;
+        font-size: 14px;
+      }
+      th {
+        background: #f8eee9;
+      }
+      th,
+      td {
+        padding: 12px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      code {
+        background: #f5ece7;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 14px;
+        padding: 20px 0;
+      }
+      @media print {
+        body {
+          background: white;
+        }
+        header {
+          background: white;
+          color: black;
+          padding: 20px;
+        }
+        header small,
+        header p {
+          color: #444;
+        }
+        main {
+          padding: 0;
+        }
+        article {
+          border: 0;
+          padding: 0;
+        }
+        a {
+          color: black;
+        }
+        h2 {
+          break-after: avoid;
+        }
+        .table-wrap {
+          overflow: visible;
+        }
+        table {
+          min-width: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <small>OURNEST / EXPERIENCE REVIEW</small>
+      <h1>让每一笔账<br />更清楚、更可信</h1>
+      <p>首页 · 明细与详情 · 分析　／　源码审查与设计建议</p>
+    </header>
+    <main>
+      <article>
+        <h1 id="section-0">OurNest 首页、明细与分析体验综合评估</h1>
+        <aside>
+          审查基线：当前工作区，HEAD
+          <code>6063a468a853350e8e02f0f10136c760d82e3e19</code
+          >；工作区有既存未提交修改，不能视为该提交或线上版本。方法：源码与项目规范静态审查，结合三个独立专项报告和
+          mini-program-engineering-suite
+          的证据分级。未运行小程序、云环境、真机、读屏或故障注入；视觉和用户影响均为待验证推断。本报告不修改业务代码。
+        </aside>
+        <h2 id="section-4">01 执行摘要</h2>
+        <p>
+          <strong>方向：保留温暖可信的账本体系，以财务口径和交互可恢复性优先于视觉重做。</strong>
+          首页回答“本月怎样”，明细回答“发生了什么”，分析回答“为什么及如何比较”；目前三者已有基本闭环、状态组件与部分图表文字替代，但静态审查发现财务文案可能与数据口径不符、刷新或分页失败缺少清晰恢复，以及只读入口与角色不匹配。建议先修语义与状态，再做结构和视觉精修，不建议先全局换肤或添加装饰性图形。
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>优先级</th>
+                <th>核心事项</th>
+                <th>证据性质</th>
+                <th>预期结果</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>P1</td>
+                <td>分析二次失败提示和重试</td>
+                <td>静态条件可推导，待复现</td>
+                <td>无空白、可恢复、数据与筛选上下文一致</td>
+              </tr>
+              <tr>
+                <td>P1</td>
+                <td>生活月报周期及收支口径</td>
+                <td>固定文案与动态数据绑定，待组合验证</td>
+                <td>展示和复制的标题、周期、方向一致</td>
+              </tr>
+              <tr>
+                <td>P1</td>
+                <td>AA 提示的适用前提</td>
+                <td>计算及措辞可见，实际数据待核实</td>
+                <td>明示估算前提，不暗示真实债务或自动结算</td>
+              </tr>
+              <tr>
+                <td>P1</td>
+                <td>访客空态写入口</td>
+                <td>模板与拦截代码直接可见</td>
+                <td>无不可执行写入口，服务端校验保留</td>
+              </tr>
+              <tr>
+                <td>P2</td>
+                <td>两种明细分页失败恢复</td>
+                <td>错误分支静态可见，待断网验证</td>
+                <td>保留已有记录，尾部可重试</td>
+              </tr>
+              <tr>
+                <td>P2</td>
+                <td>无障碍、趋势替代与密度</td>
+                <td>静态风险，需设备实测</td>
+                <td>操作有名称和状态，图文可互相验证</td>
+              </tr>
+              <tr>
+                <td>P2</td>
+                <td>公共按钮、预算信息重复与金额约数</td>
+                <td>代码事实及设计建议</td>
+                <td>一致组件、减少重复、避免近似数误读</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <h2 id="section-18">02 业务约束与评估边界</h2>
+        <ul>
+          <li>
+            产品为个人/共享账本。Owner
+            可管理全部记录，成员只可编辑删除自己录入的记录，访客只读；客户端的显示控制不是服务端授权替代。依据：<a
+              href="../BUSINESS-AND-IMPLEMENTATION.md#L25-L38"
+              >业务与实现</a
+            >。
+          </li>
+          <li>
+            首页当月汇总与跨期最近记录是不同数据集；明细分页的月汇总来自完整查询范围；不能用当前已加载页算整体。分析当前周期对比同期，历史周期对比完整上期，预算仅为当前配置。<a
+              href="../BUSINESS-AND-IMPLEMENTATION.md#L56-L62"
+              >统计口径</a
+            >。
+          </li>
+          <li>
+            付款人、消费归属、录入人不同；公共/多人不自动均摊。差额不是多人通用结算，不应承诺自动转账。<a
+              href="../BUSINESS-AND-IMPLEMENTATION.md#L50-L54"
+              >家庭视角</a
+            >。账户只是名称而非余额；无离线写入、实时推送或已实现导出。<a
+              href="../../README.md#L22-L30"
+              >产品说明</a
+            >、<a href="../BUSINESS-AND-IMPLEMENTATION.md#L76-L80">边界</a>。
+          </li>
+          <li>
+            延续 <code>#F0442F</code>、浅暖背景、现有 navbar/卡片、本地线性图标；除 tabbar
+            外不加阴影；沿用公共组件和安全区规则。加载、错误、空、就绪互斥。<a
+              href="../UI-GUIDELINES.md#L3-L17"
+              >UI 规范</a
+            >。
+          </li>
+          <li>
+            审查含首页、明细列表、记录详情、分析及筛选下钻。四个 Tab
+            是同一主页面内面板，不是四个独立原生页面。<a
+              href="../../miniprogram/pages/index/index.wxml#L9-L31"
+              >页面容器</a
+            >。
+          </li>
+        </ul>
+        <h2 id="section-26">03 首页：先让预算与本月账况易读</h2>
+        <p>
+          <strong>现状与保留</strong
+          >：有无账本、加载、错误、空态，预算和本月收支、跨期最近记录；“最近记录”不应被用户理解为当月汇总来源。<a
+            href="../../miniprogram/components/tl-tab-home/index.wxml#L1-L205"
+            >首页模板</a
+          >、<a href="../../miniprogram/components/tl-tab-home/index.js#L33-L39">状态映射</a>。
+        </p>
+        <ul>
+          <li>
+            <strong>P1 只读空态</strong>：空态“记一笔”未按只读隐藏，点击才被拦截。<a
+              href="../../miniprogram/components/tl-tab-home/index.wxml#L37-L41"
+              >模板</a
+            >、<a href="../../miniprogram/components/tl-tab-home/index.js#L452-L456">处理器</a
+            >。建议只读时显示中性说明和可执行浏览操作；保留客户端拦截及云端授权。验证空账本及本月空记录两种情形。
+          </li>
+          <li>
+            <strong>P2 预算表达</strong>：预算状态和右侧均可能呈现“已使用”比例。<a
+              href="../../miniprogram/components/tl-tab-home/index.wxml#L42-L74"
+              >模板</a
+            >。建议将余额/超支作为主信息，比例保留一次，预算未设置、零预算、超支分别有清楚文案；不假设历史预算归档存在。
+          </li>
+          <li>
+            <strong>P2 数字精度</strong>：大于等于 100000 的首页汇总用一位小数的“万”表示。<a
+              href="../../miniprogram/components/tl-tab-home/index.js#L17-L20"
+              >格式化</a
+            >。建议舍入时明确“约”，并提供精确金额查看路径，覆盖正负与边界；不要将账户名称描述为账户余额。
+          </li>
+          <li>
+            <strong>版式方向</strong
+            >：保留暖色与卡片，将账本身份、账期、预算/收支、最近记录排成明确层级。长账本名、超大金额、窄屏和系统大字需实际检查，静态代码不能证明拥挤或合规。
+          </li>
+        </ul>
+        <h2 id="section-35">04 明细与记录详情：连续浏览和角色可预期</h2>
+        <p>
+          <strong>现状与保留</strong
+          >：按月、收支筛选和日期分组；分页采用游标、快照变化自动重新加载；详情将金额、交易信息、家庭信息分组。<a
+            href="../../miniprogram/components/tl-tab-records/index.wxml#L1-L100"
+            >列表模板</a
+          >、<a href="../../miniprogram/components/tl-tab-records/index.js#L238-L310">分页</a>、<a
+            href="../../miniprogram/pages/record-detail/index.wxml#L12-L80"
+            >详情</a
+          >。主明细对只读者打开详情，其他用户进入编辑页；这不等于成员可编辑他人记录，最终权限仍需服务端与编辑页检查。<a
+            href="../../miniprogram/components/tl-tab-records/index.js#L435-L439"
+            >入口</a
+          >。
+        </p>
+        <ul>
+          <li>
+            <strong>P1 只读空态</strong>：列表空态始终有“记一笔”，处理器对访客 toast 后返回。<a
+              href="../../miniprogram/components/tl-tab-records/index.wxml#L88-L94"
+              >模板</a
+            >、<a href="../../miniprogram/components/tl-tab-records/index.js#L414-L421">处理器</a
+            >。建议访客隐藏写操作，区分筛选无结果、本月空、有历史与无历史，提供合理可执行操作。
+          </li>
+          <li>
+            <strong>P2 追加失败</strong
+            >：主明细追加失败只结束加载，筛选明细追加失败则整体切换错误态。<a
+              href="../../miniprogram/components/tl-tab-records/index.js#L292-L317"
+              >主明细</a
+            >、<a href="../../miniprogram/pages/record-filtered/index.js#L125-L145">下钻</a>、<a
+              href="../../miniprogram/pages/record-filtered/index.wxml#L7-L25"
+              >模板</a
+            >。建议首屏错误与分页错误分开；追加失败保留内容和游标、尾部重试；快照冲突另行说明并重新加载首屏。
+          </li>
+          <li>
+            <strong>P2 组件一致性</strong>：明细重试和空态按钮用私有
+            <code>view</code>，建议替换为公共
+            <code>tl-button</code>，检查大小、反馈和读屏，避免页面私有通用按钮。<a
+              href="../../miniprogram/components/tl-tab-records/index.wxml#L46-L50"
+              >模板</a
+            >、<a href="../UI-GUIDELINES.md#L5-L8">规范</a>。
+          </li>
+          <li>
+            <strong>详情设计原则</strong
+            >：保留带正负号的金额、来源、账户、录入人与家庭归属；缺失信息使用准确的“未指定/未知”，不得把录入人当作付款人。核验长交易号、长备注和历史成员，不把当前只读详情页面误述为已有编辑按钮。<a
+              href="../../miniprogram/pages/record-detail/index.js#L19-L72"
+              >字段映射</a
+            >。
+          </li>
+        </ul>
+        <h2 id="section-44">05 分析：先保证结论可信，再优化图表阅读</h2>
+        <p>
+          <strong>现状与保留</strong
+          >：周期、收支切换、概览、趋势、分类列表和家庭视角已有实现；分类有名称、金额、占比及图表失败备用列表，值得保留。<a
+            href="../../miniprogram/components/tl-tab-analysis/index.wxml#L71-L185"
+            >分析模板</a
+          >、<a href="../../miniprogram/components/tl-tab-analysis/index.wxml#L242-L275">分类</a>。
+        </p>
+        <ul>
+          <li>
+            <strong>P1 二次失败恢复</strong>：错误占位依赖
+            <code>error &amp;&amp; !chartFirstReadyEver</code
+            >，后续请求失败置错误并清数据，正文在错误时隐藏，静态推导首次成功后的失败可能没有错误入口。<a
+              href="../../miniprogram/components/tl-tab-analysis/index.wxml#L59-L69"
+              >模板</a
+            >、<a href="../../miniprogram/components/tl-tab-analysis/index.js#L970-L1014">逻辑</a
+            >、<a href="../../miniprogram/components/tl-tab-analysis/index.wxss#L37-L48">样式</a
+            >。应确保所有失败均有解释及重试，若保留旧数据必须明确旧账本/区间；先注入失败确认实际效果。
+          </li>
+          <li>
+            <strong>P1 月报语义</strong
+            >：周/月/年及收支切换下仍有“生活月报”，弹层固定“家庭总支出”但绑定当前方向总额，复制也固定写家庭支出。<a
+              href="../../miniprogram/components/tl-tab-analysis/index.wxml#L71-L83"
+              >入口</a
+            >、<a href="../../miniprogram/components/tl-tab-analysis/index.wxml#L596-L610">弹层</a
+            >、<a href="../../miniprogram/components/tl-tab-analysis/index.js#L1091-L1115">复制</a
+            >。建议产品二选一：严格限于月度支出，或以统一语义模型动态生成周期、收支、账本语境，并共享给展示与复制。覆盖周/月/年
+            × 收入/支出 × 个人/共享。
+          </li>
+          <li>
+            <strong>P1 AA 口径</strong>：前两名付款人的差额除二，但文案有“需转账”“结清”表述。<a
+              href="../../miniprogram/components/tl-tab-analysis/dashboard.js#L84-L132"
+              >计算及复制</a
+            >。这不是一般债务计算；建议产品确认仅在能证明两人、共同费用、等额分摊等前提时展示金额，否则说明不可推算；即使适用也标注假设和排除项，不承诺自动结算。先核实服务端数据组成及实际场景。
+          </li>
+          <li>
+            <strong>P2 图表与可访问性</strong
+            >：周对照图有两组柱，但展开文本未列对应上周逐日值；部分图表标签字号小且分类颜色哈希可能碰撞。<a
+              href="../../miniprogram/components/tl-tab-analysis/index.wxml#L168-L185"
+              >趋势</a
+            >、<a href="../../miniprogram/components/tl-tab-analysis/chart-options.js#L178-L211"
+              >图表参数</a
+            >、<a href="../../miniprogram/components/tl-tab-analysis/chart-options.js#L45-L70"
+              >颜色映射</a
+            >。建议文字列日期、本期、上期及变化；图表提供摘要及完整数据表，名称和数值不依赖颜色。字号及对比度须实测，不以静态值认定失败。
+          </li>
+          <li>
+            <strong>P2 信息层级</strong
+            >：概览同时包含总额、笔数、日均、月报、结余、比较和家庭数据。<a
+              href="../../miniprogram/components/tl-tab-analysis/index.wxml#L72-L130"
+              >模板</a
+            >。建议优先突出账期、当前方向总额及比较，弱化重复结余，保留有业务价值的明细；具体布局需在真实数据与设备上验证。
+          </li>
+        </ul>
+        <h2 id="section-54">06 跨页面交互与实施顺序</h2>
+        <ul>
+          <li>
+            月份箭头、分析筛选、关闭和底栏加号包含图标或可点击
+            <code>view</code
+            >；节点未见完整可访问名称和选中状态。建议依据微信支持的属性补充名称、角色和状态，读屏实测焦点顺序、弹层关闭及焦点返回；不将
+            Web 属性直接照搬。<a
+              href="../../miniprogram/components/tl-tab-records/index.wxml#L5-L27"
+              >明细</a
+            >、<a href="../../miniprogram/components/tl-tab-analysis/index.wxml#L3-L40">分析</a>、<a
+              href="../../miniprogram/components/tl-tabbar/index.wxml#L10-L15"
+              >底栏</a
+            >。
+          </li>
+          <li>
+            <strong>阶段 A：可信与恢复</strong>：复现分析二次失败、核定月报与 AA
+            口径、修复访客入口；补状态和语义组合测试。
+          </li>
+          <li>
+            <strong>阶段 B：连续任务</strong
+            >：修复两类分页失败反馈、统一公共按钮；确保游标与快照冲突路径安全。
+          </li>
+          <li>
+            <strong>阶段 C：可读与精修</strong
+            >：图表文本对照、无障碍标记、预算去重及近似金额；在设备上验证后才调整局部尺寸与层级。
+          </li>
+          <li>
+            建议验收：所有错误能解释并重试；只读用户无写 CTA
+            且服务端继续拒绝写入；展示/复制语义一致；分页失败不丢已读上下文；图表核心值可从文字获得。
+          </li>
+        </ul>
+        <h2 id="section-62">07 待执行验证矩阵</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>维度</th>
+                <th>场景与验收</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>身份与数据</td>
+                <td>
+                  Owner、成员、访客 ×
+                  个人/共享；无账本、空账本、本月空但历史有记录；成员访问他人记录，以服务端实际权限为准
+                </td>
+              </tr>
+              <tr>
+                <td>财务口径</td>
+                <td>
+                  周/月/年 × 收入/支出 ×
+                  个人/共享的月报展示和复制；两人、多人、未知付款、非共同/非等额消费的
+                  AA；金额阈值与精度
+                </td>
+              </tr>
+              <tr>
+                <td>失败与竞态</td>
+                <td>
+                  首页/分析首屏及成功后二次失败、重试；两类明细第二页失败；快照变化；快速切换账本、周期、类型，确认未显示过期数据
+                </td>
+              </tr>
+              <tr>
+                <td>设备与可用性</td>
+                <td>
+                  微信开发者工具及 iOS/Android
+                  真机：窄屏、大字、长名称/交易号、大金额、安全区、滚动遮挡、触控、对比度；系统读屏及图表替代文本
+                </td>
+              </tr>
+              <tr>
+                <td>工程回归</td>
+                <td>
+                  真正实施修改后按影响范围运行 <code>npm run verify</code>、<code
+                    >npm run ui:check</code
+                  >、适用视觉检查，并按
+                  <a href="../REGRESSION.md">手工回归</a> 使用测试环境与非生产数据
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <h2 id="section-72">08 专项报告与说明</h2>
+        <ul>
+          <li><a href="./unslop-review.md">Unslop：视觉工艺与品牌一致性</a></li>
+          <li><a href="./huashu-review.md">花叔 Design：设计结构与业务叙事</a></li>
+          <li><a href="./ui-ux-review.md">UI/UX Pro Max：交互、无障碍与图表</a></li>
+        </ul>
+        <p>
+          三份报告各自独立，严重度判断可能不同；本综合报告按财务可信与项目规范统一排序。HTML
+          是本报告的阅读版，不是新产品界面原型；若后续进入新视觉设计，先提出三个方向供选择，再展开选定方向。未运行测试或视觉回归，不能据此宣称实机缺陷已复现或发布已就绪。
+        </p>
+      </article>
+      <footer>静态审查报告 · 本页面为阅读版，非产品原型 · 关联源码链接以仓库相对路径打开</footer>
+    </main>
+  </body>
+</html>

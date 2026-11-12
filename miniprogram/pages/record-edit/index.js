@@ -5,6 +5,15 @@ const categoryService = require("../../services/category.service");
 const categoryStore = require("../../services/category.store");
 const { getId } = require("../../utils/mapper");
 const { resolveCategoryScheme } = require("../../utils/category-color");
+const iconGlyphs = require("../../components/tl-icon/glyphs");
+const categoryIcons = require("../../components/tl-icon/category-icons");
+
+function displayCategoryIcon(name) {
+  return Object.prototype.hasOwnProperty.call(iconGlyphs, name) ||
+    Object.prototype.hasOwnProperty.call(categoryIcons, name)
+    ? name
+    : "price-tag-3-line";
+}
 const ledgerService = require("../../services/ledger.service");
 const { getPaymentAccounts } = require("../../services/payment-account.service");
 const { markNavigation } = require("../../utils/navigation-timing");
@@ -12,8 +21,6 @@ const {
   evaluateAmountExpression,
   getAmountValidationMessage,
 } = require("../../utils/amount-expression");
-
-const ledgerMembersMemoryCache = {};
 
 function today() {
   const now = new Date();
@@ -131,6 +138,11 @@ Page({
     familyError: false,
     familyMembers: [],
     familyConsumers: [],
+    incomeRecipients: [{ openid: "", nickName: "未指定" }],
+    incomeRecipientOpenid: "",
+    incomeRecipientName: "未指定",
+    incomeRecipientIndex: 0,
+    incomeRecipientHistorical: false,
     familyPayerIndex: 0,
     familyConsumerIndex: 0,
     familyKindIndex: 0,
@@ -162,7 +174,6 @@ Page({
     }
     const isShared = targetLedger.type === "shared";
     const needFamily = !options.id && isShared && Boolean(ledgerId);
-    const hasFamilyCache = needFamily && Boolean(ledgerMembersMemoryCache[ledgerId]);
     const cachedCategories =
       !options.id && ledgerId && typeof categoryStore.getCategoriesSync === "function"
         ? categoryStore.getCategoriesSync(ledgerId)
@@ -173,7 +184,7 @@ Page({
     this.setData({
       type,
       familyEnabled: needFamily,
-      familyLoading: needFamily && !hasFamilyCache,
+      familyLoading: needFamily,
       typeLabel: type === "income" ? "收入" : "支出",
       typeIcon: type === "income" ? "funds-line" : "price-tag-3-line",
       ledgerName: targetLedger.name || "我家账本",
@@ -455,6 +466,7 @@ Page({
         categoryName: recordCategoryName,
         categoryLabel: record.categoryLabel || recordCategoryName,
         categoryIcon: recordCategoryIcon,
+        detailCategoryIcon: displayCategoryIcon(recordCategoryIcon),
         selectedChipClass: recordScheme.chipClass,
         selectedIconColor: recordScheme.iconColor,
         parentCategory: record.parentCategory || "",
@@ -481,6 +493,10 @@ Page({
         createdDate: formatRecordTimestamp(record.createdAt),
         updatedDate: formatRecordTimestamp(record.updatedAt),
         syncVersion: Number(record.syncVersion || 0),
+        incomeRecipientOpenid: record.incomeOwnerOpenid || "",
+        incomeRecipientName: record.incomeOwnerOpenid
+          ? record.incomeOwnerName || "历史成员"
+          : "未指定",
       });
       this.setAmountExpression(String(record.amount || ""));
       if (ledgerInfo.type === "shared") {
@@ -509,6 +525,17 @@ Page({
     const eligibleMembers = (result.members || []).filter((item) =>
       ["owner", "member"].includes(item.role)
     );
+    const incomeRecipients = [{ openid: "", nickName: "未指定" }, ...eligibleMembers];
+    let incomeRecipientOpenid = this.data.incomeRecipientOpenid;
+    if (!this.data.isEditing && !this._incomeRecipientInitialized) {
+      const currentMember = eligibleMembers.find((item) => item.openid === app.globalData.openid);
+      incomeRecipientOpenid = currentMember ? currentMember.openid : "";
+      this._incomeRecipientInitialized = true;
+    }
+    const incomeRecipientIndex = incomeRecipients.findIndex(
+      (item) => item.openid === incomeRecipientOpenid
+    );
+    const incomeRecipient = incomeRecipients.find((item) => item.openid === incomeRecipientOpenid);
     const payers = [{ openid: "", nickName: "其他" }, ...eligibleMembers];
     const consumers = [...eligibleMembers];
     const attribution = existing || {
@@ -543,6 +570,13 @@ Page({
     this.setData({
       familyMembers: payers,
       familyConsumers: consumers,
+      incomeRecipients,
+      incomeRecipientOpenid,
+      incomeRecipientIndex: Math.max(0, incomeRecipientIndex),
+      incomeRecipientHistorical: incomeRecipientIndex < 0,
+      incomeRecipientName: incomeRecipient
+        ? incomeRecipient.nickName
+        : this.data.incomeRecipientName,
       familyPayerIndex: payerIndex,
       familyConsumerIndex: consumerIndex,
       familyKindIndex: kindIndex,
@@ -552,25 +586,35 @@ Page({
   async loadFamilyContext(ledgerId, existing, display = {}) {
     this.familyExisting = existing || null;
     this.familyDisplay = display || {};
-    const cached = ledgerId && ledgerMembersMemoryCache[ledgerId];
-    if (cached) {
-      this.applyFamilyResult(cached, existing, display);
-    } else {
-      this.setData({ familyLoading: true, familyError: false });
-    }
+    this.setData({ familyLoading: true, familyError: false });
     try {
       const result = await ledgerService.getLedgerMembers(ledgerId);
-      if (ledgerId) ledgerMembersMemoryCache[ledgerId] = result;
       this.applyFamilyResult(result, existing, display);
     } catch (_error) {
-      if (!cached) {
-        this.setData({ familyLoading: false, familyError: true });
-      }
+      this.setData({ familyLoading: false, familyError: true });
     }
   },
   retryFamilyContext() {
-    if (this.data.ledgerId) delete ledgerMembersMemoryCache[this.data.ledgerId];
     return this.loadFamilyContext(this.data.ledgerId, this.familyExisting, this.familyDisplay);
+  },
+  clearIncomeRecipient() {
+    this.setData({
+      incomeRecipientIndex: 0,
+      incomeRecipientHistorical: false,
+      incomeRecipientOpenid: "",
+      incomeRecipientName: "未指定",
+    });
+  },
+  changeIncomeRecipient(event) {
+    const index = Number(event.detail.value);
+    const recipient = this.data.incomeRecipients[index];
+    if (!recipient) return;
+    this.setData({
+      incomeRecipientIndex: index,
+      incomeRecipientHistorical: false,
+      incomeRecipientOpenid: recipient.openid,
+      incomeRecipientName: recipient.nickName,
+    });
   },
   changeFamilyPayer(event) {
     this.setData({ familyPayerIndex: Number(event.detail.value) });
@@ -599,6 +643,7 @@ Page({
       categoryLabel,
       categoryHeading: categoryLabel,
       categoryIcon,
+      detailCategoryIcon: displayCategoryIcon(categoryIcon),
       selectedChipClass: scheme.chipClass,
       selectedIconColor: scheme.iconColor,
       parentCategory,
@@ -718,6 +763,10 @@ Page({
   },
 
   resetForNextRecord() {
+    const currentIndex = this.data.incomeRecipients.findIndex(
+      (item) => item.openid && item.openid === app.globalData.openid
+    );
+    const recipient = this.data.incomeRecipients[Math.max(0, currentIndex)];
     this.setData({
       amount: "",
       amountResult: "",
@@ -726,6 +775,10 @@ Page({
       note: "",
       tagInput: "",
       tags: [],
+      incomeRecipientOpenid: recipient ? recipient.openid : "",
+      incomeRecipientName: recipient ? recipient.nickName : "未指定",
+      incomeRecipientIndex: Math.max(0, currentIndex),
+      incomeRecipientHistorical: false,
       saving: false,
     });
   },
@@ -793,6 +846,9 @@ Page({
       account: this.data.accounts[this.data.accountIndex],
       syncVersion: this.data.syncVersion || 0,
       ...(familyAttribution ? { familyAttribution } : {}),
+      ...(this.data.familyEnabled && this.data.type === "income"
+        ? { incomeOwnerOpenid: this.data.incomeRecipientOpenid }
+        : {}),
     };
 
     try {

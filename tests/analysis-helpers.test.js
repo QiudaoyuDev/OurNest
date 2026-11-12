@@ -796,19 +796,19 @@ test("family payer and consumption totals count each expense once with public at
   const result = familyExpenseGroups(rows);
   assert.equal(result.total, 65);
   assert.deepEqual(
-    result.payers.map((row) => [row.openid, row.amount]),
+    result.payers.map((row) => [row.openid, row.amount, row.rate]),
     [
-      ["b", 40],
-      ["a", 20],
-      ["", 5],
+      ["b", 40, 62],
+      ["a", 20, 31],
+      ["", 5, 8],
     ]
   );
   assert.deepEqual(
-    result.consumers.map((row) => [row.openid, row.amount]),
+    result.consumers.map((row) => [row.openid, row.amount, row.rate]),
     [
-      ["a", 30],
-      ["b", 30],
-      ["", 5],
+      ["a", 30, 46],
+      ["b", 30, 46],
+      ["", 5, 8],
     ]
   );
   assert.equal(result.consumers[0].publicAmount, 20);

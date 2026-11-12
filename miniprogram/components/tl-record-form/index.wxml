@@ -70,7 +70,7 @@
     </view>
     <view class="tl-record-form__field tl-record-form__field--note">
       <text>备注</text>
-      <textarea class="tl-record-form__note" value="{{note}}" auto-height="{{false}}" bindinput="noteInput" placeholder="100字以内" />
+      <textarea class="tl-record-form__note" value="{{note}}" auto-height="{{false}}" bindinput="noteInput" placeholder="100字以内" placeholder-class="tl-record-form__note-placeholder" />
     </view>
     <view class="tl-record-form__tags">
       <text>标签</text>

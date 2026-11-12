@@ -5,7 +5,8 @@
       <view class="analysis-primary-tab {{mode === 'month' ? 'is-active' : ''}}" data-mode="month" bindtap="switchMode">月度</view>
       <view class="analysis-primary-tab {{mode === 'year' ? 'is-active' : ''}}" data-mode="year" bindtap="switchMode">年度</view>
       <view class="analysis-primary-tab {{mode === 'custom' ? 'is-active' : ''}}" data-mode="custom" bindtap="switchMode">自定义</view>
-      <view class="analysis-primary-tab {{mode === 'all' ? 'is-active' : ''}}" data-mode="all" bindtap="switchMode">累计</view>
+    </view>
+    <view class="analysis-slim-bar {{isWarmRefreshing ? 'is-active' : ''}}">
     </view>
     <view class="analysis-action-bar" wx:if="{{mode !== 'custom'}}">
       <view class="analysis-context-bar">
@@ -54,10 +55,10 @@
     </view>
   </view>
   <scroll-view class="analysis-scroll" bindscroll="onAnalysisScroll" scroll-top="{{scrollTop}}" scroll-y="{{true}}" enhanced="{{true}}" enable-flex="{{true}}" show-scrollbar="{{false}}">
-    <view class="page-content">
-      <tl-skeleton wx:if="{{loading}}" variant="analysis">
+    <view class="page-content {{isWarmRefreshing ? 'is-warm-refreshing' : ''}}">
+      <tl-skeleton wx:if="{{loading && !chartFirstReadyEver}}" variant="analysis">
       </tl-skeleton>
-      <tl-empty-state wx:elif="{{error}}" variant="error" title="分析数据加载失败" description="请检查网络后重新加载">
+      <tl-empty-state wx:elif="{{error && !chartFirstReadyEver}}" variant="error" title="分析数据加载失败" description="请检查网络后重新加载">
         <tl-button variant="secondary" size="small" bind:tap="reload">重新加载</tl-button>
       </tl-empty-state>
       <tl-empty-state wx:elif="{{noLedger}}" title="还没有可分析的账本" description="创建账本并记下第一笔收支后，这里会生成分析">
@@ -317,39 +318,45 @@
           <block wx:elif="{{mode === 'custom' || mode === 'all'}}">
             <view wx:if="{{mode === 'custom'}}" class="custom-range card">
               <view class="date-preset-bar">
-                <view class="preset-pill {{customPreset === '7d' ? 'is-active' : ''}}" data-preset="7d" bindtap="applyDatePreset">近7天</view>
                 <view class="preset-pill {{customPreset === '30d' ? 'is-active' : ''}}" data-preset="30d" bindtap="applyDatePreset">近30天</view>
-                <view class="preset-pill {{customPreset === 'month' ? 'is-active' : ''}}" data-preset="month" bindtap="applyDatePreset">本月</view>
-                <view class="preset-pill {{customPreset === 'year' ? 'is-active' : ''}}" data-preset="year" bindtap="applyDatePreset">今年</view>
+                <view class="preset-pill {{customPreset === '90d' ? 'is-active' : ''}}" data-preset="90d" bindtap="applyDatePreset">近90天</view>
+                <view class="preset-pill {{customPreset === '180d' ? 'is-active' : ''}}" data-preset="180d" bindtap="applyDatePreset">近半年</view>
+                <view class="preset-pill {{customPreset === 'all' ? 'is-active' : ''}}" data-preset="all" bindtap="applyDatePreset">全部累计</view>
               </view>
-              <view class="custom-range__dates">
-                <picker mode="date" value="{{customStart}}" end="{{customToday}}" bindchange="changeCustomStart" class="custom-date-picker">
-                  <view class="custom-date-box">
+              <view class="custom-range__dates {{customPreset === 'all' ? 'is-all-range' : ''}}">
+                <picker mode="date" value="{{customStart}}" end="{{customToday}}" bindchange="changeCustomStart" class="custom-date-picker" disabled="{{customPreset === 'all'}}">
+                  <view class="custom-date-box {{customPreset === 'all' ? 'is-disabled' : ''}}">
                     <tl-icon name="calendar-line" size="26" colorKey="primary">
                     </tl-icon>
-                    <text class="custom-date-text">{{customStart}}</text>
-                    <tl-icon name="arrow-down-s-fill" size="20" colorKey="tertiary">
+                    <text class="custom-date-text">{{customPreset === 'all' ? (customStart || '建账起') : customStart}}</text>
+                    <tl-icon wx:if="{{customPreset !== 'all'}}" name="arrow-down-s-fill" size="20" colorKey="tertiary">
                     </tl-icon>
                   </view>
                 </picker>
                 <view class="custom-range__separator">至</view>
-                <picker mode="date" value="{{customEnd}}" end="{{customToday}}" bindchange="changeCustomEnd" class="custom-date-picker">
-                  <view class="custom-date-box">
+                <picker mode="date" value="{{customEnd}}" end="{{customToday}}" bindchange="changeCustomEnd" class="custom-date-picker" disabled="{{customPreset === 'all'}}">
+                  <view class="custom-date-box {{customPreset === 'all' ? 'is-disabled' : ''}}">
                     <tl-icon name="calendar-line" size="26" colorKey="primary">
                     </tl-icon>
-                    <text class="custom-date-text">{{customEnd}}</text>
-                    <tl-icon name="arrow-down-s-fill" size="20" colorKey="tertiary">
+                    <text class="custom-date-text">{{customPreset === 'all' ? '至今' : customEnd}}</text>
+                    <tl-icon wx:if="{{customPreset !== 'all'}}" name="arrow-down-s-fill" size="20" colorKey="tertiary">
                     </tl-icon>
                   </view>
                 </picker>
               </view>
               <view class="custom-range__footer">
-                <view class="custom-range__days-badge" wx:if="{{customDays > 0}}">
+                <view class="custom-range__days-badge" wx:if="{{customPreset === 'all'}}">
+                  <tl-icon name="time-line" size="22" colorKey="primary">
+                  </tl-icon>
+                  <text>全部历史汇总</text>
+                </view>
+                <view class="custom-range__days-badge" wx:elif="{{customDays > 0}}">
                   <tl-icon name="time-line" size="22" colorKey="primary">
                   </tl-icon>
                   <text>共 {{customDays}} 天</text>
                 </view>
-                <text class="custom-range__note">对比前一个等长区间 · 最多 366 天</text>
+                <text class="custom-range__note" wx:if="{{customPreset === 'all'}}">全量账目聚合 · 无跨度上限</text>
+                <text class="custom-range__note" wx:else>对比前一个等长区间 · 最多 366 天</text>
               </view>
             </view>
             <block wx:if="{{hasRecords}}">
@@ -501,7 +508,7 @@
                   <text>¥{{member.amountText}}</text>
                 </view>
                 <view wx:for="{{member.categories}}" wx:for-item="category" wx:for-index="categoryIndex" wx:key="key" class="family-category-row" data-dimension="payer" data-index="{{memberIndex}}" data-category-index="{{categoryIndex}}" bindtap="openFamilyRecords">
-                  <tl-icon name="{{category.categoryIcon || 'price-tag-3-line'}}" size="28" colorKey="primary">
+                  <tl-icon name="{{category.categoryIcon || 'price-tag-3-line'}}" size="28" color="{{category.iconColor}}">
                   </tl-icon>
                   <text class="dashboard-row-content">{{category.name}}</text>
                   <text class="dashboard-amount">¥{{category.amountText}}</text>
@@ -525,7 +532,7 @@
                   <text>¥{{member.amountText}}</text>
                 </view>
                 <view wx:for="{{member.categories}}" wx:for-item="category" wx:for-index="categoryIndex" wx:key="key" class="family-category-row" data-dimension="consumer" data-index="{{memberIndex}}" data-category-index="{{categoryIndex}}" bindtap="openFamilyRecords">
-                  <tl-icon name="{{category.categoryIcon || 'price-tag-3-line'}}" size="28" colorKey="primary">
+                  <tl-icon name="{{category.categoryIcon || 'price-tag-3-line'}}" size="28" color="{{category.iconColor}}">
                   </tl-icon>
                   <text class="dashboard-row-content">{{category.name}}</text>
                   <text class="dashboard-amount">¥{{category.amountText}}</text>
@@ -549,7 +556,7 @@
                   <text>¥{{member.amountText}}</text>
                 </view>
                 <view wx:for="{{member.categories}}" wx:for-item="category" wx:for-index="categoryIndex" wx:key="key" class="family-category-row" data-dimension="creator" data-index="{{memberIndex}}" data-category-index="{{categoryIndex}}" bindtap="openFamilyRecords">
-                  <tl-icon name="{{category.categoryIcon || 'price-tag-3-line'}}" size="28" colorKey="primary">
+                  <tl-icon name="{{category.categoryIcon || 'price-tag-3-line'}}" size="28" color="{{category.iconColor}}">
                   </tl-icon>
                   <text class="dashboard-row-content">{{category.name}}</text>
                   <text class="dashboard-amount">¥{{category.amountText}}</text>
