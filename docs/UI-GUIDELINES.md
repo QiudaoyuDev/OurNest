@@ -1,0 +1,21 @@
+# UI 维护规范
+
+本文整理当前项目协作约束，不提出新的视觉方案。实现事实源为 [全局样式](../miniprogram/app.wxss)、[公共组件](../miniprogram/components) 与 [UI 检查脚本](../scripts/check-ui.mjs)。若脚本路径或规则调整，应同步维护说明。
+
+## 品牌与复用
+
+- 保持温暖暖红体系：主色 `#F0442F`、浅暖背景、统一圆角卡片与自定义 navbar，不擅自改版。
+- 优先使用全局语义 Token 与 `tl-` 公共组件，避免页面复制骨架、空状态、按钮、固定底部操作、Bottom Sheet、Dialog。
+- 除 `tl-tabbar` 外不使用阴影；渐变仅限现有规范允许的页面背景、Tabbar 中央操作及骨架动画，端点自然衔接。
+- 图标使用本地 `ri-icon` Remix Icon 线性风格；品牌资源使用 [透明 Logo](../miniprogram/images/brand/our-nest-logo-256-transparent.png)。
+
+## 状态与权限
+
+- 数据呈现遵循互斥的 Loading → Error / Empty / Ready；加载时不提前展示 Ready 内容，不用虚构金额或补零隐藏接口错误。
+- 单一组件负责底部安全区，检查键盘、全面屏、固定按钮及弹层叠加。
+- 访客无写入、导入及导出操作；成员不能操作他人记录。入口隐藏不是安全边界，云端仍须授权。
+- 切换账本或范围时隔离在途响应；图表随组件生命周期正确初始化和销毁。
+
+## 检查
+
+执行 `npm run ui:check`；关键视觉变更另执行 `npm run visual:check`，分析专项使用 `npm run visual:analysis:check`。视觉命令依赖微信开发者工具及基线，不包含在 `verify` 中。只有确认差异符合设计意图后，才使用对应 update 命令更新基线。真机检查见 [回归清单](./REGRESSION.md)。

@@ -3,7 +3,7 @@
 ## 开发前
 
 - 阅读根目录 `AGENTS.md`，它包含必须遵守的接口、权限、数据与发布约束。
-- 当前未完成事项只在 `plan/PENDING.md` 维护。
+- 当前仓库没有 `plan/PENDING.md`；已知边界与待验证事项记录在对应主题文档。
 - 修改字段契约、权限边界或验收预期时，同步更新对应 `docs/` 文档和测试。
 
 ## 格式与质量检查
@@ -11,7 +11,7 @@
 在项目根目录安装依赖并运行完整校验：
 
 ```powershell
-npm install
+npm ci
 npm run verify
 ```
 
@@ -24,6 +24,7 @@ npm run test
 npm run cloud:check
 npm run ui:check
 npm run visual:check
+npm run visual:analysis:check
 ```
 
 需要自动格式化或修复 Lint 时：
@@ -53,6 +54,9 @@ UI 修改遵守 [`UI-GUIDELINES.md`](./UI-GUIDELINES.md)，优先使用 `app.wxs
 - `index.js`：数据请求、页面事件、请求竞态保护及图表实例生命周期。
 - `dates.js`：月份移动、范围标签、日历日期选择与日期格式。
 - `view-model.js`：将真实接口数据转换为金额文案、排名、日历和明细展示数据。
+- `dashboard.js`：分析面板及家庭视角展示模型。
+- `ratio-preview.js`：比例预览交互与展示转换。
+- `chart-controller.js`：图表实例协调与生命周期管理。
 - `chart-options.js`：只接收数据生成图表配置，统一图表颜色，不依赖页面实例或 `wx`。
 
 组件初始化使用空数据；业务模板不放示例金额、虚构记录或不可达的旧版界面。日期与展示转换模块保持可独立测试，不承担云函数请求或权限判断。
@@ -61,7 +65,7 @@ UI 修改遵守 [`UI-GUIDELINES.md`](./UI-GUIDELINES.md)，优先使用 `app.wxs
 
 - `README.md`：当前项目入口、已实现能力、启动与发布说明。
 - `docs/`：长期有效的数据、环境、安全、回归和协作规则。
-- `plan/PENDING.md`：唯一待办入口，只记录未完成、待决策和暂缓事项。
+- 不链接不存在的计划文件，不将历史计划当作当前实现证明。
 - `AGENTS.md`：自动化协作者必须执行的强制约束。
 - 已完成过程和历史方案由 Git 历史承担，不新增流水账式 Markdown。
 
