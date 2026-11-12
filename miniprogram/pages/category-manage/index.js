@@ -3,6 +3,7 @@ const categoryService = require("../../services/category.service");
 const ledgerStore = require("../../services/ledger.store");
 const feedback = require("../../services/feedback-ui");
 const { resolveCategoryScheme } = require("../../utils/category-color");
+const { getLedgerRole } = require("../../utils/mapper");
 
 function compareCategoryOrder(left, right) {
   if (left.isOther !== right.isOther) return left.isOther ? 1 : -1;
@@ -82,8 +83,12 @@ Page({
     const currentGlobal = app.globalData.currentLedger || {};
     const targetId = this.data.ledgerId || currentGlobal._id || currentGlobal.id;
     if (!targetId) return;
-    const ledger =
-      cachedLedgers.find((item) => (item._id || item.id) === targetId) || currentGlobal;
+    const cachedLedger = cachedLedgers.find((item) => (item._id || item.id) === targetId) || null;
+    const isCurrent = targetId === (currentGlobal._id || currentGlobal.id);
+    const ledger = {
+      ...(cachedLedger || {}),
+      ...(isCurrent ? currentGlobal : {}),
+    };
     const ledgerId = ledger._id || ledger.id || targetId;
     const items = await categoryService.listCategories(ledgerId);
     const categories = items || [];
@@ -94,8 +99,19 @@ Page({
     const activeParentId = groups.some((item) => item._id === this.data.activeParentId)
       ? this.data.activeParentId
       : (groups[0] && groups[0]._id) || "";
-    const isReadonly = Boolean(ledger.readonly || ledger.role === "readonly");
-    const role = ledger.role || (ledger.type === "shared" ? "member" : "owner");
+    const openid = (app.globalData && app.globalData.openid) || "";
+    const serverRole = categoryService.getCategoryRole
+      ? categoryService.getCategoryRole(ledgerId)
+      : "";
+    const resolvedRole =
+      serverRole ||
+      ledger.role ||
+      (isCurrent && currentGlobal.role) ||
+      getLedgerRole(openid, ledger);
+    const role = resolvedRole === "none" ? "member" : resolvedRole;
+    const isReadonly = Boolean(
+      ledger.readonly || role === "readonly" || (isCurrent && currentGlobal.readonly)
+    );
     const canCreate = !isReadonly;
     const expenseRows = buildRows(expenseGroups, activeParentId, "expense");
     const incomeRows = buildRows(incomeGroups, activeParentId, "income");

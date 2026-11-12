@@ -36,6 +36,98 @@ function calendarAmount(value) {
   return formatDisplayMoney(value);
 }
 
+function generateEditorialSummary({
+  mode,
+  type,
+  total,
+  categories,
+  delta,
+  comparisonLabel,
+  balance,
+  budget,
+}) {
+  if (!total || total === 0) {
+    return mode === "week"
+      ? "本周暂无记录，记下第一笔收支开启小家记账生活。"
+      : mode === "month"
+        ? "本月暂无收支记录，保持记账让家庭财务更清晰。"
+        : "本年度暂无收支记录。";
+  }
+  const topCategory =
+    categories && categories[0] && categories[0].recordCount ? categories[0] : null;
+  const parts = [];
+  if (topCategory) {
+    parts.push(`${topCategory.name}占${type === "income" ? "收入" : "支出"} ${topCategory.rate}%`);
+  }
+  if (delta !== 0) {
+    const isLess = delta < 0;
+    if (type === "expense") {
+      parts.push(isLess ? `开销较${comparisonLabel}有所放缓` : `开销较${comparisonLabel}有所增加`);
+    } else {
+      parts.push(isLess ? `收入较${comparisonLabel}有所减少` : `收入较${comparisonLabel}稳步提升`);
+    }
+  } else {
+    parts.push(`整体节奏与${comparisonLabel}持平`);
+  }
+  if (budget && budget.enabled && type === "expense" && mode === "month") {
+    parts.push(`月预算已使用 ${budget.rate}%`);
+  } else if (type === "expense" && Number.isFinite(balance)) {
+    if (balance > 0) {
+      parts.push("小家结余保持健康盈余");
+    } else if (balance < 0) {
+      parts.push("本期结余暂为赤字，需注意适度节流");
+    }
+  }
+  return parts.join("，") + "。";
+}
+
+function calculateFamilySettlement(family = {}, rangeLabel = "", ledgerName = "咱家小账") {
+  const payers = (family && family.payers) || [];
+  if (!family || payers.length < 2) {
+    return {
+      enabled: false,
+      advice: "本期支出主要由单人支付，暂无需对账结算。",
+      copyText: "",
+    };
+  }
+  const [first, second] = payers;
+  const firstAmount = Number(first.amount || 0);
+  const secondAmount = Number(second.amount || 0);
+  const diffCents = Math.round(Math.abs(firstAmount - secondAmount) * 100);
+  const halfDiff = diffCents / 200;
+  const diffText = formatDisplayMoney(halfDiff);
+
+  const higher = firstAmount >= secondAmount ? first : second;
+  const lower = firstAmount >= secondAmount ? second : first;
+
+  let advice = "";
+  if (diffCents === 0) {
+    advice = `${first.name} 与 ${second.name} 付款金额一致，收支平衡！`;
+  } else {
+    advice = `${lower.name} 需向 ${higher.name} 转账 ¥${diffText} 结清平摊开支`;
+  }
+
+  const copyText = [
+    `【咱家小账 · ${rangeLabel || "生活"}对账单】`,
+    `🏠 账本：${ledgerName}`,
+    `💰 家庭总支出：¥${family.totalText || formatDisplayMoney(family.total)}`,
+    `👤 ${first.name} 垫付：¥${first.amountText || formatDisplayMoney(first.amount)} (${first.rate || 50}%)`,
+    `👤 ${second.name} 垫付：¥${second.amountText || formatDisplayMoney(second.amount)} (${second.rate || 50}%)`,
+    diffCents === 0
+      ? `🤝 结算结果：双人开销一致，无需结算`
+      : `🤝 结算建议：${lower.name} 需转给 ${higher.name} ¥${diffText} 结清本期公共开支`,
+  ].join("\n");
+
+  return {
+    enabled: true,
+    advice,
+    diffText,
+    higherName: higher.name,
+    lowerName: lower.name,
+    copyText,
+  };
+}
+
 function makeDashboardView(result, mode, type, today) {
   const dashboard = result.dashboard || {};
   const total = Number(dashboard.total || 0);
@@ -82,6 +174,20 @@ function makeDashboardView(result, mode, type, today) {
     delta === 0
       ? `与${comparisonLabel}持平`
       : `较${comparisonLabel}${delta > 0 ? "增加" : "减少"} ¥${formatDisplayMoney(Math.abs(delta))}`;
+  const comparisonTag =
+    delta === 0
+      ? `与${comparisonLabel}持平`
+      : `${delta > 0 ? "↑" : "↓"} 较${comparisonLabel}${delta > 0 ? "增加" : "减少"} ¥${formatDisplayMoney(Math.abs(delta))}`;
+  const editorialSummary = generateEditorialSummary({
+    mode,
+    type,
+    total,
+    categories,
+    delta,
+    comparisonLabel,
+    balance: Number((result.overview || {}).balance),
+    budget: result.budget,
+  });
   const dates = new Map((dashboard.daily || []).map((day) => [day.date, day]));
   const start = (result.range || {}).start || "";
   const cells = [];
@@ -150,12 +256,21 @@ function makeDashboardView(result, mode, type, today) {
       completed.length /
       100
     : 0;
+  const settlement = calculateFamilySettlement(
+    result.family,
+    (result.range || {}).label || "",
+    (result.ledger || {}).name || "咱家小账"
+  );
   return {
     typeLabel: label,
     totalText: formatDisplayMoney(total),
     recordCount: Number(dashboard.recordCount || 0),
     dailyAverageText: formatDisplayMoney(dashboard.dailyAverage),
     comparisonText,
+    comparisonTag,
+    editorialSummary,
+    settlement,
+    isBalancePositive: Number((result.overview || {}).balance || 0) >= 0,
     categories,
     accounts,
     topRecords,
@@ -169,4 +284,11 @@ function makeDashboardView(result, mode, type, today) {
   };
 }
 
-module.exports = { makeDashboardView, dayAdd, calendarAmount, categoryDisplayIcon };
+module.exports = {
+  makeDashboardView,
+  dayAdd,
+  calendarAmount,
+  categoryDisplayIcon,
+  generateEditorialSummary,
+  calculateFamilySettlement,
+};

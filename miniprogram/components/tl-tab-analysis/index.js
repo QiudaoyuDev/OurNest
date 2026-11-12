@@ -129,6 +129,7 @@ Component({
     modeIndex: 1,
     modeLabel: "\u6708\u5ea6",
     isModeSheetVisible: false,
+    isMonthlyReportVisible: false,
     anchor: "",
     customStart: "",
     customEnd: "",
@@ -585,6 +586,10 @@ Component({
     async selectDashboardDay(event) {
       const date = event.currentTarget.dataset.date;
       if (!date || date > dateAnchor()) return;
+      if (this.data.selectedDay === date) {
+        this.closeDashboardDay();
+        return;
+      }
       const id = ++this.dayRequestId;
       this.setData({
         selectedDay: date,
@@ -594,6 +599,16 @@ Component({
         dayHasMore: false,
       });
       await this.fetchDashboardDay(id, false);
+    },
+
+    closeDashboardDay() {
+      this.setData({
+        selectedDay: null,
+        dayRecords: [],
+        dayStatus: "idle",
+        dayCursor: null,
+        dayHasMore: false,
+      });
     },
 
     async fetchDashboardDay(id, append) {
@@ -1048,6 +1063,48 @@ Component({
 
     closeModeSheet() {
       this.setData({ isModeSheetVisible: false });
+    },
+
+    openMonthlyReportSheet() {
+      this.setData({ isMonthlyReportVisible: true });
+    },
+
+    closeMonthlyReportSheet() {
+      this.setData({ isMonthlyReportVisible: false });
+    },
+
+    copySettlementBill() {
+      const copyText = this.data.dashboardView?.settlement?.copyText;
+      if (!copyText) return;
+      if (wx.setClipboardData) {
+        wx.setClipboardData({ data: copyText });
+      }
+    },
+
+    copyMonthlyReportText() {
+      const v = this.data.dashboardView || {};
+      const categoriesText = (v.categories || [])
+        .slice(0, 3)
+        .map((c, i) => `${i + 1}. ${c.name}：¥${c.amountText} (${c.rate}%)`)
+        .join("\n");
+      const payersText = ((this.data.family && this.data.family.payers) || [])
+        .map((p) => `${p.name}：¥${p.amountText} (${p.rate}%)`)
+        .join("，");
+      const lines = [
+        `【咱家小账 · ${this.data.rangeLabel || "月度"}生活月报】`,
+        `💰 家庭支出：¥${v.totalText} (共 ${v.recordCount} 笔，日均 ¥${v.dailyAverageText})`,
+        `结余状态：¥${v.balanceText} (${v.comparisonTag || v.comparisonText || ""})`,
+        v.editorialSummary ? `💬 生活速览：${v.editorialSummary}` : "",
+        categoriesText ? `📊 消费大头 Top 3：\n${categoriesText}` : "",
+        payersText ? `👥 付款贡献：${payersText}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      if (wx.setClipboardData) {
+        wx.setClipboardData({ data: lines });
+      }
+      this.closeMonthlyReportSheet();
     },
 
     openQuestionDialog(event) {

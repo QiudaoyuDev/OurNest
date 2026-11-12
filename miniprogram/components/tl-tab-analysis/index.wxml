@@ -68,22 +68,63 @@
           <tl-empty-state wx:if="{{!hasRecords}}" title="暂无收支记录" description="选择其他日期范围查看">
           </tl-empty-state>
           <block wx:if="{{hasRecords && (mode === 'week' || mode === 'month' || mode === 'year')}}">
-            <view class="analysis-summary-card card dashboard-hero">
-              <text class="section-kicker">{{rangeLabel}} · {{dashboardView.typeLabel}}</text>
-              <text class="summary-title">¥{{dashboardView.totalText}}</text>
-              <text class="summary-copy">共 {{dashboardView.recordCount}} 笔 · {{dashboardView.comparisonText}}</text>
+            <view class="analysis-summary-card analysis-overview-card card dashboard-hero">
+              <view class="overview-top-row">
+                <view class="overview-main-info">
+                  <text class="section-kicker">{{rangeLabel}} · {{dashboardView.typeLabel}}</text>
+                  <text class="summary-title t-num">¥{{dashboardView.totalText}}</text>
+                  <text class="summary-copy">共 {{dashboardView.recordCount}} 笔 · 日均 ¥{{dashboardView.dailyAverageText}}</text>
+                </view>
+                <view class="overview-badges">
+                  <view class="overview-report-btn" bindtap="openMonthlyReportSheet">
+                    <tl-icon name="file-text-line" size="24" colorKey="primary">
+                    </tl-icon>
+                    <text>生活月报</text>
+                  </view>
+                  <view class="overview-balance-badge {{dashboardView.isBalancePositive ? 'is-positive' : 'is-negative'}}">
+                    <text class="badge-label">结余</text>
+                    <text class="badge-amount t-num">¥{{dashboardView.balanceText}}</text>
+                  </view>
+                  <text class="overview-compare-tag">{{dashboardView.comparisonTag || dashboardView.comparisonText}}</text>
+                </view>
+              </view>
+              <view class="editorial-narrative-box">
+                <view class="narrative-icon-wrap">
+                  <tl-icon name="chat-smile-2-line" size="28" colorKey="primary">
+                  </tl-icon>
+                </view>
+                <text class="narrative-text">{{dashboardView.editorialSummary}}</text>
+              </view>
+              <view wx:if="{{family && analysisType === 'expense' && family.payers.length}}" class="family-contribution-strip" data-section="family" bindtap="goSection">
+                <view class="strip-header">
+                  <view class="strip-title-group">
+                    <tl-icon name="team-line" size="26" colorKey="primary">
+                    </tl-icon>
+                    <text class="strip-title">全家付款贡献</text>
+                  </view>
+                  <text class="strip-action">明细 ›</text>
+                </view>
+                <view class="family-members-row">
+                  <view wx:for="{{family.payers}}" wx:key="openid" class="family-member-pill">
+                    <view class="member-avatar-chip">{{item.name[0]}}</view>
+                    <text class="member-name">{{item.name}}</text>
+                    <text class="member-amount t-num">¥{{item.amountText}}</text>
+                    <text class="member-rate">({{item.rate}}%)</text>
+                  </view>
+                </view>
+              </view>
               <view class="summary-metrics">
                 <view class="summary-metric">
-                  <text>收入</text>
-                  <text class="is-income">¥{{dashboardView.incomeText}}</text>
+                  <text>本期收入</text>
+                  <text class="is-income t-num">¥{{dashboardView.incomeText}}</text>
                 </view>
                 <view class="summary-metric">
-                  <text>支出</text>
-                  <text class="is-expense">¥{{dashboardView.expenseText}}</text>
+                  <text>本期支出</text>
+                  <text class="is-expense t-num">¥{{dashboardView.expenseText}}</text>
                 </view>
                 <view class="summary-metric">
-                  <text>结余</text>
-                  <text>¥{{dashboardView.balanceText}}</text>
+                  <text>本期结余</text>
+                  <text class="t-num">¥{{dashboardView.balanceText}}</text>
                 </view>
               </view>
             </view>
@@ -94,11 +135,26 @@
               <view wx:if="{{family && analysisType === 'expense'}}" class="{{activeSection === 'family' ? 'is-active' : ''}}" data-section="family" bindtap="goSection">共享支出</view>
             </view>
             <view id="analysis-summary" class="dashboard-card card">
-              <text class="card-title">{{mode === 'week' ? '本周小结' : mode === 'month' ? '月度小结' : '年度小结'}}</text>
-              <view class="dashboard-insight">{{dashboardView.comparisonText}} · 日均 {{dashboardView.typeLabel}} ¥{{dashboardView.dailyAverageText}}</view>
-              <view wx:if="{{dashboardView.categories[0] && dashboardView.categories[0].recordCount}}" class="dashboard-insight">{{dashboardView.categories[0].name}}占{{dashboardView.typeLabel}} {{dashboardView.categories[0].rate}}%</view>
-              <view wx:if="{{budget.enabled && analysisType === 'expense' && mode === 'month'}}" class="dashboard-insight">月预算 ¥{{budget.amountText}} · 已使用 {{budget.rate}}%</view>
-              <view class="dashboard-meta">金额（元） · 0 至 ¥{{dashboardView.maxText}}</view>
+              <view class="dashboard-heading">
+                <text class="card-title">{{mode === 'week' ? '本周走势' : mode === 'month' ? '月度走势' : '年度走势'}}</text>
+                <text class="dashboard-meta">最高 ¥{{dashboardView.maxText}}</text>
+              </view>
+              <view class="chart-tooltip-bar {{selectedBar ? 'is-active' : ''}}" bindtap="openSelectedMonth">
+                <block wx:if="{{selectedBar}}">
+                  <view class="tooltip-data-group">
+                    <text class="tooltip-label">{{selectedBar.key}}</text>
+                    <text class="tooltip-amount t-num">¥{{selectedBar.amountText}}</text>
+                  </view>
+                  <view class="tooltip-action-group">
+                    <text class="tooltip-action">看流水 ›</text>
+                  </view>
+                </block>
+                <view wx:else class="tooltip-hint-group">
+                  <tl-icon name="cursor-line" size="24" colorKey="tertiary">
+                  </tl-icon>
+                  <text class="tooltip-hint">点击柱体查看当期收支详情</text>
+                </view>
+              </view>
               <view class="dashboard-chart">
                 <view class="dashboard-grid">
                   <view>
@@ -131,7 +187,7 @@
                 <text>查看明细 ›</text>
               </view>
               <block wx:if="{{mode === 'month'}}">
-                <view class="dashboard-subheading">{{analysisType === 'income' ? '收入日历' : '支出日历'}}</view>
+                <view class="dashboard-subheading">{{analysisType === 'income' ? '收入日历足迹' : '支出日历足迹'}}</view>
                 <view class="calendar-weekdays">
                   <text>日</text>
                   <text>一</text>
@@ -149,7 +205,13 @@
                 </view>
                 <tl-button variant="text" size="small" bind:tap="toggleCalendar">{{calendarExpanded ? '收起日历' : '展开全部'}}</tl-button>
                 <view wx:if="{{selectedDay}}" class="dashboard-day-detail">
-                  <text class="dashboard-subheading">{{selectedDay}} 明细</text>
+                  <view class="dashboard-day-detail__header">
+                    <text class="dashboard-subheading">{{selectedDay}} 明细</text>
+                    <view class="day-detail-close" bindtap="closeDashboardDay">
+                      <tl-icon name="close-line" size="28" colorKey="muted">
+                      </tl-icon>
+                    </view>
+                  </view>
                   <text wx:if="{{dayStatus === 'ready' || dayStatus === 'loadingMore'}}" class="dashboard-meta">{{dashboardView.typeLabel}}合计 ¥{{dayAmountText}}</text>
                   <tl-skeleton wx:if="{{dayStatus === 'loading'}}" variant="list">
                   </tl-skeleton>
@@ -198,7 +260,13 @@
                   </view>
                   <view class="dashboard-row-content">
                     <text class="dashboard-row-title">{{item.name}}</text>
-                    <text class="dashboard-meta">{{item.parentCategory ? item.parentCategory + ' · ' : ''}}占比 {{item.rate}}%</text>
+                    <view class="category-progress-wrap">
+                      <view class="category-progress-track">
+                        <view class="category-progress-fill" style="width: {{item.rate}}%; background: {{item.chartColor}};">
+                        </view>
+                      </view>
+                      <text class="dashboard-meta">{{item.parentCategory ? item.parentCategory + ' · ' : ''}}占比 {{item.rate}}%</text>
+                    </view>
                     <text wx:if="{{compareCategories}}" class="dashboard-meta">上期 ¥{{item.previousText}} · {{item.deltaDirection}} ¥{{item.deltaText}}</text>
                   </view>
                   <view class="dashboard-row-value">
@@ -397,7 +465,24 @@
               <text class="section-kicker">家庭支出 · ¥{{family.totalText}}</text>
             </view>
             <view class="showcase-insights card">
-              <view class="showcase-insight">付款人和消费归属分别统计；公共及多人消费按记录人展示，未知数据计入其他。</view>
+              <view class="showcase-insight">记录全家共同开支，透明分摊更安心；支持按付款人与消费归属分别查看。</view>
+            </view>
+            <view wx:if="{{dashboardView.settlement && dashboardView.settlement.enabled}}" class="family-settlement-card card">
+              <view class="settlement-header">
+                <view class="settlement-title-group">
+                  <tl-icon name="hand-coin-line" size="28" colorKey="primary">
+                  </tl-icon>
+                  <text class="settlement-title">伴侣 AA 垫付对账建议</text>
+                </view>
+                <view class="settlement-copy-btn" bindtap="copySettlementBill">
+                  <tl-icon name="file-copy-line" size="24" colorKey="primary">
+                  </tl-icon>
+                  <text>复制对账单</text>
+                </view>
+              </view>
+              <view class="settlement-advice-box">
+                <text class="settlement-advice">{{dashboardView.settlement.advice}}</text>
+              </view>
             </view>
             <view class="showcase-section">
               <text class="section-kicker">成员付款</text>
@@ -500,6 +585,48 @@
     <tl-empty-state wx:else title="暂无可选分类" description="请刷新分析后重试">
       <tl-button variant="secondary" size="small" bind:tap="refreshRatioAnalysis">刷新分析</tl-button>
     </tl-empty-state>
+  </tl-bottom-sheet>
+  <tl-bottom-sheet visible="{{isMonthlyReportVisible}}" bind:close="closeMonthlyReportSheet">
+    <view class="monthly-report-sheet">
+      <view class="monthly-report-sheet__header">
+        <text class="card-title">咱家生活月报</text>
+        <tl-button variant="text" size="small" bind:tap="closeMonthlyReportSheet">关闭</tl-button>
+      </view>
+      <view class="monthly-report-card">
+        <view class="report-card-banner">
+          <text class="report-brand">OurNest · 生活月刊</text>
+          <text class="report-period">{{rangeLabel}}</text>
+        </view>
+        <view class="report-card-hero">
+          <text class="report-hero-label">家庭总支出</text>
+          <text class="report-hero-amount t-num">¥{{dashboardView.totalText}}</text>
+          <text class="report-hero-sub">共 {{dashboardView.recordCount}} 笔 · 日均 ¥{{dashboardView.dailyAverageText}}</text>
+        </view>
+        <view wx:if="{{dashboardView.editorialSummary}}" class="report-narrative-quote">
+          <text>“{{dashboardView.editorialSummary}}”</text>
+        </view>
+        <view wx:if="{{dashboardView.categories.length}}" class="report-top-categories">
+          <text class="report-section-label">生活大头前三项</text>
+          <view wx:for="{{dashboardView.categories}}" wx:key="key" wx:if="{{index < 3}}" class="report-cat-row">
+            <view class="report-cat-left">
+              <view class="category-chart-dot" style="background: {{item.chartColor}};">
+              </view>
+              <text class="report-cat-name">{{item.name}}</text>
+            </view>
+            <text class="report-cat-val t-num">¥{{item.amountText}} ({{item.rate}}%)</text>
+          </view>
+        </view>
+        <view wx:if="{{family && family.payers.length}}" class="report-payers-summary">
+          <text class="report-section-label">全家付款贡献</text>
+          <view class="report-payers-pills">
+            <text wx:for="{{family.payers}}" wx:key="openid" class="report-payer-item">{{item.name}} {{item.rate}}% (¥{{item.amountText}})</text>
+          </view>
+        </view>
+      </view>
+      <view class="monthly-report-actions">
+        <tl-button variant="primary" size="medium" bind:tap="copyMonthlyReportText">一键复制月报文本</tl-button>
+      </view>
+    </view>
   </tl-bottom-sheet>
   <tl-bottom-sheet visible="{{isModeSheetVisible}}" bind:close="closeModeSheet">
     <view class="analysis-mode-sheet">

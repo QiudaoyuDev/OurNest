@@ -89,15 +89,17 @@ async function refreshCategories(ledgerId, options = {}) {
         throw new Error("分类状态已变化，请重试");
       }
       const items = data.categories || [];
+      const role = data.role || "";
       const root = readCacheRecord() || { scope, ledgers: {} };
       const lastSyncedAt = Date.now();
       root.ledgers = root.ledgers || {};
-      root.ledgers[ledgerId] = { items, lastSyncedAt };
+      root.ledgers[ledgerId] = { items, role, lastSyncedAt };
       root.updatedAt = lastSyncedAt;
       wx.setStorageSync(CACHE_KEY, root);
       entry.items = items;
+      entry.role = role;
       entry.lastSyncedAt = lastSyncedAt;
-      emitSync({ ledgerId, items, changed: true });
+      emitSync({ ledgerId, items, role, changed: true });
       return items;
     })
     .finally(() => {
@@ -146,6 +148,11 @@ function removeLedger(ledgerId) {
   }
 }
 
+function getCategoryRole(ledgerId) {
+  const entry = ledgerId && ensureMemory(ledgerId);
+  return (entry && entry.role) || "";
+}
+
 function clearAll() {
   Object.keys(memoryCache).forEach((key) => delete memoryCache[key]);
   generation += 1;
@@ -157,6 +164,7 @@ module.exports = {
   DEFAULT_SYNC_INTERVAL_MS,
   getCategoriesSync,
   getCategories,
+  getCategoryRole,
   refreshCategories,
   invalidate,
   invalidateAll,

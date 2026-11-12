@@ -375,3 +375,51 @@ test("flat category editing and deletion protect permissions and fallback", asyn
   assert.equal(rows.ledger.syncRevision, 2);
   assert.equal(rows.operations.length, 0);
 });
+
+test("categoryStore caches server role and allows category-manage to accurately identify owner in shared ledger", async () => {
+  const categoryStorePath = require.resolve("../miniprogram/services/category.store");
+  const apiPath = require.resolve("../miniprogram/services/api");
+  const storage = {};
+  const globalApp = {
+    globalData: {
+      environment: { key: "test" },
+      openid: "owner_openid",
+      currentLedger: {
+        _id: "shared_ledger_1",
+        type: "shared",
+        ownerOpenid: "owner_openid",
+        role: "owner",
+      },
+    },
+  };
+  global.getApp = () => globalApp;
+  global.wx = {
+    getStorageSync(key) {
+      return storage[key];
+    },
+    setStorageSync(key, val) {
+      storage[key] = val;
+    },
+    removeStorageSync(key) {
+      delete storage[key];
+    },
+  };
+  require.cache[apiPath] = {
+    id: apiPath,
+    filename: apiPath,
+    loaded: true,
+    exports: {
+      callApi: async (route, payload) => {
+        if (route === "category/list") {
+          return { categories: [{ _id: "c1", name: "餐饮", type: "expense" }], role: "owner" };
+        }
+        return {};
+      },
+    },
+  };
+  delete require.cache[categoryStorePath];
+  const categoryStore = require(categoryStorePath);
+  const items = await categoryStore.getCategories("shared_ledger_1");
+  assert.equal(items.length, 1);
+  assert.equal(categoryStore.getCategoryRole("shared_ledger_1"), "owner");
+});

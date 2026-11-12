@@ -1,0 +1,1137 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>咱家小账 (OurNest) - 分析界面 UI 优化方案交互预览</title>
+    <style>
+      :root {
+        --tl-color-page: #fff7f2;
+        --tl-color-surface: #fffdfc;
+        --tl-color-surface-soft: #fff0ea;
+        --tl-color-surface-muted: #f7eee8;
+        --tl-color-primary: #f0442f;
+        --tl-color-primary-ink: #c33425;
+        --tl-color-primary-soft: #fff0ea;
+        --tl-color-text: #312522;
+        --tl-color-text-secondary: #6f625d;
+        --tl-color-text-tertiary: #7c6860;
+        --tl-color-border-warm: #ffe1d9;
+        --tl-color-border-subtle: rgba(70, 40, 30, 0.08);
+        --tl-radius-card: 28px;
+        --tl-radius-pill: 999px;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+          sans-serif;
+        background-color: #2b2523;
+        color: #333;
+        padding: 24px 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+      }
+
+      .preview-header {
+        text-align: center;
+        color: #fff;
+        margin-bottom: 20px;
+        max-width: 680px;
+      }
+
+      .preview-header h1 {
+        font-size: 22px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .preview-header p {
+        font-size: 13px;
+        color: #c7b9b4;
+        line-height: 1.5;
+      }
+
+      /* 顶部切换 Tab 选项卡（控制查看哪个问题） */
+      .section-selector {
+        display: flex;
+        background: #443b38;
+        padding: 4px;
+        border-radius: 999px;
+        gap: 6px;
+        margin-bottom: 24px;
+        max-width: 520px;
+        width: 100%;
+      }
+
+      .section-tab {
+        flex: 1;
+        padding: 9px 12px;
+        border-radius: 999px;
+        text-align: center;
+        font-size: 13px;
+        font-weight: 600;
+        color: #d8c8c2;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        user-select: none;
+      }
+
+      .section-tab.active {
+        background: var(--tl-color-primary);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(240, 68, 47, 0.4);
+      }
+
+      /* 模拟手机机身容器 */
+      .device-wrapper {
+        width: 390px;
+        max-width: 100%;
+        height: 780px;
+        background: var(--tl-color-page);
+        border-radius: 44px;
+        box-shadow:
+          0 24px 60px rgba(0, 0, 0, 0.5),
+          0 0 0 8px #483f3c;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+
+      /* 手机顶部状态栏 */
+      .status-bar {
+        height: 44px;
+        padding: 0 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--tl-color-text);
+        background: var(--tl-color-page);
+        z-index: 100;
+      }
+
+      .nav-bar {
+        height: 44px;
+        padding: 0 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--tl-color-text);
+        background: var(--tl-color-page);
+        position: relative;
+        border-bottom: 1px solid rgba(240, 68, 47, 0.05);
+      }
+
+      /* 小程序页面内容区 */
+      .page-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px 14px 40px;
+        position: relative;
+      }
+
+      /* 顶部一级分段控制 (Primary Tabs) */
+      .analysis-primary-tabs {
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        margin-bottom: 12px;
+        border-bottom: 1px solid var(--tl-color-border-subtle);
+        padding-bottom: 2px;
+      }
+
+      .analysis-primary-tab {
+        padding: 8px 4px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--tl-color-text-secondary);
+        cursor: pointer;
+        position: relative;
+        transition: color 0.2s ease;
+        text-align: center;
+        flex: 1;
+      }
+
+      .analysis-primary-tab.is-active {
+        color: var(--tl-color-primary-ink);
+      }
+
+      .analysis-primary-tab.is-active::after {
+        content: "";
+        position: absolute;
+        bottom: -3px;
+        left: 20%;
+        right: 20%;
+        height: 3px;
+        border-radius: 3px;
+        background: var(--tl-color-primary);
+      }
+
+      /* 操作栏：时间胶囊与收支切换 */
+      .analysis-action-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 12px;
+        position: relative;
+      }
+
+      /* 胶囊容器 */
+      .analysis-context-bar {
+        flex: 1;
+        min-width: 0;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        border: 1px solid var(--tl-color-border-subtle);
+        border-radius: var(--tl-radius-pill);
+        background: #ffffff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+        overflow: hidden;
+        position: relative;
+      }
+
+      .context-period {
+        display: flex;
+        width: 100%;
+        height: 100%;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .context-nav {
+        width: 36px;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--tl-color-primary-ink);
+        cursor: pointer;
+        user-select: none;
+        font-size: 16px;
+        transition: background 0.15s;
+      }
+
+      .context-nav:hover {
+        background: var(--tl-color-primary-soft);
+      }
+
+      .context-picker-btn {
+        flex: 1;
+        min-width: 0;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 0 4px;
+        cursor: pointer;
+      }
+
+      .context-period-text {
+        color: var(--tl-color-text);
+        font-weight: 700;
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .arrow-icon {
+        font-size: 10px;
+        color: var(--tl-color-primary);
+        transform: translateY(1px);
+      }
+
+      /* 右侧收支切换切换器 */
+      .dashboard-toggle {
+        display: flex;
+        padding: 3px;
+        border-radius: var(--tl-radius-pill);
+        background: var(--tl-color-primary-soft);
+        flex-shrink: 0;
+      }
+
+      .dashboard-toggle-item {
+        padding: 4px 10px;
+        border-radius: var(--tl-radius-pill);
+        color: var(--tl-color-text-secondary);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .dashboard-toggle-item.is-active {
+        color: #fff;
+        background: var(--tl-color-primary);
+      }
+
+      /* 卡片通用 */
+      .card {
+        background: var(--tl-color-surface);
+        border-radius: 20px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid var(--tl-color-border-subtle);
+        box-shadow: 0 2px 10px rgba(70, 40, 30, 0.03);
+      }
+
+      /* 自定义区间快捷 Pills */
+      .date-preset-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--tl-color-surface-soft);
+        padding: 4px;
+        border-radius: var(--tl-radius-pill);
+        margin-bottom: 12px;
+      }
+
+      .preset-pill {
+        flex: 1;
+        text-align: center;
+        padding: 7px 0;
+        border-radius: var(--tl-radius-pill);
+        color: var(--tl-color-text-secondary);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+      }
+
+      .preset-pill.is-active {
+        background: #ffffff;
+        color: var(--tl-color-primary-ink);
+        font-weight: 700;
+        border-color: var(--tl-color-border-warm);
+        box-shadow: 0 2px 6px rgba(240, 68, 47, 0.1);
+      }
+
+      .custom-range-inputs {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .custom-input-box {
+        flex: 1;
+        height: 38px;
+        background: var(--tl-color-surface-soft);
+        border: 1px solid var(--tl-color-border-subtle);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 10px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--tl-color-text);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .range-info-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 10px;
+        font-size: 11px;
+        color: var(--tl-color-primary-ink);
+        background: var(--tl-color-primary-soft);
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-weight: 600;
+      }
+
+      /* 概览卡片 */
+      .overview-hero {
+        background: linear-gradient(135deg, #fff7f2 0%, #fff0ea 100%);
+        border: 1px solid var(--tl-color-border-warm);
+      }
+
+      .hero-label {
+        font-size: 12px;
+        color: var(--tl-color-text-secondary);
+        margin-bottom: 4px;
+      }
+
+      .hero-amount {
+        font-size: 30px;
+        font-weight: 800;
+        color: var(--tl-color-text);
+        letter-spacing: -0.5px;
+        margin-bottom: 6px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .hero-sub {
+        font-size: 12px;
+        color: var(--tl-color-text-tertiary);
+        display: flex;
+        gap: 12px;
+      }
+
+      .hero-metrics {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px dashed rgba(240, 68, 47, 0.15);
+        text-align: center;
+      }
+
+      .metric-title {
+        font-size: 11px;
+        color: var(--tl-color-text-secondary);
+        margin-bottom: 2px;
+      }
+
+      .metric-val {
+        font-size: 15px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .val-exp {
+        color: var(--tl-color-primary);
+      }
+      .val-inc {
+        color: #1f7a4b;
+      }
+
+      /* 模拟柱状图卡片 */
+      .chart-card {
+        min-height: 180px;
+      }
+
+      .chart-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+
+      .chart-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--tl-color-text);
+      }
+
+      .chart-bars-wrap {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        height: 120px;
+        padding-bottom: 20px;
+        position: relative;
+        border-bottom: 1px solid #f2e9e3;
+      }
+
+      .bar-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        justify-content: flex-end;
+        gap: 6px;
+      }
+
+      .bar-pillar {
+        width: 14px;
+        border-radius: 4px 4px 0 0;
+        background: var(--tl-color-primary);
+        transition: height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      .bar-col.prev .bar-pillar {
+        background: #f8b4a9;
+      }
+
+      .bar-label {
+        font-size: 11px;
+        color: var(--tl-color-text-secondary);
+        position: absolute;
+        bottom: 0;
+      }
+
+      /* 优化后 Loading 微动进度条 */
+      .slim-progress-bar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #f0442f 0%, #ff8268 50%, #f0442f 100%);
+        background-size: 200% 100%;
+        animation: slimLoading 1s infinite linear;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        z-index: 10;
+      }
+
+      .slim-progress-bar.active {
+        opacity: 1;
+      }
+
+      @keyframes slimLoading {
+        0% {
+          background-position: 100% 0;
+        }
+        100% {
+          background-position: -100% 0;
+        }
+      }
+
+      /* 骨架屏（现存模式模拟） */
+      .skeleton-overlay {
+        display: none;
+        animation: pulse 1.2s ease-in-out infinite;
+      }
+
+      .skeleton-box {
+        background: #e9e0da;
+        border-radius: 8px;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.8;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+
+      /* 解释与对比标注浮窗卡片 */
+      .demo-callout-panel {
+        margin-top: 20px;
+        background: #39312e;
+        border: 1px solid #4f4440;
+        border-radius: 16px;
+        padding: 16px 20px;
+        max-width: 680px;
+        width: 100%;
+        color: #ede2dd;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .demo-callout-panel h3 {
+        font-size: 15px;
+        font-weight: 700;
+        color: #ff8268;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .demo-callout-panel ul {
+        padding-left: 20px;
+        margin: 8px 0;
+      }
+
+      .demo-callout-panel li {
+        margin-bottom: 6px;
+      }
+
+      .badge-tag {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 700;
+        margin-right: 4px;
+      }
+
+      .badge-old {
+        background: #5f4b45;
+        color: #ffab91;
+      }
+      .badge-new {
+        background: #2e6930;
+        color: #a5d6a7;
+      }
+
+      /* 控制面板按钮组 */
+      .action-button-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+
+      .ctrl-btn {
+        background: #4f4440;
+        color: #fff;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .ctrl-btn:hover {
+        background: #645652;
+      }
+
+      .ctrl-btn.primary {
+        background: var(--tl-color-primary);
+      }
+      .ctrl-btn.primary:hover {
+        background: #d93d2a;
+      }
+
+      .warning-box {
+        border: 1px dashed #d97706;
+        background: rgba(217, 119, 6, 0.1);
+        padding: 8px 12px;
+        border-radius: 8px;
+        color: #fcd34d;
+        margin-top: 8px;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="preview-header">
+      <h1><span>✨</span> 咱家小账 · 分析页面重构预览</h1>
+      <p>点击上方切换选项卡，可分别查看三个问题的实机高保真交互、改动前后对比与运行演示。</p>
+    </div>
+
+    <!-- 顶部问题选择器 -->
+    <div class="section-selector">
+      <div class="section-tab active" onclick="switchProblemView('week')">1. 周度时间框</div>
+      <div class="section-tab" onclick="switchProblemView('custom')">2. 自定义与累计</div>
+      <div class="section-tab" onclick="switchProblemView('loading')">3. Loading 体验</div>
+    </div>
+
+    <!-- 模拟手机视口 -->
+    <div class="device-wrapper">
+      <!-- 状态栏 -->
+      <div class="status-bar">
+        <span>09:41</span>
+        <span>📶 5G 🔋 100%</span>
+      </div>
+      <!-- 导航栏 -->
+      <div class="nav-bar">
+        <span>账本分析</span>
+      </div>
+
+      <!-- 顶部加载进度条（优化方案 3 展现） -->
+      <div class="slim-progress-bar" id="slimProgressBar"></div>
+
+      <!-- 滚动内容区 -->
+      <div class="page-scroll" id="pageScroll">
+        <!-- 顶部分段控制 Tab -->
+        <div class="analysis-primary-tabs" id="primaryTabsWrap">
+          <!-- 动态生成 4 项或 5 项 Tab -->
+        </div>
+
+        <!-- 操作栏（时间选择器与收支切换） -->
+        <div class="analysis-action-bar" id="actionBarWrap">
+          <!-- 胶囊时间条 -->
+          <div class="analysis-context-bar" id="contextBar">
+            <div class="context-period">
+              <div class="context-nav" onclick="shiftDate(-1)">‹</div>
+              <div class="context-picker-btn">
+                <span class="context-period-text" id="contextDateText">11.09 - 11.15</span>
+                <span class="arrow-icon">▾</span>
+              </div>
+              <div class="context-nav" onclick="shiftDate(1)">›</div>
+            </div>
+          </div>
+
+          <!-- 支出/收入切换 -->
+          <div class="dashboard-toggle">
+            <div
+              class="dashboard-toggle-item is-active"
+              id="typeExpenseBtn"
+              onclick="toggleAnalysisType('expense')"
+            >
+              支出
+            </div>
+            <div
+              class="dashboard-toggle-item"
+              id="typeIncomeBtn"
+              onclick="toggleAnalysisType('income')"
+            >
+              收入
+            </div>
+          </div>
+        </div>
+
+        <!-- 自定义模式专属面板（第2点演示） -->
+        <div id="customPanel" style="display: none">
+          <div class="card" style="padding: 12px; margin-bottom: 12px">
+            <!-- 快捷 Pills -->
+            <div class="date-preset-bar" id="presetPillsWrap">
+              <!-- 动态生成 Pills -->
+            </div>
+            <!-- 日期选择输入模拟 -->
+            <div class="custom-range-inputs">
+              <div class="custom-input-box">
+                <span id="customStartVal">2026-10-13</span>
+                <span style="color: #aaa; font-size: 11px">▾</span>
+              </div>
+              <span style="font-size: 13px; color: #999">至</span>
+              <div class="custom-input-box">
+                <span id="customEndVal">2026-11-12</span>
+                <span style="color: #aaa; font-size: 11px">▾</span>
+              </div>
+            </div>
+            <div class="range-info-badge" id="customBadgeText">⏱ 共 31 天 · 对比前一个等长区间</div>
+          </div>
+        </div>
+
+        <!-- 真实内容区域（Loading 切换测试目标） -->
+        <div id="analysisRealContent" style="transition: opacity 0.25s ease">
+          <!-- 概览大卡片 -->
+          <div class="card overview-hero">
+            <div class="hero-label" id="heroLabelText">11.09 - 11.15 · 支出</div>
+            <div class="hero-amount" id="heroAmountText">¥2,480.00</div>
+            <div class="hero-sub">
+              <span>共 18 笔</span>
+              <span>日均 ¥354.28</span>
+              <span style="color: #25a66a">结余 +¥1,520</span>
+            </div>
+            <div class="hero-metrics">
+              <div>
+                <div class="metric-title">本期收入</div>
+                <div class="metric-val val-inc">¥4,000.00</div>
+              </div>
+              <div>
+                <div class="metric-title">本期支出</div>
+                <div class="metric-val val-exp">¥2,480.00</div>
+              </div>
+              <div>
+                <div class="metric-title">本期结余</div>
+                <div class="metric-val" style="color: #312522">¥1,520.00</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 走势柱状图卡片 -->
+          <div class="card chart-card">
+            <div class="chart-header">
+              <div class="chart-title" id="chartTitleText">本周走势</div>
+              <div style="font-size: 12px; color: var(--tl-color-text-secondary)" id="chartMaxText">
+                最高 ¥680.00
+              </div>
+            </div>
+            <div class="chart-bars-wrap" id="chartBarsContainer">
+              <!-- 动态生成柱子 -->
+            </div>
+          </div>
+
+          <!-- 分类占位卡片 -->
+          <div class="card" style="padding: 14px 16px">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 12px">
+              <span style="font-size: 14px; font-weight: 700">支出分类排行</span>
+              <span style="font-size: 12px; color: var(--tl-color-primary)">查看全部 ›</span>
+            </div>
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 10px;
+              "
+            >
+              <div style="display: flex; align-items: center; gap: 8px">
+                <span style="width: 18px; font-size: 12px; font-weight: 700; color: #e06253"
+                  >1</span
+                >
+                <span
+                  style="width: 10px; height: 10px; border-radius: 50%; background: #f0442f"
+                ></span>
+                <span style="font-size: 13px; font-weight: 600">餐饮美食</span>
+              </div>
+              <span style="font-size: 13px; font-weight: 700">¥1,260.00</span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between">
+              <div style="display: flex; align-items: center; gap: 8px">
+                <span style="width: 18px; font-size: 12px; font-weight: 700; color: #e67e22"
+                  >2</span
+                >
+                <span
+                  style="width: 10px; height: 10px; border-radius: 50%; background: #f39c12"
+                ></span>
+                <span style="font-size: 13px; font-weight: 600">居家日用</span>
+              </div>
+              <span style="font-size: 13px; font-weight: 700">¥680.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 原有全屏骨架屏模拟（用于对比体验） -->
+        <div id="skeletonView" class="skeleton-overlay" style="display: none">
+          <div class="card" style="height: 180px; padding: 16px">
+            <div class="skeleton-box" style="width: 40%; height: 16px; margin-bottom: 16px"></div>
+            <div class="skeleton-box" style="width: 70%; height: 36px; margin-bottom: 20px"></div>
+            <div style="display: flex; gap: 12px">
+              <div class="skeleton-box" style="flex: 1; height: 30px"></div>
+              <div class="skeleton-box" style="flex: 1; height: 30px"></div>
+              <div class="skeleton-box" style="flex: 1; height: 30px"></div>
+            </div>
+          </div>
+          <div class="card" style="height: 180px; padding: 16px">
+            <div class="skeleton-box" style="width: 30%; height: 16px; margin-bottom: 16px"></div>
+            <div class="skeleton-box" style="width: 100%; height: 120px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 下方交互控制器与详细说明卡片 -->
+    <div class="demo-callout-panel" id="explainPanel">
+      <!-- 内容根据 switchProblemView 动态更新 -->
+    </div>
+
+    <script>
+      let currentProblem = "week";
+      let currentWeekStyle = "new"; // 'old' vs 'new'
+      let currentMode = "week"; // 'week', 'month', 'year', 'custom', 'all'
+      let currentPreset = "30d"; // '30d', '90d', 'halfYear', 'all'
+      let currentDateIndex = 0;
+
+      const sampleWeeks = [
+        {
+          oldLabel: "2026-11-09 至 2026-11-15",
+          newLabel: "11.09 - 11.15",
+          total: "¥2,480.00",
+          max: "¥680.00",
+          bars: [120, 340, 210, 680, 420, 510, 200],
+        },
+        {
+          oldLabel: "2026-11-02 至 2026-11-08",
+          newLabel: "11.02 - 11.08",
+          total: "¥3,120.00",
+          max: "¥890.00",
+          bars: [280, 410, 190, 520, 890, 430, 400],
+        },
+        {
+          oldLabel: "2025-12-29 至 2026-01-04",
+          newLabel: "2025.12.29 - 01.04",
+          total: "¥4,500.00",
+          max: "¥1,200.00",
+          bars: [600, 750, 400, 1200, 550, 600, 400],
+        },
+      ];
+
+      // 初始化页面
+      function init() {
+        switchProblemView("week");
+      }
+
+      // 切换问题视图
+      function switchProblemView(problem) {
+        currentProblem = problem;
+        document.querySelectorAll(".section-tab").forEach((tab, i) => {
+          tab.classList.toggle(
+            "active",
+            (problem === "week" && i === 0) ||
+              (problem === "custom" && i === 1) ||
+              (problem === "loading" && i === 2)
+          );
+        });
+
+        const primaryTabsWrap = document.getElementById("primaryTabsWrap");
+        const customPanel = document.getElementById("customPanel");
+        const actionBarWrap = document.getElementById("actionBarWrap");
+        const explainPanel = document.getElementById("explainPanel");
+
+        if (problem === "week") {
+          // 问题 1：周度时间框
+          currentMode = "week";
+          renderPrimaryTabs(false); // 4项
+          customPanel.style.display = "none";
+          actionBarWrap.style.display = "flex";
+          renderWeekBars();
+          updateWeekDisplay();
+
+          explainPanel.innerHTML = `
+          <h3>问题 1：周度时间框挤压排查与优化对比</h3>
+          <p><strong>现象诊断：</strong>操作栏整行可用宽约 508rpx，右侧有支出/收入切换，左右各有 72rpx 翻页箭头。原周度文案长达 23 字符（<code>2026-11-09 至 2026-11-15</code>），实际排版空间仅剩 ~306rpx，被左右按钮死死卡住。</p>
+          <div class="action-button-group">
+            <button class="ctrl-btn ${currentWeekStyle === "old" ? "primary" : ""}" onclick="setWeekStyle('old')">预览【原版 23 字符被挤压】</button>
+            <button class="ctrl-btn ${currentWeekStyle === "new" ? "primary" : ""}" onclick="setWeekStyle('new')">预览【优化后 智能省略年份】(推荐)</button>
+            <button class="ctrl-btn" onclick="shiftDate(-1)">点此模拟上一周 (‹)</button>
+            <button class="ctrl-btn" onclick="shiftDate(1)">点此模拟下一周 (›)</button>
+          </div>
+          <ul>
+            <li><span class="badge-tag badge-old">原版痛点</span> 字符极度逼近边界，稍窄屏幕即触发省略号或折行，窒息感明显。</li>
+            <li><span class="badge-tag badge-new">优化方案</span> 保持同年度时精简为 <code>MM.DD - MM.DD</code>（仅 11 字符），留白提升 100%；跨年时自动补今年年份（如 <code>2025.12.29 - 01.04</code>），信息精准且呼吸感极佳。</li>
+          </ul>
+        `;
+        } else if (problem === "custom") {
+          // 问题 2：自定义与累计重构
+          currentMode = "custom";
+          renderPrimaryTabs(false); // 4项，移除累计
+          customPanel.style.display = "block";
+          actionBarWrap.style.display = "none"; // 自定义模式下没有周月年胶囊
+          renderPresetPills();
+
+          explainPanel.innerHTML = `
+          <h3>问题 2：自定义默认选中与快捷项调整评估</h3>
+          <p><strong>交互评估要点：</strong></p>
+          <ul>
+            <li><strong>顶栏精简至 4 项：</strong>顶部从 5 个 Tab 优化为 <code>[周度, 月度, 年度, 自定义]</code>，单项宽度由 130rpx 增至 173rpx，大字体、大热区，对称优雅。</li>
+            <li><strong>进入默认选中：</strong>进入自定义界面自动高亮激活 <strong>“近30天”</strong>，杜绝原先没有任何高亮的迷茫感。</li>
+            <li><strong>快捷药丸重构：</strong>推荐设为 <code>[近30天, 近90天, 近半年, 全部累计]</code>。移除了与顶栏“周度/月度”高度重合的“近7天”和“本月”。</li>
+          </ul>
+          <div class="warning-box">
+            ⚠️ <strong>后端技术边界说明：</strong>后端云函数对 <code>mode: 'custom'</code> 限制了最大 366 天。将“全部累计”作为快捷项后，前端底层直接调用原先的 <code>all</code> 接口，绕过 366 天单日切片限制，兼得体验与稳定性！
+          </div>
+          <div class="action-button-group">
+            <button class="ctrl-btn" onclick="selectPreset('30d')">选择「近30天」(默认)</button>
+            <button class="ctrl-btn" onclick="selectPreset('90d')">选择「近90天」(季度)</button>
+            <button class="ctrl-btn" onclick="selectPreset('halfYear')">选择「近半年」(180天)</button>
+            <button class="ctrl-btn" onclick="selectPreset('all')">选择「全部累计」(全量)</button>
+          </div>
+        `;
+        } else if (problem === "loading") {
+          // 问题 3：Loading 体验升级
+          currentMode = "week";
+          renderPrimaryTabs(false);
+          customPanel.style.display = "none";
+          actionBarWrap.style.display = "flex";
+          updateWeekDisplay();
+
+          explainPanel.innerHTML = `
+          <h3>问题 3：周期切换 Loading 升级演示</h3>
+          <p><strong>体验痛点：</strong>在已有内容时切换月度/周度，原程序会<strong>瞬间清空整页</strong>并跳出灰白骨架屏，300ms 后再刷出，造成强烈的<strong>“刺眼白闪与跳动”</strong>。</p>
+          <div class="action-button-group">
+            <button class="ctrl-btn" onclick="triggerOldLoadingDemo()" style="border: 1px solid #ff7043;">体验【原有】全屏骨架白闪 (刺眼打断)</button>
+            <button class="ctrl-btn primary" onclick="triggerNewLoadingDemo()">体验【优化后】微淡化+顶部微动条 (推荐)</button>
+          </div>
+          <ul>
+            <li><span class="badge-tag badge-old">原有全屏骨架</span> 适合首屏冷启动；但在页面内切换时使用属于反模式，打断用户视线连续性。</li>
+            <li><span class="badge-tag badge-new">优化后温和过渡</span> 真实页面保持在原地，透明度微调至 60%，顶部滑出优雅渐变光条（Slim Progress Bar）；数据返回无缝替换，丝滑顺畅。</li>
+          </ul>
+        `;
+        }
+      }
+
+      // 渲染顶部分段控制
+      function renderPrimaryTabs(includeAll) {
+        const tabs = includeAll
+          ? ["周度", "月度", "年度", "自定义", "累计"]
+          : ["周度", "月度", "年度", "自定义"];
+        const tabsWrap = document.getElementById("primaryTabsWrap");
+        tabsWrap.innerHTML = tabs
+          .map((tab) => {
+            const val =
+              tab === "周度"
+                ? "week"
+                : tab === "月度"
+                  ? "month"
+                  : tab === "年度"
+                    ? "year"
+                    : tab === "自定义"
+                      ? "custom"
+                      : "all";
+            const isActive = val === currentMode;
+            return `<div class="analysis-primary-tab ${isActive ? "is-active" : ""}" onclick="onTabClick('${val}')">${tab}</div>`;
+          })
+          .join("");
+      }
+
+      function onTabClick(mode) {
+        currentMode = mode;
+        if (mode === "custom") {
+          switchProblemView("custom");
+        } else {
+          switchProblemView(currentProblem === "loading" ? "loading" : "week");
+        }
+      }
+
+      // 设置周度样式模式
+      function setWeekStyle(style) {
+        currentWeekStyle = style;
+        updateWeekDisplay();
+        switchProblemView("week");
+      }
+
+      // 更新周度时间显示
+      function updateWeekDisplay() {
+        const data = sampleWeeks[currentDateIndex];
+        const textElem = document.getElementById("contextDateText");
+        const heroAmount = document.getElementById("heroAmountText");
+        const heroLabel = document.getElementById("heroLabelText");
+        const chartMax = document.getElementById("chartMaxText");
+
+        if (currentWeekStyle === "old") {
+          textElem.innerText = data.oldLabel;
+          textElem.style.fontSize = "12px"; // 原先字多被压缩
+          textElem.style.letterSpacing = "-0.4px";
+        } else {
+          textElem.innerText = data.newLabel;
+          textElem.style.fontSize = "14px";
+          textElem.style.letterSpacing = "0px";
+        }
+
+        heroLabel.innerText = `${textElem.innerText} · 支出`;
+        heroAmount.innerText = data.total;
+        chartMax.innerText = `最高 ${data.max}`;
+        renderWeekBars();
+      }
+
+      function shiftDate(delta) {
+        currentDateIndex = (currentDateIndex + delta + sampleWeeks.length) % sampleWeeks.length;
+        if (currentProblem === "loading") {
+          triggerNewLoadingDemo();
+        } else {
+          updateWeekDisplay();
+        }
+      }
+
+      // 渲染柱状图
+      function renderWeekBars() {
+        const data = sampleWeeks[currentDateIndex];
+        const container = document.getElementById("chartBarsContainer");
+        const days = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+        const maxVal = 1200;
+
+        container.innerHTML = data.bars
+          .map((val, idx) => {
+            const h = Math.round((val / maxVal) * 90);
+            return `
+          <div class="bar-col">
+            <div class="bar-pillar" style="height: ${h}%;"></div>
+            <span class="bar-label">${days[idx]}</span>
+          </div>
+        `;
+          })
+          .join("");
+      }
+
+      // 渲染自定义快捷药丸
+      function renderPresetPills() {
+        const presets = [
+          { id: "30d", label: "近30天" },
+          { id: "90d", label: "近90天" },
+          { id: "halfYear", label: "近半年" },
+          { id: "all", label: "全部累计" },
+        ];
+        const wrap = document.getElementById("presetPillsWrap");
+        wrap.innerHTML = presets
+          .map(
+            (p) => `
+        <div class="preset-pill ${currentPreset === p.id ? "is-active" : ""}" onclick="selectPreset('${p.id}')">
+          ${p.label}
+        </div>
+      `
+          )
+          .join("");
+      }
+
+      // 选中自定义药丸联动
+      function selectPreset(presetId) {
+        currentPreset = presetId;
+        renderPresetPills();
+
+        const startElem = document.getElementById("customStartVal");
+        const endElem = document.getElementById("customEndVal");
+        const badgeElem = document.getElementById("customBadgeText");
+        const heroLabel = document.getElementById("heroLabelText");
+        const heroAmount = document.getElementById("heroAmountText");
+
+        if (presetId === "30d") {
+          startElem.innerText = "2026-10-13";
+          endElem.innerText = "2026-11-12";
+          badgeElem.innerHTML = "⏱ 共 31 天 · 对比前一个等长区间";
+          heroLabel.innerText = "近30天 · 支出";
+          heroAmount.innerText = "¥8,920.00";
+        } else if (presetId === "90d") {
+          startElem.innerText = "2026-08-14";
+          endElem.innerText = "2026-11-12";
+          badgeElem.innerHTML = "⏱ 共 91 天 · 季度财务分析";
+          heroLabel.innerText = "近90天 · 支出";
+          heroAmount.innerText = "¥24,650.00";
+        } else if (presetId === "halfYear") {
+          startElem.innerText = "2026-05-16";
+          endElem.innerText = "2026-11-12";
+          badgeElem.innerHTML = "⏱ 共 181 天 · 半年收支复盘";
+          heroLabel.innerText = "近半年 · 支出";
+          heroAmount.innerText = "¥51,200.00";
+        } else if (presetId === "all") {
+          startElem.innerText = "2024-03-01";
+          endElem.innerText = "2026-11-12";
+          badgeElem.innerHTML = "✨ 全部历史累计 · 走聚合统计 (无366天上限)";
+          heroLabel.innerText = "全部历史累计 · 支出";
+          heroAmount.innerText = "¥186,430.00";
+        }
+      }
+
+      // 切换收支类型
+      function toggleAnalysisType(type) {
+        document.getElementById("typeExpenseBtn").classList.toggle("is-active", type === "expense");
+        document.getElementById("typeIncomeBtn").classList.toggle("is-active", type === "income");
+      }
+
+      // 模拟原有全屏骨架屏暴闪
+      function triggerOldLoadingDemo() {
+        const realContent = document.getElementById("analysisRealContent");
+        const skeletonView = document.getElementById("skeletonView");
+
+        realContent.style.display = "none";
+        skeletonView.style.display = "block";
+
+        setTimeout(() => {
+          skeletonView.style.display = "none";
+          realContent.style.display = "block";
+          updateWeekDisplay();
+        }, 450);
+      }
+
+      // 模拟优化后温和渐进式加载
+      function triggerNewLoadingDemo() {
+        const realContent = document.getElementById("analysisRealContent");
+        const slimBar = document.getElementById("slimProgressBar");
+
+        // 内容原地微淡化，顶部出现微动光条
+        realContent.style.opacity = "0.55";
+        realContent.style.pointerEvents = "none";
+        slimBar.classList.add("active");
+
+        setTimeout(() => {
+          slimBar.classList.remove("active");
+          realContent.style.opacity = "1";
+          realContent.style.pointerEvents = "auto";
+          updateWeekDisplay();
+        }, 350);
+      }
+
+      init();
+    </script>
+  </body>
+</html>

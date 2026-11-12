@@ -3,13 +3,34 @@ function getId(item = {}) {
 }
 
 function getLedgerRole(openid, ledger = {}) {
-  if (ledger.ownerOpenid === openid || ledger.role === "owner") return "owner";
+  if (!ledger) return "member";
+  if (ledger.role === "owner") return "owner";
+  if (openid && ledger.ownerOpenid === openid) return "owner";
+  if (
+    openid &&
+    Array.isArray(ledger.members) &&
+    ledger.members.some((m) => m && m.openid === openid && m.role === "owner")
+  ) {
+    return "owner";
+  }
+  if (
+    ledger.type === "personal" &&
+    (!Array.isArray(ledger.memberOpenids) || ledger.memberOpenids.length === 0) &&
+    (!Array.isArray(ledger.viewerOpenids) || ledger.viewerOpenids.length === 0)
+  ) {
+    if (ledger.role === "readonly" || ledger.readonly) return "readonly";
+    return "owner";
+  }
   if (
     ledger.role === "readonly" ||
     ledger.readonly ||
-    (ledger.viewerOpenids || []).includes(openid)
-  )
+    (openid && (ledger.viewerOpenids || []).includes(openid)) ||
+    (openid &&
+      Array.isArray(ledger.members) &&
+      ledger.members.some((m) => m && m.openid === openid && m.role === "readonly"))
+  ) {
     return "readonly";
+  }
   return "member";
 }
 

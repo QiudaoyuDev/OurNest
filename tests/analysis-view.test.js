@@ -22,6 +22,8 @@ const {
   makeDashboardView,
   calendarAmount,
   categoryDisplayIcon,
+  generateEditorialSummary,
+  calculateFamilySettlement,
 } = require("../miniprogram/components/tl-tab-analysis/dashboard");
 
 test("dashboard bars preserve small amounts and distinguish zero", () => {
@@ -1215,4 +1217,66 @@ test("range trend selection and category drill-down preserve bucket and ledger r
     kind: "id",
     id: "salary",
   });
+});
+
+test("dashboardView generates natural editorial summary and comparison tag", () => {
+  const result = makeDashboardView(
+    {
+      dashboard: { total: 5820.5, recordCount: 46, dailyAverage: 194.01 },
+      overview: { income: 16500, expense: 5820.5, balance: 10679.5 },
+      comparison: { expense: { delta: -680 } },
+      dashboard: {
+        total: 5820.5,
+        recordCount: 46,
+        dailyAverage: 194.01,
+        categories: [
+          { key: "food", name: "餐饮美食", recordCount: 18, rate: 41.5, amount: 2415.5 },
+        ],
+      },
+    },
+    "month",
+    "expense",
+    "2026-11-12"
+  );
+  assert.equal(result.isBalancePositive, true);
+  assert.match(result.comparisonTag, /↓ 较上月减少 ¥680.00/);
+  assert.match(result.editorialSummary, /餐饮美食占支出 41.5%/);
+  assert.match(result.editorialSummary, /开销较上月有所放缓/);
+  assert.match(result.editorialSummary, /小家结余保持健康盈余/);
+});
+
+test("dashboard day selection toggles off when clicking the selected day", async () => {
+  const h = ratioPreviewHarness({ analysisType: "expense" });
+  h.page.dayRequestId = 0;
+  const p1 = h.page.selectDashboardDay({ currentTarget: { dataset: { date: "2026-01-01" } } });
+  assert.equal(h.page.data.selectedDay, "2026-01-01");
+  if (h.pending && h.pending[0]) {
+    h.pending[0].resolve({ records: [] });
+  }
+  await p1;
+  // Clicking the same date again toggles off
+  await h.page.selectDashboardDay({ currentTarget: { dataset: { date: "2026-01-01" } } });
+  assert.equal(h.page.data.selectedDay, null);
+  assert.equal(h.page.data.dayRecords.length, 0);
+});
+
+test("calculateFamilySettlement computes fair partner balance difference", () => {
+  const family = {
+    total: 4000,
+    totalText: "4,000.00",
+    payers: [
+      { name: "我", amount: 3000, amountText: "3,000.00", rate: 75 },
+      { name: "伴侣", amount: 1000, amountText: "1,000.00", rate: 25 },
+    ],
+  };
+  const settlement = calculateFamilySettlement(family, "11月", "小家小账");
+  assert.equal(settlement.enabled, true);
+  assert.equal(settlement.diffText, "1000.00");
+  assert.match(settlement.advice, /伴侣 需向 我 转账 ¥1000.00/);
+  assert.match(settlement.copyText, /【咱家小账 · 11月对账单】/);
+  assert.match(settlement.copyText, /家庭总支出：¥4,000.00/);
+
+  // Single payer case
+  const single = calculateFamilySettlement({ payers: [{ name: "我", amount: 100 }] });
+  assert.equal(single.enabled, false);
 });

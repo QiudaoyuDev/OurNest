@@ -1,6 +1,8 @@
 const feedback = require("../../services/feedback-ui");
 const app = getApp();
 const ledgerStore = require("../../services/ledger.store");
+const dataRefresh = require("../../services/data-refresh.service");
+const { emit } = require("../../utils/event-bus");
 
 function normalizeBudget(value) {
   const numberValue = Math.round(Number(value) * 100) / 100;
@@ -69,15 +71,30 @@ Page({
         };
         app.persistAuthState();
       }
-      if (ledger) {
-        const pages = getCurrentPages();
-        const previousPage = pages[pages.length - 2];
-        if (previousPage && typeof previousPage.loadDashboard === "function") {
-          await previousPage.loadDashboard(ledger._id);
+      const budgetPayload = {
+        ledgerId: this.data.ledgerId,
+        budgetEnabled: this.data.budgetEnabled,
+        monthlyBudget: normalizeBudget(this.data.monthlyBudget),
+      };
+      const pages = getCurrentPages();
+      const previousPage = pages[pages.length - 2];
+      if (previousPage) {
+        const home =
+          typeof previousPage.selectComponent === "function" &&
+          previousPage.selectComponent("#tab-home");
+        if (home) {
+          if (typeof home.applyBudgetUpdate === "function") {
+            home.applyBudgetUpdate(budgetPayload);
+          }
+          if (typeof home.refreshDashboard === "function") {
+            home.refreshDashboard({ silent: true });
+          }
         }
       }
-      feedback.showToast({ type: "success", message: "已保存" });
-      setTimeout(() => wx.navigateBack(), 650);
+      emit("budget:changed", budgetPayload);
+      emit("records:changed", { ledgerId: this.data.ledgerId, source: "budget-mutation" });
+      dataRefresh.invalidate({ ledgerId: this.data.ledgerId, source: "budget-mutation" });
+      wx.navigateBack();
     } catch (error) {
       feedback.showToast({ type: "error", message: error.message || "保存失败" });
     } finally {

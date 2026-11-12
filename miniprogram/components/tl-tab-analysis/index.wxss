@@ -1523,7 +1523,8 @@
   opacity: 0.65;
 }
 .dashboard-bar.is-selected {
-  border: 2rpx solid var(--tl-color-text);
+  background: var(--tl-color-primary-ink);
+  outline: 2rpx solid var(--tl-color-primary-ink);
 }
 
 .dashboard-bar.is-future {
@@ -1696,4 +1697,484 @@
 }
 .dashboard-day.has-amount .dashboard-day-amount {
   color: var(--tl-color-primary-ink);
+}
+
+/* Phase 1: Lifestyle Editorial & Warm Overview Styles */
+.t-num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5rpx;
+}
+
+.analysis-overview-card {
+  padding: 32rpx;
+  background: var(--tl-color-surface);
+  border: 1rpx solid var(--tl-color-border-warm);
+  border-radius: var(--tl-radius-lg);
+  box-shadow: none;
+  margin-bottom: var(--tl-space-md);
+}
+
+.overview-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--tl-space-md);
+}
+
+.overview-main-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.overview-main-info .summary-title {
+  margin-top: 8rpx;
+  font-size: var(--tl-font-data-lg);
+  font-weight: var(--tl-font-weight-bold);
+  color: var(--tl-color-text);
+  line-height: 1.2;
+}
+
+.overview-main-info .summary-copy {
+  margin-top: 8rpx;
+  font-size: var(--tl-font-caption);
+  color: var(--tl-color-text-secondary);
+}
+
+.overview-badges {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8rpx;
+}
+
+.overview-balance-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 6rpx;
+  padding: 6rpx 16rpx;
+  border-radius: var(--tl-radius-pill);
+  font-size: var(--tl-font-caption);
+  font-weight: var(--tl-font-weight-bold);
+}
+
+.overview-balance-badge.is-positive {
+  background: var(--tl-color-income-soft);
+  color: var(--tl-color-income);
+}
+
+.overview-balance-badge.is-negative {
+  background: var(--tl-color-danger-soft);
+  color: var(--tl-color-danger);
+}
+
+.overview-compare-tag {
+  font-size: var(--tl-font-caption-compact);
+  color: var(--tl-color-text-tertiary);
+  font-weight: var(--tl-font-weight-medium);
+}
+
+/* Editorial Narrative Box */
+.editorial-narrative-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 14rpx;
+  margin-top: 24rpx;
+  padding: 18rpx 20rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1rpx dashed var(--tl-color-border-warm);
+  border-radius: var(--tl-radius-control);
+}
+
+.narrative-icon-wrap {
+  flex: 0 0 32rpx;
+  margin-top: 2rpx;
+}
+
+.narrative-text {
+  flex: 1;
+  font-size: var(--tl-font-body-sm);
+  color: var(--tl-color-text-secondary);
+  line-height: 1.55;
+}
+
+/* Family Contribution Strip */
+.family-contribution-strip {
+  margin-top: 24rpx;
+  padding: 18rpx 20rpx;
+  background: var(--tl-color-surface-warm);
+  border-radius: var(--tl-radius-control);
+  border: 1rpx solid var(--tl-color-border-warm);
+}
+
+.strip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14rpx;
+}
+
+.strip-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.strip-title {
+  font-size: var(--tl-font-caption);
+  font-weight: var(--tl-font-weight-bold);
+  color: var(--tl-color-text);
+}
+
+.strip-action {
+  font-size: var(--tl-font-caption);
+  color: var(--tl-color-primary);
+  font-weight: var(--tl-font-weight-medium);
+}
+
+.family-members-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.family-member-pill {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 6rpx 14rpx 6rpx 8rpx;
+  background: #ffffff;
+  border-radius: var(--tl-radius-pill);
+  border: 1rpx solid var(--tl-color-border-subtle);
+  font-size: var(--tl-font-caption);
+}
+
+.member-avatar-chip {
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 50%;
+  background: var(--tl-color-primary-soft);
+  color: var(--tl-color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--tl-font-caption-compact);
+  font-weight: var(--tl-font-weight-bold);
+}
+
+.member-name {
+  color: var(--tl-color-text);
+  font-weight: var(--tl-font-weight-medium);
+}
+
+.member-amount {
+  color: var(--tl-color-text);
+  font-weight: var(--tl-font-weight-bold);
+}
+
+.member-rate {
+  color: var(--tl-color-text-tertiary);
+  font-size: var(--tl-font-caption-compact);
+}
+
+/* Phase 2: Chart Tooltip & Micro-Interactions */
+.chart-tooltip-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 56rpx;
+  margin-top: var(--tl-space-sm);
+  padding: 8rpx 16rpx;
+  border-radius: var(--tl-radius-control);
+  background: var(--tl-color-surface-soft);
+  border: 1rpx solid var(--tl-color-border-subtle);
+}
+
+.chart-tooltip-bar.is-active {
+  background: var(--tl-color-surface-warm);
+  border-color: var(--tl-color-border-warm);
+}
+
+.tooltip-data-group {
+  display: flex;
+  align-items: baseline;
+  gap: var(--tl-space-sm);
+}
+
+.tooltip-label {
+  font-size: var(--tl-font-caption);
+  color: var(--tl-color-text-secondary);
+  font-weight: var(--tl-font-weight-medium);
+}
+
+.tooltip-amount {
+  font-size: var(--tl-font-body);
+  font-weight: var(--tl-font-weight-bold);
+  color: var(--tl-color-primary-ink);
+}
+
+.tooltip-action-group {
+  display: flex;
+  align-items: center;
+}
+
+.tooltip-action {
+  font-size: var(--tl-font-caption);
+  color: var(--tl-color-primary);
+  font-weight: var(--tl-font-weight-bold);
+}
+
+.tooltip-hint-group {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  width: 100%;
+  justify-content: center;
+}
+
+.tooltip-hint {
+  font-size: var(--tl-font-caption-compact);
+  color: var(--tl-color-text-tertiary);
+}
+
+/* Phase 2: Native Category Progress Bar */
+.category-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 6rpx;
+  width: 100%;
+}
+
+.category-progress-track {
+  flex: 1;
+  max-width: 220rpx;
+  height: 8rpx;
+  border-radius: var(--tl-radius-pill);
+  background: var(--tl-color-divider);
+  overflow: hidden;
+}
+
+.category-progress-fill {
+  height: 100%;
+  border-radius: var(--tl-radius-pill);
+}
+
+/* Phase 2: Calendar Detail Header Close */
+.dashboard-day-detail__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--tl-space-xs);
+}
+
+.day-detail-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+}
+
+/* Phase 3: Family Settlement & Monthly Report Styles */
+.overview-report-btn {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 6rpx 14rpx;
+  border-radius: var(--tl-radius-pill);
+  background: var(--tl-color-surface-soft);
+  border: 1rpx solid var(--tl-color-border-warm);
+  font-size: var(--tl-font-caption-compact);
+  color: var(--tl-color-primary);
+  font-weight: var(--tl-font-weight-medium);
+}
+
+.family-settlement-card {
+  margin-bottom: var(--tl-space-md);
+  padding: 24rpx;
+  background: var(--tl-color-surface-warm);
+  border: 1rpx solid var(--tl-color-border-warm);
+  border-radius: var(--tl-radius-md);
+}
+
+.settlement-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.settlement-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.settlement-title {
+  font-size: var(--tl-font-body-sm);
+  font-weight: var(--tl-font-weight-bold);
+  color: var(--tl-color-text);
+}
+
+.settlement-copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 6rpx 14rpx;
+  border-radius: var(--tl-radius-pill);
+  background: #ffffff;
+  border: 1rpx solid var(--tl-color-border-warm);
+  font-size: var(--tl-font-caption-compact);
+  color: var(--tl-color-primary);
+  font-weight: var(--tl-font-weight-bold);
+}
+
+.settlement-advice-box {
+  padding: 12rpx 16rpx;
+  background: #ffffff;
+  border-radius: var(--tl-radius-sm);
+  border: 1rpx dashed var(--tl-color-border-warm);
+}
+
+.settlement-advice {
+  font-size: var(--tl-font-body-sm);
+  color: var(--tl-color-text-secondary);
+  line-height: 1.5;
+}
+
+/* Monthly Report Sheet Styles */
+.monthly-report-sheet {
+  padding: 28rpx var(--tl-page-inline) 48rpx;
+}
+
+.monthly-report-sheet__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.monthly-report-card {
+  padding: 28rpx;
+  background: var(--tl-color-surface);
+  border: 1rpx solid var(--tl-color-border-warm);
+  border-radius: var(--tl-radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.report-card-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1rpx solid var(--tl-color-divider-warm);
+  padding-bottom: 14rpx;
+}
+
+.report-brand {
+  font-size: var(--tl-font-caption);
+  font-weight: var(--tl-font-weight-bold);
+  color: var(--tl-color-primary);
+}
+
+.report-period {
+  font-size: var(--tl-font-caption-compact);
+  color: var(--tl-color-text-tertiary);
+}
+
+.report-card-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.report-hero-label {
+  font-size: var(--tl-font-caption-compact);
+  color: var(--tl-color-text-tertiary);
+}
+
+.report-hero-amount {
+  font-size: var(--tl-font-data-lg);
+  font-weight: var(--tl-font-weight-bold);
+  color: var(--tl-color-text);
+  line-height: 1.15;
+}
+
+.report-hero-sub {
+  font-size: var(--tl-font-caption-compact);
+  color: var(--tl-color-text-secondary);
+}
+
+.report-narrative-quote {
+  padding: 14rpx 16rpx;
+  background: var(--tl-color-surface-soft);
+  border-left: 4rpx solid var(--tl-color-primary);
+  border-radius: var(--tl-radius-xs);
+  font-size: var(--tl-font-body-sm);
+  color: var(--tl-color-text-secondary);
+  line-height: 1.5;
+}
+
+.report-top-categories,
+.report-payers-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.report-section-label {
+  font-size: var(--tl-font-caption-compact);
+  font-weight: var(--tl-font-weight-bold);
+  color: var(--tl-color-text-tertiary);
+}
+
+.report-cat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6rpx 0;
+  border-bottom: 1rpx dashed var(--tl-color-divider-warm);
+}
+
+.report-cat-row:last-child {
+  border-bottom: none;
+}
+
+.report-cat-left {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.report-cat-name {
+  font-size: var(--tl-font-body-sm);
+  color: var(--tl-color-text);
+  font-weight: var(--tl-font-weight-medium);
+}
+
+.report-cat-val {
+  font-size: var(--tl-font-body-sm);
+  color: var(--tl-color-text);
+  font-weight: var(--tl-font-weight-bold);
+}
+
+.report-payers-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+
+.report-payer-item {
+  padding: 6rpx 14rpx;
+  background: var(--tl-color-surface-warm);
+  border-radius: var(--tl-radius-pill);
+  font-size: var(--tl-font-caption-compact);
+  color: var(--tl-color-text-secondary);
+}
+
+.monthly-report-actions {
+  margin-top: 24rpx;
 }

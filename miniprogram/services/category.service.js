@@ -6,6 +6,7 @@ const { emit } = require("../utils/event-bus");
 
 // 有效缓存立即返回；冷启动、过期或失效时等待云端分类。
 const listCategories = (ledgerId) => categoryStore.getCategories(ledgerId);
+const getCategoryRole = (ledgerId) => categoryStore.getCategoryRole(ledgerId);
 
 async function mutateCategory(route, payload) {
   const result = await callApi(route, payload);
@@ -34,4 +35,4 @@ async function removeCategory(categoryId, ledgerId) {
   return result;
 }
 
-module.exports = { listCategories, saveCategory, removeCategory };
+module.exports = { listCategories, getCategoryRole, saveCategory, removeCategory };

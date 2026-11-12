@@ -1,6 +1,8 @@
 const feedback = require("../../services/feedback-ui");
 const app = getApp();
 const categoryService = require("../../services/category.service");
+const ledgerStore = require("../../services/ledger.store");
+const { getLedgerRole } = require("../../utils/mapper");
 Page({
   data: {
     ledgerId: "",
@@ -36,8 +38,26 @@ Page({
         ...item,
         isProtected: Boolean(item.isOther),
       }));
-    const ledger = app.globalData.currentLedger || {};
-    this.setData({ items, role: ledger.role || "" });
+    const cachedLedgers = (await ledgerStore.getLedgers().catch(() => [])) || [];
+    const currentGlobal = app.globalData.currentLedger || {};
+    const targetId = this.data.ledgerId || currentGlobal._id || currentGlobal.id;
+    const cachedLedger = cachedLedgers.find((item) => (item._id || item.id) === targetId) || null;
+    const isCurrent = targetId === (currentGlobal._id || currentGlobal.id);
+    const ledger = {
+      ...(cachedLedger || {}),
+      ...(isCurrent ? currentGlobal : {}),
+    };
+    const openid = (app.globalData && app.globalData.openid) || "";
+    const serverRole = categoryService.getCategoryRole
+      ? categoryService.getCategoryRole(this.data.ledgerId)
+      : "";
+    const resolvedRole =
+      serverRole ||
+      ledger.role ||
+      (isCurrent && currentGlobal.role) ||
+      getLedgerRole(openid, ledger);
+    const role = resolvedRole === "none" ? "member" : resolvedRole;
+    this.setData({ items, role });
   },
   openCreate() {
     if (!["owner", "member"].includes(this.data.role)) return;

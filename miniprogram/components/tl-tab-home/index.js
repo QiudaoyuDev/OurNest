@@ -157,13 +157,25 @@ Component({
   lifetimes: {
     attached() {
       this.bootstrap();
-      this._onRecordsChanged = () => this.refreshDashboard();
+      this._onRecordsChanged = () => this.refreshDashboard({ silent: true });
       onEvent("records:changed", this._onRecordsChanged);
+      this._onBudgetChanged = (payload = {}) => {
+        const targetId = payload.ledgerId || "";
+        if (!targetId || targetId === this.data.ledgerId) {
+          this.applyBudgetUpdate(payload);
+          this.refreshDashboard({ silent: true });
+        }
+      };
+      onEvent("budget:changed", this._onBudgetChanged);
     },
     detached() {
       if (this._onRecordsChanged) {
         offEvent("records:changed", this._onRecordsChanged);
         this._onRecordsChanged = null;
+      }
+      if (this._onBudgetChanged) {
+        offEvent("budget:changed", this._onBudgetChanged);
+        this._onBudgetChanged = null;
       }
     },
   },
@@ -197,12 +209,14 @@ Component({
       return ledgers;
     },
 
-    async loadDashboard(ledgerId) {
+    async loadDashboard(ledgerId, options = {}) {
       const requestId = (this._dashboardRequestId || 0) + 1;
       this._dashboardRequestId = requestId;
       const ledger = app.globalData.currentLedger || {};
       const targetLedgerId = ledgerId || ledger._id || "";
-      this.setPageStatus("loading");
+      if (!options.silent) {
+        this.setPageStatus("loading");
+      }
       if (!targetLedgerId) {
         this.setData({
           ledgers: [],
@@ -263,12 +277,37 @@ Component({
       return true;
     },
 
-    async refreshDashboard() {
+    applyBudgetUpdate({ budgetEnabled, monthlyBudget } = {}) {
+      const enabled = Boolean(budgetEnabled);
+      const budgetNum = enabled ? Number(monthlyBudget || 0) : 0;
+      const rawExpenseStr = String(this.data.monthExpense || "0").replace(/,/g, "");
+      const expenseNum = Number(rawExpenseStr) || 0;
+      const budgetLeftNum = enabled ? Number((budgetNum - expenseNum).toFixed(2)) : 0;
+      const isOverBudget = budgetLeftNum < 0;
+      const budgetLeftAbs = Math.abs(budgetLeftNum);
+      const budgetRate = enabled && budgetNum ? (expenseNum / budgetNum) * 100 : 0;
+      const budgetLeftFormatted = formatDisplayMoney(budgetLeftAbs);
+      this.setData({
+        budgetEnabled: enabled,
+        budget: formatDisplayMoney(budgetNum),
+        budgetLeft: formatDisplayMoney(budgetLeftNum),
+        budgetLeftAbs: budgetLeftFormatted,
+        budgetLeftInteger: budgetLeftFormatted.split(".")[0],
+        budgetLeftDecimal: budgetLeftFormatted.includes(".")
+          ? `.${budgetLeftFormatted.split(".")[1]}`
+          : "",
+        isOverBudget,
+        budgetRate,
+        budgetRateText: budgetRate.toFixed(1),
+      });
+    },
+
+    async refreshDashboard(options = {}) {
       if (this.data.isSwitchingLedger) return false;
       const ledger = app.globalData.currentLedger || {};
       const targetLedgerId = ledger._id || "";
 
-      const request = this.loadDashboard(targetLedgerId);
+      const request = this.loadDashboard(targetLedgerId, options);
       const requestId = this._dashboardRequestId;
       try {
         return await request;

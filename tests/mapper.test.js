@@ -4,6 +4,16 @@ const { getId, getLedgerRole, normalizeLedger } = require("../miniprogram/utils/
 test("mapper resolves ids and ledger roles", () => {
   assert.equal(getId({ _id: "a", id: "b" }), "a");
   assert.equal(getLedgerRole("u1", { ownerOpenid: "u1" }), "owner");
+  assert.equal(getLedgerRole("u1", { type: "shared", ownerOpenid: "u1" }), "owner");
+  assert.equal(
+    getLedgerRole("u1", { type: "shared", members: [{ openid: "u1", role: "owner" }] }),
+    "owner"
+  );
+  assert.equal(
+    getLedgerRole("u2", { type: "shared", ownerOpenid: "u1", memberOpenids: ["u2"] }),
+    "member"
+  );
+  assert.equal(getLedgerRole("u1", { type: "personal" }), "owner");
   assert.equal(getLedgerRole("u1", { viewerOpenids: ["u1"] }), "readonly");
   assert.equal(normalizeLedger({ _id: "l1", memberOpenids: ["u1"] }, "u1").id, "l1");
 });
