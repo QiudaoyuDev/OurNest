@@ -161,6 +161,38 @@
   background: var(--tl-color-primary-soft);
 }
 
+.budget-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx 32rpx;
+  padding: 20rpx 30rpx 0;
+}
+
+.budget-summary-item {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  min-width: 0;
+}
+
+.budget-summary-label {
+  color: var(--tl-color-text-secondary);
+  font-size: var(--tl-font-body-sm);
+}
+
+.budget-summary-value {
+  color: var(--tl-color-text);
+  font-size: var(--tl-font-body-sm);
+  font-weight: var(--tl-font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.budget-summary-value.income {
+  color: var(--tl-color-income);
+}
+
 .summary-glow {
   position: absolute;
   right: -72rpx;

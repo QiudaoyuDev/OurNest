@@ -156,24 +156,30 @@
               </view>
             </view>
           </view>
-          <view class="summary-card card fade-up">
-            <view class="summary-head">
-              <view class="summary-title">{{showBudget && budgetEnabled ? '本月收支' : '本月结余'}}</view>
-              <view wx:if="{{canManageBudget && (!showBudget || !budgetEnabled)}}" class="summary-action" bindtap="goBudgetSettings">设置预算</view>
+          <view wx:if="{{showBudget && budgetEnabled}}" class="budget-summary fade-up">
+            <view class="budget-summary-item">
+              <text class="budget-summary-label">本月收入</text>
+              <text class="budget-summary-value income">¥{{monthIncomeCompact}}</text>
             </view>
-            <view class="overview-value" wx:if="{{!showBudget || !budgetEnabled}}">¥{{balanceCompact}}</view>
+            <view class="budget-summary-item">
+              <text class="budget-summary-label">本月结余</text>
+              <text class="budget-summary-value">¥{{balanceCompact}}</text>
+            </view>
+          </view>
+          <view wx:else class="summary-card card fade-up">
+            <view class="summary-head">
+              <view class="summary-title">本月结余</view>
+              <view wx:if="{{canManageBudget}}" class="summary-action" bindtap="goBudgetSettings">设置预算</view>
+            </view>
+            <view class="overview-value">¥{{balanceCompact}}</view>
             <view class="overview-grid">
               <view class="overview-item">
                 <view class="overview-label">收入</view>
                 <view class="overview-value income">¥{{monthIncomeCompact}}</view>
               </view>
-              <view wx:if="{{!showBudget || !budgetEnabled}}" class="overview-item">
+              <view class="overview-item">
                 <view class="overview-label">支出</view>
                 <view class="overview-value expense">¥{{monthExpenseCompact}}</view>
-              </view>
-              <view wx:if="{{showBudget && budgetEnabled}}" class="overview-item">
-                <view class="overview-label">结余</view>
-                <view class="overview-value">¥{{balanceCompact}}</view>
               </view>
             </view>
           </view>

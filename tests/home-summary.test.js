@@ -4,6 +4,22 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 const money = require("../miniprogram/utils/money");
 
+test("home uses a compact income and balance summary only when budget is visible and enabled", () => {
+  const template = fs.readFileSync("miniprogram/components/tl-tab-home/index.wxml", "utf8");
+  const summary = template.match(
+    /<view wx:if="\{\{showBudget && budgetEnabled\}\}" class="budget-summary fade-up">([\s\S]*?)<view wx:else class="summary-card card fade-up">/
+  );
+  assert.ok(summary);
+  assert.match(summary[1], /本月收入[\s\S]*?monthIncomeCompact/);
+  assert.match(summary[1], /本月结余[\s\S]*?balanceCompact/);
+  assert.doesNotMatch(summary[1], /monthExpense/);
+  assert.match(template, /wx:else class="summary-card card fade-up"[\s\S]*?monthExpenseCompact/);
+  assert.match(
+    template,
+    /wx:if="\{\{!showBudget \|\| !budgetEnabled\}\}" class="summary-card card fade-up"/
+  );
+});
+
 test("home shows expense placeholders for empty and income-only months", () => {
   const context = {
     getApp: () => ({}),
