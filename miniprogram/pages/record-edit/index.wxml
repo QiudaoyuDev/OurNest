@@ -50,28 +50,36 @@
               </view>
             </scroll-view>
           </view>
-          <tl-record-form quick-entry="{{!isEditing}}" entry-visible="{{!!categoryId}}" note-focused="{{noteFocused}}" saving="{{saving}}" bind:submit="saveAndLeave" bind:submitcontinue="saveAndContinue" type="{{type}}" amount="{{amount}}" amount-result="{{amountResult}}" show-amount-result="{{showAmountResult}}" quick-amounts="{{quickAmounts}}" ledger-name="{{ledgerName}}" accounts="{{accounts}}" account-index="{{accountIndex}}" date="{{date}}" note="{{note}}" tag-input="{{tagInput}}" tags="{{tags}}" bind:amountinput="onAmountInput" bind:quickamount="setQuickAmount" bind:accountchange="onAccountChange" bind:datechange="onDateChange" bind:noteinput="onNoteInput" bind:taginput="onTagInput" bind:addtag="addTag" bind:removetag="removeTag" bind:keypadchange="onKeypadChange">
+          <tl-record-form quick-entry="{{!isEditing}}" entry-visible="{{!!categoryId && !entryCollapsed}}" note-focused="{{noteFocused}}" saving="{{saving}}" bind:submit="saveAndLeave" bind:submitcontinue="saveAndContinue" type="{{type}}" amount="{{amount}}" amount-result="{{amountResult}}" show-amount-result="{{showAmountResult}}" quick-amounts="{{quickAmounts}}" ledger-name="{{ledgerName}}" accounts="{{accounts}}" account-index="{{accountIndex}}" date="{{date}}" note="{{note}}" tag-input="{{tagInput}}" tags="{{tags}}" bind:amountinput="onAmountInput" bind:quickamount="setQuickAmount" bind:accountchange="onAccountChange" bind:datechange="onDateChange" bind:noteinput="onNoteInput" bind:taginput="onTagInput" bind:addtag="addTag" bind:removetag="removeTag" bind:keypadchange="onKeypadChange">
             <view wx:if="{{!isEditing && categoryId}}" class="entry-panel-info">
-              <view class="entry-panel-heading">
-                <view class="entry-panel-category-pill {{selectedChipClass}}">
-                  <tl-icon name="{{categoryIcon}}" size="28" color="{{selectedIconColor || '#f0442f'}}">
-                  </tl-icon>
-                  <text class="entry-panel-category">{{categoryHeading}}</text>
+              <view class="entry-panel-card">
+                <view class="entry-panel-heading">
+                  <view class="entry-panel-category-pill {{selectedChipClass}}">
+                    <tl-icon name="{{categoryIcon}}" size="32" color="{{selectedIconColor || '#f0442f'}}">
+                    </tl-icon>
+                    <text class="entry-panel-category">{{typeLabel}} / {{categoryHeading}}</text>
+                  </view>
+                  <view class="entry-change" bindtap="reselectEntryCategory">重选分类 ›</view>
                 </view>
-                <view class="entry-panel-amount">
-                  {{amount || '0.00'}} 元
-                  <text wx:if="{{showAmountResult && amountResult}}" class="entry-panel-result">= {{amountResult}} 元</text>
+                <view class="entry-amount-row">
+                  <view class="entry-panel-amount">{{amount || '0.00'}}</view>
+                  <view class="entry-clear" bindtap="clearEntryAmount">清空</view>
                 </view>
+                <view wx:if="{{showAmountResult && amountResult}}" class="entry-panel-result">= {{amountResult}}</view>
               </view>
-              <view class="entry-clear" bindtap="clearEntryAmount">清空金额</view>
-              <input class="entry-panel-note" value="{{note}}" maxlength="100" adjust-position="{{true}}" confirm-type="done" bindinput="onNoteInput" bindfocus="onNoteFocus" bindblur="onNoteBlur" placeholder="添加备注" />
-              <view class="entry-panel-props">
-                <picker mode="date" value="{{date}}" bindchange="onDateChange">
-                  <view class="entry-panel-chip">{{date}}</view>
-                </picker>
-                <picker mode="selector" range="{{accounts}}" value="{{accountIndex}}" bindchange="onAccountChange">
-                  <view class="entry-panel-chip">{{accounts[accountIndex] || '选择账户'}}</view>
-                </picker>
+              <view class="entry-panel-card">
+                <view class="entry-field-label">备注 <text class="entry-optional">选填</text></view>
+                <input class="entry-panel-note" value="{{note}}" maxlength="100" adjust-position="{{true}}" confirm-type="done" bindinput="onNoteInput" bindfocus="onNoteFocus" bindblur="onNoteBlur" placeholder="添加备注" />
+                <view class="entry-panel-props">
+                  <picker class="entry-field" mode="date" value="{{date}}" bindchange="onDateChange">
+                    <view class="entry-field-label">日期</view>
+                    <view class="entry-panel-chip"><text>{{date}}</text><text class="entry-arrow">›</text></view>
+                  </picker>
+                  <picker class="entry-field" mode="selector" range="{{accounts}}" value="{{accountIndex}}" bindchange="onAccountChange">
+                    <view class="entry-field-label">账户</view>
+                    <view class="entry-panel-chip"><text>{{accounts[accountIndex] || '选择账户'}}</text><text class="entry-arrow">›</text></view>
+                  </picker>
+                </view>
               </view>
               <view wx:if="{{familyEnabled && type === 'income'}}" class="entry-family">
                 <view wx:if="{{familyLoading}}" class="family-note">正在同步家庭成员…</view>
@@ -80,10 +88,8 @@
                   <tl-button variant="text" size="small" bind:tap="retryFamilyContext">重试</tl-button>
                 </view>
                 <picker wx:else mode="selector" range="{{incomeRecipients}}" range-key="nickName" value="{{incomeRecipientIndex}}" bindchange="changeIncomeRecipient">
-                  <view class="entry-family-row">
-                    <text>收入归属</text>
-                    <text>{{incomeRecipientName}} ▾</text>
-                  </view>
+                  <view class="entry-field-label">收入归属</view>
+                  <view class="entry-family-row"><text>{{incomeRecipientName}}</text><text class="entry-arrow">›</text></view>
                 </picker>
               </view>
               <view wx:if="{{familyEnabled && type === 'expense'}}" class="entry-family">
@@ -94,22 +100,16 @@
                 </view>
                 <block wx:else>
                   <picker mode="selector" range="{{familyMembers}}" range-key="nickName" value="{{familyPayerIndex}}" bindchange="changeFamilyPayer">
-                    <view class="entry-family-row">
-                      <text>付款人</text>
-                      <text>{{familyMembers[familyPayerIndex].nickName}} ▾</text>
-                    </view>
+                    <view class="entry-field-label">付款人</view>
+                    <view class="entry-family-row"><text>{{familyMembers[familyPayerIndex].nickName}}</text><text class="entry-arrow">›</text></view>
                   </picker>
                   <picker mode="selector" range="{{familyKinds}}" range-key="label" value="{{familyKindIndex}}" bindchange="changeFamilyKind">
-                    <view class="entry-family-row">
-                      <text>消费归属</text>
-                      <text>{{familyKinds[familyKindIndex].label}} ▾</text>
-                    </view>
+                    <view class="entry-field-label">消费归属</view>
+                    <view class="entry-family-row"><text>{{familyKinds[familyKindIndex].label}}</text><text class="entry-arrow">›</text></view>
                   </picker>
                   <picker wx:if="{{familyKinds[familyKindIndex].value === 'personal'}}" mode="selector" range="{{familyConsumers}}" range-key="nickName" value="{{familyConsumerIndex}}" bindchange="changeFamilyConsumer">
-                    <view class="entry-family-row">
-                      <text>消费成员</text>
-                      <text>{{familyConsumers[familyConsumerIndex].nickName || '请选择'}} ▾</text>
-                    </view>
+                    <view class="entry-field-label">消费成员</view>
+                    <view class="entry-family-row"><text>{{familyConsumers[familyConsumerIndex].nickName || '请选择'}}</text><text class="entry-arrow">›</text></view>
                   </picker>
                 </block>
               </view>

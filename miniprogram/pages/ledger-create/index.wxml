@@ -71,7 +71,7 @@
               </view>
               <view wx:if="{{budgetEnabled}}" class="budget-input-wrap">
                 <view class="field-label">
-                  月预算金额（元）
+                  月预算金额
                   <text class="required-star">*</text>
                 </view>
                 <view class="budget-input-row">

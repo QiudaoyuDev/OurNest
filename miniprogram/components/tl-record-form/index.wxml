@@ -1,6 +1,5 @@
 <view class="tl-record-form {{quickEntry ? 'tl-record-form--quick' : ''}}">
   <view wx:if="{{!quickEntry}}" class="tl-record-form__amount" bindtap="openKeypad">
-    <text>金额（元）</text>
     <text class="tl-record-form__amount-value {{amount ? '' : 'is-placeholder'}}">{{amount || '0.00'}}</text>
   </view>
   <scroll-view wx:if="{{!quickEntry && quickAmounts.length}}" class="tl-record-form__quick" scroll-x="{{true}}" show-scrollbar="{{false}}" enhanced="{{true}}">
@@ -72,16 +71,10 @@
       <text>备注</text>
       <textarea class="tl-record-form__note" value="{{note}}" auto-height="{{false}}" bindinput="noteInput" placeholder="100字以内" placeholder-class="tl-record-form__note-placeholder" />
     </view>
-    <view class="tl-record-form__tags">
+    <view wx:if="{{tags.length}}" class="tl-record-form__tags">
       <text>标签</text>
-      <view class="tl-record-form__tag-content">
-        <view class="tl-record-form__tag-composer">
-          <input value="{{tagInput}}" bindinput="tagInput" bindconfirm="addTag" placeholder="输入标签" />
-          <view class="tl-record-form__add" bindtap="addTag">添加</view>
-        </view>
-        <view class="tl-record-form__tag-list">
-          <view wx:for="{{tags}}" wx:key="*this" data-index="{{index}}" bindtap="removeTag">#{{item}}</view>
-        </view>
+      <view class="tl-record-form__tag-list">
+        <view wx:for="{{tags}}" wx:key="index">#{{item}}</view>
       </view>
     </view>
   </block>

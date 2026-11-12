@@ -28,7 +28,7 @@
         </view>
         <view class="month-brief" wx:if="{{!loading && !isError}}">
           <view>
-            <text class="brief-label">收入（元）</text>
+            <text class="brief-label">收入</text>
             <text class="brief-income">{{monthIncome}}</text>
           </view>
           <view>

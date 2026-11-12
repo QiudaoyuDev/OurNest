@@ -13,7 +13,7 @@
         </view>
         <view class="amount-card card {{quickAmountsEnabled ? '' : 'is-disabled'}}">
           <view class="amount-head">
-            <text>常用金额（元）</text>
+            <text>常用金额</text>
             <text>{{amounts.length}} / 5</text>
           </view>
           <view class="amount-list">

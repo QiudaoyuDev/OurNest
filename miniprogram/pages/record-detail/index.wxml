@@ -19,7 +19,7 @@
               <text class="hero-category-label">{{record.typeText}} / {{record.parentCategoryText ? record.parentCategoryText + ' / ' : ''}}{{record.categoryText}}</text>
             </view>
             <view class="amount {{record.type}}">{{record.sign}}{{record.amountText}}</view>
-            <view class="hero-caption">{{record.selectedTimeText}} · 金额单位：元</view>
+            <view class="hero-caption">{{record.selectedTimeText}}</view>
           </view>
           <view class="detail-section">
             <view class="section-title">交易信息</view>

@@ -782,3 +782,27 @@ test("keypad edits emit controlled values with two-decimal precision", () => {
     ["0.", "0.12", "12-", "12-5", "12-", ""]
   );
 });
+
+
+test("editing preserves historical tags exactly without offering tag editing", async () => {
+  const { page, calls } = await readyPage();
+  page.setData({ isEditing: true, recordId: "existing", tags: ["午餐", "午餐", "家人"], tagInput: "" });
+  page.onNoteInput(input("更新备注"));
+  await page.saveAndLeave();
+  assert.deepEqual(calls.updates[0].tags, ["午餐", "午餐", "家人"]);
+  const template = fs.readFileSync(path.join(root, "miniprogram/components/tl-record-form/index.wxml"), "utf8");
+  assert.match(template, /wx:if="{{tags.length}}"/);
+  assert.doesNotMatch(template, /bindtap="(?:addTag|removeTag)"/);
+});
+
+
+test("reselecting a category preserves entry fields and reopens the panel", async () => {
+  const { page } = await readyPage();
+  page.onNoteInput(input("午餐"));
+  const before = { amount: page.data.amount, note: page.data.note, date: page.data.date, accountIndex: page.data.accountIndex };
+  page.reselectEntryCategory();
+  assert.equal(page.data.entryCollapsed, true);
+  page.chooseCategory({ detail: { categoryId: "lunch" }, currentTarget: { dataset: {} } });
+  assert.equal(page.data.entryCollapsed, false);
+  for (const [key, value] of Object.entries(before)) assert.equal(page.data[key], value);
+});

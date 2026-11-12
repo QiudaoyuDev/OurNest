@@ -150,7 +150,7 @@ test("record entry opens its keypad only after selecting a category", () => {
   const template = fs.readFileSync("miniprogram/pages/record-edit/index.wxml", "utf8");
   const form = fs.readFileSync("miniprogram/components/tl-record-form/index.wxml", "utf8");
   assert.match(template, /wx:for="\{\{flatCategories\}\}"/);
-  assert.match(template, /entry-visible="\{\{!!categoryId\}\}"/);
+  assert.match(template, /entry-visible="\{\{!!categoryId && !entryCollapsed\}\}"/);
   assert.doesNotMatch(template, /openCategoryManager/);
   assert.match(form, /quickEntry && entryVisible/);
   assert.match(template, /class="entry-family"/);

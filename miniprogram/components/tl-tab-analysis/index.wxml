@@ -72,7 +72,7 @@
             <view class="analysis-summary-card analysis-overview-card card dashboard-hero">
               <view class="overview-top-row">
                 <view class="overview-main-info">
-                  <text class="section-kicker">{{rangeLabel}} · {{dashboardView.typeLabel}}（元）</text>
+                  <text class="section-kicker">{{rangeLabel}} · {{dashboardView.typeLabel}}</text>
                   <text class="summary-title t-num">{{dashboardView.totalText}}</text>
                   <text class="summary-copy">共 {{dashboardView.recordCount}} 笔 · 日均 {{dashboardView.dailyAverageText}}</text>
                 </view>
@@ -361,7 +361,7 @@
             </view>
             <block wx:if="{{hasRecords}}">
               <view class="analysis-summary-card card dashboard-hero">
-                <text class="section-kicker">{{mode === 'custom' ? '区间' : '累计'}}{{analysisType === 'income' ? '收入' : '支出'}}（元）</text>
+                <text class="section-kicker">{{mode === 'custom' ? '区间' : '累计'}}{{analysisType === 'income' ? '收入' : '支出'}}</text>
                 <text class="summary-title">{{analysisType === 'income' ? overview.incomeText : overview.expenseText}}</text>
                 <text class="summary-copy">{{directionRecordCount === null ? '收支共 ' + overview.recordCount : '共 ' + directionRecordCount}} 笔 · 结余 {{overview.balanceText}}（收入减支出）</text>
                 <text wx:if="{{comparisonRange}}" class="summary-copy">对比 {{comparisonRange.start}} 起至 {{comparisonRange.end}} 前 · 结余 {{balanceCompareText}}</text>
@@ -397,7 +397,7 @@
                 </view>
                 <view class="timeline-detail-box">
                   <view class="timeline-header">
-                    <text class="timeline-title">趋势明细（元）</text>
+                    <text class="timeline-title">趋势明细</text>
                     <view class="timeline-cols-head">
                       <text class="th-cell th-inc">收入</text>
                       <text class="th-cell th-exp">支出</text>
@@ -469,7 +469,7 @@
             <view id="analysis-family">
             </view>
             <view class="showcase-section">
-              <text class="section-kicker">家庭支出（元） · {{family.totalText}}</text>
+              <text class="section-kicker">家庭支出 · {{family.totalText}}</text>
             </view>
             <view class="showcase-insights card">
               <view class="showcase-insight">记录全家共同开支，透明分摊更安心；支持按付款人与消费归属分别查看。</view>
@@ -575,7 +575,7 @@
       <text class="card-title">其余分类</text>
       <tl-button class="ratio-sheet-close" variant="text" size="small" bind:tap="closeRatioRemainder">关闭</tl-button>
     </view>
-    <text class="ratio-preview-meta">选择一个分类，查看对应明细（金额单位：元）</text>
+    <text class="ratio-preview-meta">选择一个分类，查看对应明细</text>
     <scroll-view wx:if="{{ratioRemainderOptions.length}}" class="ratio-remainder-scroll" scroll-y="{{true}}" show-scrollbar="{{false}}">
       <view wx:for="{{ratioRemainderOptions}}" wx:key="key" class="analysis-ratio-row" data-key="{{item.key}}" bindtap="chooseRatioRemainder">
         <view class="ratio-category-main">
@@ -605,7 +605,7 @@
           <text class="report-period">{{rangeLabel}}</text>
         </view>
         <view class="report-card-hero">
-          <text class="report-hero-label">家庭总支出（元）</text>
+          <text class="report-hero-label">家庭总支出</text>
           <text class="report-hero-amount t-num">{{dashboardView.totalText}}</text>
           <text class="report-hero-sub">共 {{dashboardView.recordCount}} 笔 · 日均 {{dashboardView.dailyAverageText}}</text>
         </view>

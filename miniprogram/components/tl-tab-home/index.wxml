@@ -21,7 +21,7 @@
         </view>
         <block wx:elif="{{isEmpty}}">
           <view wx:if="{{!showBudget || !budgetEnabled}}" class="summary-card card fade-up">
-            <view class="summary-title">本月结余（元）</view>
+            <view class="summary-title">本月结余</view>
             <view class="overview-value">{{balanceCompact}}</view>
             <view class="overview-grid">
               <view class="overview-item">
@@ -43,7 +43,7 @@
             <block wx:if="{{budgetEnabled}}">
               <view class="budget-card-header">
                 <view class="budget-card-heading">
-                  <text class="budget-card-title">本月预算（元）</text>
+                  <text class="budget-card-title">本月预算</text>
                   <view class="budget-status-tag {{isOverBudget ? 'danger' : budgetRate >= 90 ? 'danger' : budgetRate >= 70 ? 'warning' : budgetRate >= 50 ? 'attention' : 'safe'}}">{{isOverBudget ? '已超支' : budgetRate >= 100 ? '预算已用完' : '已使用 ' + budgetRateText + '%'}}</view>
                 </view>
                 <view class="budget-actions">
@@ -111,7 +111,7 @@
           <view wx:if="{{showBudget && budgetEnabled}}" class="budget-card card fade-up">
             <view class="budget-card-header">
               <view class="budget-card-heading">
-                <text class="budget-card-title">本月预算（元）</text>
+                <text class="budget-card-title">本月预算</text>
                 <view class="budget-status-tag {{isOverBudget ? 'danger' : budgetRate >= 90 ? 'danger' : budgetRate >= 70 ? 'warning' : budgetRate >= 50 ? 'attention' : 'safe'}}">{{isOverBudget ? '已超支' : budgetRate >= 100 ? '预算已用完' : '已使用 ' + budgetRateText + '%'}}</view>
               </view>
               <view class="budget-actions">
@@ -166,7 +166,7 @@
           </view>
           <view wx:else class="summary-card card fade-up">
             <view class="summary-head">
-              <view class="summary-title">本月结余（元）</view>
+              <view class="summary-title">本月结余</view>
               <view wx:if="{{canManageBudget}}" class="summary-action" bindtap="goBudgetSettings">设置预算</view>
             </view>
             <view class="overview-value">{{balanceCompact}}</view>

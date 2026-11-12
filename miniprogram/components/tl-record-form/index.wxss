@@ -130,7 +130,9 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10rpx;
-  margin-top: 14rpx;
+  margin-top: 0;
+  min-width: 0;
+  flex: 1;
 }
 .tl-record-form__tag-list view {
   margin-right: 0;
@@ -254,7 +256,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 64rpx;
+  height: 88rpx;
   border: var(--tl-border-width) solid var(--tl-color-border-warm);
   border-radius: var(--tl-radius-control);
   background: var(--tl-palette-warm-100);
@@ -386,7 +388,7 @@
 
 .tl-record-form__keypad--quick {
   box-sizing: border-box;
-  max-height: 78vh;
+  max-height: 85vh;
   overflow-y: auto;
   animation: record-panel-up var(--tl-duration-normal) ease-out both;
 }
@@ -409,7 +411,7 @@
   gap: 8rpx;
 }
 .tl-record-form__keypad-grid--four .keypad-key {
-  height: 68rpx;
+  height: 88rpx;
 }
 .keypad-key--operator {
   color: var(--tl-color-primary-ink);

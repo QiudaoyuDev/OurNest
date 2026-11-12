@@ -38,7 +38,7 @@ test("analysis amounts use shared yuan labels and preserve record and balance si
     "utf8"
   );
   assert.doesNotMatch(template + record, /¥/);
-  assert.match(template, /趋势明细（元）/);
+  assert.match(template, /趋势明细/);
   assert.match(template, /收入减支出/);
   assert.match(template, /item\.balance >= 0 \? '\+' : ''/);
   assert.match(record, /type === 'income' \? '\+' : '-'/);
@@ -1302,7 +1302,7 @@ test("dashboardView generates natural editorial summary and comparison tag", () 
     "2026-11-12"
   );
   assert.equal(result.isBalancePositive, true);
-  assert.match(result.comparisonTag, /↓ 较上月减少 680.00 元/);
+  assert.match(result.comparisonTag, /↓ 较上月减少 680.00/);
   assert.match(result.comparisonCopyText, /↓ 较上月减少 ¥680.00/);
   assert.match(result.editorialSummary, /餐饮美食占支出 41.5%/);
   assert.match(result.editorialSummary, /开销较上月有所放缓/);
@@ -1336,7 +1336,7 @@ test("calculateFamilySettlement computes fair partner balance difference", () =>
   const settlement = calculateFamilySettlement(family, "11月", "小家小账");
   assert.equal(settlement.enabled, true);
   assert.equal(settlement.diffText, "1000.00");
-  assert.match(settlement.advice, /伴侣 需向 我 转账 1000.00 元/);
+  assert.match(settlement.advice, /伴侣 需向 我 转账 1000.00/);
   assert.match(settlement.copyText, /伴侣 需转给 我 ¥1000.00/);
   assert.match(settlement.copyText, /【咱家小账 · 11月对账单】/);
   assert.match(settlement.copyText, /家庭总支出：¥4,000.00/);

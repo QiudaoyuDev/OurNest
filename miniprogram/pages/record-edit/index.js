@@ -116,6 +116,7 @@ Page({
     deleting: false,
     keypadOpen: false,
     noteFocused: false,
+    entryCollapsed: false,
     note: "",
     tagInput: "",
     tags: [],
@@ -389,8 +390,12 @@ Page({
         (item.level === "child" || (!item.level && !item.parentId))
     );
     if (!child) return;
-    this.setData({ categoryId });
+    this.setData({ categoryId, entryCollapsed: false });
     this.renderCategories(this._categories);
+  },
+
+  reselectEntryCategory() {
+    if (!this.data.saving) this.setData({ entryCollapsed: true });
   },
 
   handleEntryBack() {
@@ -799,9 +804,9 @@ Page({
       return;
     }
     if (!this.data.isEditing && (this.data.categoryLoading || this.data.categoryError)) return;
-    const finalTags = Array.from(
-      new Set([...this.data.tags, ...normalizeTags(this.data.tagInput)])
-    ).slice(0, 8);
+    const finalTags = this.data.isEditing
+      ? this.data.tags.slice()
+      : Array.from(new Set([...this.data.tags, ...normalizeTags(this.data.tagInput)])).slice(0, 8);
     const result = evaluateAmountExpression(this.data.amount);
     if (!result.valid) {
       feedback.showToast({

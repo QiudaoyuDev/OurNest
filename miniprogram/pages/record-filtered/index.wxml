@@ -14,7 +14,7 @@
         <block wx:else>
           <view class="filtered-summary card">
             <view>{{rangeLabel}}</view>
-            <view>共 {{count}} 笔 · 收入 {{incomeText}} · 支出 {{expenseText}}（元）</view>
+            <view>共 {{count}} 笔 · 收入 {{incomeText}} · 支出 {{expenseText}}</view>
           </view>
           <view wx:if="{{records.length}}" class="filtered-list card">
             <tl-analysis-record wx:for="{{records}}" wx:key="id" record="{{item}}" type="{{item.type}}" bind:open="openRecord">
